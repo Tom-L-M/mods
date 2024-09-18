@@ -26,10 +26,10 @@ function printVersion() {
     Options:
         -h | --help         Prints the help message and quits.
         -v | --version      Prints the version info and quits.
-        -V | --verbose      Default: false
-        -m | --max-search   Default: 100 - First 100 results
-        -t | --timeout      Default: 10 s
-        -f | --filetype     Default: txt - Files to search for`;
+        -V | --verbose      Default: false.
+        -m | --max-search   Default: 100 - First 100 results.
+        -t | --timeout      Default: 10 seconds.
+        -f | --filetype     Default: txt - Files to search for.`;
     const args = process.argv.slice(2);
 
     if (args.includes('--help') || args.includes('-h') || !args[0])
@@ -58,8 +58,7 @@ function printVersion() {
     }
 
     if (!domain) return console.log(help);
-    if (filetypes.length < 1)
-        return console.log('<> Error: File types not specified');
+    if (filetypes.length < 1) filetypes.push('txt');
 
     const buildURI = () =>
         `https://www.google.com/search?num=${maxsearch}&q=site:${domain}+filetype:${filetypes.join(
@@ -67,22 +66,13 @@ function printVersion() {
         )}`;
 
     function request(url) {
-        const init = Date.now();
-        console.log('>> Started Query');
         return new Promise((resolve, reject) => {
             let data = [];
             https
                 .get(url, res => {
-                    console.log(' > Status Code:', res.statusCode);
                     res.on('data', chunk => data.push(chunk));
                     res.on('end', () => {
                         data = Buffer.concat(data);
-                        console.log(' > Bytes: ' + data.length);
-                        console.log(
-                            '>> Ended Query - Elapsed: ' +
-                                (Date.now() - init) +
-                                ' ms\n'
-                        );
                         resolve(data.toString('utf-8'));
                     });
                 })
@@ -94,7 +84,6 @@ function printVersion() {
 
     function parseResponse(rawdata) {
         const searchstring = 'href="/url?q=';
-        const init = Date.now();
 
         let sub = rawdata;
         let acc = [];
@@ -116,8 +105,7 @@ function printVersion() {
             if (verbose) {
                 acc.push(
                     [
-                        ' · ' +
-                            tmp.slice(tmp.indexOf('/'), tmp.lastIndexOf('/')) +
+                        tmp.slice(tmp.indexOf('/'), tmp.lastIndexOf('/')) +
                             '/' +
                             tmp.slice(tmp.lastIndexOf('/') + 1),
                     ].join('')
@@ -125,8 +113,7 @@ function printVersion() {
             } else {
                 if (cchars('/', tmp) > 1) {
                     acc.push(
-                        ' · ' +
-                            tmp.slice(0, tmp.indexOf('/') + 1) +
+                        tmp.slice(0, tmp.indexOf('/') + 1) +
                             '.../' +
                             decodeURIComponent(
                                 decodeURIComponent(
@@ -136,8 +123,7 @@ function printVersion() {
                     );
                 } else {
                     acc.push(
-                        ' · ' +
-                            tmp.slice(0, tmp.indexOf('/') + 1) +
+                        tmp.slice(0, tmp.indexOf('/') + 1) +
                             decodeURIComponent(
                                 decodeURIComponent(
                                     tmp.slice(tmp.lastIndexOf('/') + 1)
@@ -148,22 +134,14 @@ function printVersion() {
             }
         }
 
-        console.log(
-            '>> Ended Parsing - ' +
-                (Date.now() - init) +
-                ' ms - ' +
-                counter +
-                ' cycles\n'
-        );
-        return acc.slice(0, -1).map(x => x.replaceAll(domain, ''));
+        return acc.slice(2, -1).map(x => x.replaceAll(domain, ''));
     }
 
     try {
         const uri = buildURI();
-        console.log('<> Looking for: ' + uri);
         const response = await request(uri);
         const results = parseResponse(response);
-        console.log(results.join('\n'));
+        console.log(results.join('\n').trim());
     } catch (err) {
         console.log('<> Error: ' + err.message);
     }
