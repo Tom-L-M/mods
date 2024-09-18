@@ -1,0 +1,12 @@
+{
+	"name": "nodemini",
+	"version": "1.3.0",
+	"description": "A NodeJS binary wrapper for executing scripts on machines without NodeJS.",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+	"license": "MIT"
+}

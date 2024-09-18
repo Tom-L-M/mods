@@ -1,0 +1,12 @@
+{
+	"name": "diff",
+	"version": "1.5.0",
+	"description": "A tool for finding line diff between files. (Still in Beta).",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+	"license": "MIT"
+}

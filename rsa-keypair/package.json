@@ -1,0 +1,12 @@
+{
+	"name": "rsa-keypair",
+	"version": "1.3.0",
+	"description": "A tool for generating secure RSA key pairs on-demand.",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+	"license": "MIT"
+}

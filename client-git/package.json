@@ -1,0 +1,12 @@
+{
+	"name": "client-git",
+	"version": "1.2.0",
+	"description": "A tool to download and import repositories from GitHub.",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+	"license": "MIT"
+}

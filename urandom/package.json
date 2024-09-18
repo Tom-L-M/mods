@@ -1,0 +1,12 @@
+{
+	"name": "urandom",
+	"version": "1.6.0",
+	"description": "A tool for generating seeded random numbers from a 'Xoshiro256**' Random Number Generator (RNG). (Imitates '/dev/urandom' behaviour in UNIX).",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+	"license": "MIT"
+}

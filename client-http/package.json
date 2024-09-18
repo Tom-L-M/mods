@@ -1,0 +1,12 @@
+{
+    "name": "client-http",
+    "version": "1.8.0",
+    "description": "A tool for sending custom HTTP requests.",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
+}

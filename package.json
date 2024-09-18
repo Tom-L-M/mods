@@ -1,0 +1,18 @@
+{
+	"name": "mods",
+	"version": "1.10.4",
+	"description": "An executable wrapper to compile standalone scripts and modules into a single tool.",
+	"main": "mods.js",
+	"keywords": [],
+	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+	"license": "MIT",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"build-linux": "pkg -c package.json -t node18-linux mods.js",
+		"build-win": "pkg -c package.json -t node18-win mods.js"
+	},
+	"pkg": {
+		"scripts": "mods.js",
+		"assets": "/**/*"
+	}
+}

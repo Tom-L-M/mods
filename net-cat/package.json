@@ -1,0 +1,12 @@
+{
+	"name": "net-cat",
+	"version": "1.6.0",
+	"description": "A tool for creating live TCP connections to remote hosts (Port of UNIX's 'netcat' tool).",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+	"license": "MIT"
+}

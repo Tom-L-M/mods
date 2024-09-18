@@ -1,0 +1,12 @@
+{
+	"name": "wol",
+	"version": "1.5.0",
+	"description": "A tool for executing the Wake-On-LAN protocol in a local network. Sends WOL magic packets.",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+	"license": "MIT"
+}

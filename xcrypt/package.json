@@ -1,0 +1,12 @@
+{
+	"name": "xcrypt",
+	"version": "1.5.0",
+	"description": "A tool for quickly encrypting files with key files and the one-time-pad XOR cypher.",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+	"license": "MIT"
+}
