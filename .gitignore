@@ -131,6 +131,7 @@ dist
 
 # Local custom
 movebin.cmd
+CHANGELOG.md
 # Publishing config
 publish.json
 # Generated binaries
