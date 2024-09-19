@@ -93,12 +93,7 @@ function slice(data, { lines, bytes } = {}) {
     if (bytes)
         // bytes have preference over lines
         return data.slice(-bytes - 1);
-    else
-        return data
-            .toString('utf-8')
-            .split('\n')
-            .slice(-lines - 1)
-            .join('\n');
+    else return data.toString('utf-8').split('\n').slice(-lines).join('\n');
 }
 
 const exeresolve = fname => {
