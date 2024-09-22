@@ -105,7 +105,7 @@ const WRITE_CHUNK_SIZE = 4 * 1024; // 4 Kb
         stats = fs.statSync(file);
         stream = fs.createWriteStream(file);
         fsize = stats.size;
-    } catch (err) {
+    } catch {
         return console.log(`Error: could not find file - ${file}`);
     }
 
