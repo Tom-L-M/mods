@@ -132,7 +132,7 @@ const help = `
 
         try {
             return require(script);
-        } catch (e) {
+        } catch {
             console.log(
                 '\nError: Invalid script path provided (' + script + ')\n'
             );
