@@ -137,7 +137,12 @@ const formatVerticalList = arr => {
                 .map(x => x.name)
                 // Filters projects with names starting with '_' and '.'
                 // usually projects still in work and hidden folders
-                .filter(d => !d.startsWith('.') && !d.startsWith('_'))
+                .filter(
+                    d =>
+                        !d.startsWith('.') &&
+                        !d.startsWith('_') &&
+                        !d.startsWith('node_modules')
+                )
         );
     };
 
