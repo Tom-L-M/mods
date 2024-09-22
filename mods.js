@@ -82,7 +82,7 @@ const formatVerticalList = arr => {
     // number of rows varies depending on number of items in list
     const ROWS = Math.ceil(arr.length / COLS);
 
-    let acc = [...new Array(COLS).fill(0).map(x => new Array())];
+    let acc = [...new Array(COLS).fill(0).map(() => new Array())];
     let lastline = 0;
     for (let i = 0; i < arr.length; i++) {
         if (acc[lastline].length < ROWS) {
@@ -200,7 +200,7 @@ const formatVerticalList = arr => {
                                                             ╚═════════════════════╝`;
 
     if (!tool || ['--help', '-h'].includes(tool)) {
-        if (!!args[2]) {
+        if (args[2]) {
             process.argv = process.argv.slice(1);
             process.argv.push('--help');
             // Call module with help flag active, to get its help message
@@ -221,11 +221,11 @@ const formatVerticalList = arr => {
         const versionhash = compileContentVersionHash(versionstring);
         console.log(`$${versionhash}$${versionstring}`);
     } else if (['--info', '-i'].includes(tool)) {
-        if (!!args[2]) {
+        if (args[2]) {
             let pkg;
             try {
                 pkg = require(`${__dirname}/${args[2]}/package.json`);
-            } catch (err) {
+            } catch {
                 return console.log(
                     `Error: Could not locate 'package.json' file of module [${
                         args[2] || ''
@@ -246,11 +246,11 @@ const formatVerticalList = arr => {
             );
         }
     } else if (['--version', '-v'].includes(tool)) {
-        if (!!args[2]) {
+        if (args[2]) {
             let pkg;
             try {
                 pkg = require(`${__dirname}/${args[2]}/package.json`);
-            } catch (err) {
+            } catch {
                 return console.log(
                     `Error: Could not locate 'package.json' file of module [${
                         args[2] || ''
