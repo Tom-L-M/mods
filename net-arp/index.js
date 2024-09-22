@@ -196,7 +196,7 @@ function printVersion() {
         let arpEntry = findEntryInARPTable(arpTable, address);
 
         // If in ARP table, return the address
-        if (!!arpEntry)
+        if (arpEntry)
             return console.log(
                 `${arpEntry.ip}\t    ${normalizeMAC(arpEntry.mac)}     (${
                     arpEntry.type
@@ -220,7 +220,7 @@ function printVersion() {
         arpEntry = findEntryInARPTable(arpTable, address);
 
         // If in ARP table, return the entry:
-        if (!!arpEntry)
+        if (arpEntry)
             return console.log(
                 `${arpEntry.ip}\t    ${normalizeMAC(arpEntry.mac)}     (${
                     arpEntry.type
