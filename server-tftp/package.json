@@ -1,12 +1,12 @@
 {
-	"name": "server-tftp",
-	"version": "1.5.0",
-	"description": "A tool for running a local protocol-compliant TFTP server.",
-	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"keywords": [],
-	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
-	"license": "MIT"
+    "name": "server-tftp",
+    "version": "1.5.1",
+    "description": "A tool for running a local protocol-compliant TFTP server.",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
 }

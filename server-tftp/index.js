@@ -39,7 +39,7 @@ function startTftpServer(context) {
         const sendack = blocknum => {
             let buf = Buffer.from([0, 4, 0, 0]);
             buf.writeUInt16BE(blocknum, 2);
-            app.udpserver.send(buf, rinfo.port, rinfo.address, (err, bytes) => {
+            app.udpserver.send(buf, rinfo.port, rinfo.address, err => {
                 if (err) return logevent(`Error sending ACK packet: ${err}`);
             });
             // logevent(`ACK BLOCK ${blocknum}`);
@@ -83,7 +83,7 @@ function startTftpServer(context) {
                 0, // A null-byte terminator
             ]);
             buf.writeUInt16BE(errcode, 2);
-            app.udpserver.send(buf, rinfo.port, rinfo.address, (err, bytes) => {
+            app.udpserver.send(buf, rinfo.port, rinfo.address, err => {
                 if (err) return logevent(`Error sending ACK packet: ${err}`);
             });
             logevent(`TFTP_ERROR (${errcode}): ${msg}`);
@@ -144,7 +144,7 @@ function startTftpServer(context) {
                         Buffer.from(packet),
                         rinfo.port,
                         rinfo.address,
-                        (err, bytes) => {
+                        err => {
                             // logevent(packet.length);
                             if (err)
                                 return logevent(
@@ -187,9 +187,7 @@ function startTftpServer(context) {
             sendack(0);
         } else if (opcode === 3) {
             // DATA packets
-            const blocknum = [...msg.subarray(2, 4)].reduce(
-                (z, x, i) => (z += x)
-            );
+            const blocknum = [...msg.subarray(2, 4)].reduce((z, x) => (z += x));
             const fdata = msg.subarray(4);
             const opts = context.EXTERNAL[uniq_id];
             // logevent('Received '+(data.length)+' bytes ('+fdata.length+' data bytes)');
@@ -242,7 +240,7 @@ function startTftpServer(context) {
         } else if (opcode === 5) {
             // ERROR packets
             const errcode = [...msg.subarray(2, 4)]
-                .reduce((z, x, i) => (z += x))
+                .reduce((z, x) => (z += x))
                 .toString();
             const errmsg = msg.subarray(4).toString();
             logevent(`ERROR (${errcode}): ${errmsg}`);
