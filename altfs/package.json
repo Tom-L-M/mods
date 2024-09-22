@@ -1,6 +1,6 @@
 {
     "name": "altfs",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "description": "A tool for manipulating Alternate Data Streams (ADSs) in Windows OS.",
     "main": "index.js",
     "scripts": {

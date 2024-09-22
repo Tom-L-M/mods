@@ -58,7 +58,7 @@ const lsAds = (dir, { read, recursive }) => {
                 continue;
             }
             let [size, ads] = line.trim().split(' ');
-            let [hostfile, adsfile, keyword] = ads.trim().split(':');
+            let [hostfile, adsfile] = ads.trim().split(':');
             let result;
             try {
                 if (read)
@@ -79,7 +79,7 @@ const lsAds = (dir, { read, recursive }) => {
                             .join(' \\n ') +
                         ']';
                 else result = '';
-            } catch (err) {
+            } catch {
                 result = 'ERR::ECREAD';
             }
             acc.push(
