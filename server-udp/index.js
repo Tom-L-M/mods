@@ -21,7 +21,7 @@ function startUdpServer(context) {
         );
         server.send(content, remote.port, remote.address, err => {
             console.log(
-                `\n> ${now} > Packet Sending Failed: udp@${host}:${port} <> udp@${remote.address}:${remote.port} -> ${err}`
+                `\n> ${now} > Packet Sending Failed: udp@${host}:${port} <> udp@${remote.address}:${remote.port} -> ${err.message}`
             );
         });
         console.log(
@@ -36,9 +36,7 @@ function startUdpServer(context) {
             date.toString().split(' ')[4] +
             '.' +
             date.getMilliseconds().toString().padStart(3, '0');
-        console.log(
-            `\n> ${now} > Connection Failed: udp@${host}:${port} <> udp@${remote.address}:${remote.port} -> ${err}`
-        );
+        console.log(`\n> ${now} > Server Error -> ${err.message}`);
     });
     server.bind(port, host, () => {
         console.log(
