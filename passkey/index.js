@@ -25,13 +25,6 @@ const samples = ([...arr], sampleSize = 1) => {
     return arr.slice(0, sampleSize);
 };
 
-const exeresolve = fname => {
-    const [m0, m1] = fname.replaceAll('\\', '/').split('/');
-    return __dirname.endsWith(m0)
-        ? __dirname + '/' + m1
-        : __dirname + '/' + fname;
-};
-
 function printVersion() {
     try {
         console.log(require(exeresolve('passkey/package.json')).version);
@@ -186,7 +179,6 @@ const parseArgv = (mapping = {}, argv = process.argv.slice(2)) => {
             let special = samples(specials, 1).join('');
 
             if (context.endingToken) {
-                console.log(9, passphrase);
                 // Replace one word for a capital letter + 2 Digits
                 // Info: This 3-letter pseudo-word is important for
                 //  passing both capital-letter-checking and number
