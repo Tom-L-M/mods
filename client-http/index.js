@@ -1,4 +1,5 @@
 const path = require('node:path');
+const fs = require('node:fs');
 
 const vID = () =>
     '################'.replace(/[#]/gm, () => Math.random().toString(16)[6]);
@@ -55,7 +56,7 @@ const sendPacket = async context => {
         options.headers['' + name] = body[0].trim();
     }
 
-    if (!!message.data) {
+    if (message.data) {
         options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
         options.headers['Content-Length'] = message.size;
         ('');
@@ -155,7 +156,7 @@ const sendPacket = async context => {
             );
     });
 
-    if (!!message.data) {
+    if (message.data) {
         req.write(message.data);
         if (trace) console.log(`> Data sent (${message.size} bytes)`);
     }
@@ -202,7 +203,7 @@ function readStdinAsync() {
     });
 }
 
-const isSTDINActive = () => !Boolean(process.stdin.isTTY);
+const isSTDINActive = () => !process.stdin.isTTY;
 
 (async () => {
     const args = process.argv.slice(2);
@@ -343,7 +344,6 @@ const isSTDINActive = () => !Boolean(process.stdin.isTTY);
 
             case '-f':
             case '--file': // --file ./example/file.bin
-                const fs = require('fs');
                 context.message.data = fs.readFileSync(
                     args.slice(++i, i + 1).join(' ')
                 );
