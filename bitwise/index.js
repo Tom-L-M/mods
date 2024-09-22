@@ -49,7 +49,6 @@ function printVersion() {
         case '--version':
         case '-v':
             return printVersion();
-            break;
         case 'or':
             res = data1 | data2;
             break;
