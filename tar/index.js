@@ -1080,7 +1080,9 @@ function printVersion() {
     try {
         console.log(require(exeresolve('tar/package.json')).version);
     } catch (err) {
-        console.log('Error: could not read package descriptor.');
+        console.log(
+            `Error: could not read package descriptor - ${err.message}`
+        );
     }
 }
 

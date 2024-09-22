@@ -245,7 +245,9 @@ function printVersion() {
     try {
         console.log(require(exeresolve('urandom/package.json')).version);
     } catch (err) {
-        console.log('Error: could not read package descriptor.');
+        console.log(
+            `Error: could not read package descriptor - ${err.message}`
+        );
     }
 }
 
