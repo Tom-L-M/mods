@@ -1,7 +1,7 @@
 const safeResolve = async (resolutionFunction, target) => {
     try {
         return await resolutionFunction(target);
-    } catch (err) {
+    } catch {
         return null;
     }
 };
@@ -13,11 +13,12 @@ const resolveDNSQuery = async context => {
 
     dns.setServers(servers);
 
+    let acc;
     try {
         switch (query) {
             case 'ALL':
             case '*':
-                let acc = [
+                acc = [
                     await safeResolve(dns.resolve4, target),
                     await safeResolve(dns.resolve6, target),
                     await safeResolve(dns.resolveCaa, target),
