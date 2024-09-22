@@ -6,7 +6,7 @@ const generate = (mod = 4096, pass = undefined) => {
     const public_config = { type: 'spki', format: 'pem' };
     const private_config = { type: 'pkcs8', format: 'pem' };
 
-    if (!!pass) {
+    if (pass) {
         private_config.cipher = 'aes-256-cbc';
         private_config.passphrase = pass;
     }
