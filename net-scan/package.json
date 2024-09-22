@@ -1,12 +1,12 @@
 {
-	"name": "net-scan",
-	"version": "1.2.0",
-	"description": "A tool for executing port scanning on a target host. (Port of UNIX's 'nmap' tool).",
-	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"keywords": [],
-	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
-	"license": "MIT"
+    "name": "net-scan",
+    "version": "1.2.1",
+    "description": "A tool for executing port scanning on a target host. (Port of UNIX's 'nmap' tool).",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
 }

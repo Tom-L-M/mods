@@ -137,19 +137,18 @@ function PORT_CHECK(host = glob.host, port) {
         socket.destroy();
     });
     socket.on('timeout', function () {
-        if (!!glob.logAll) printResult(port, host, '[closed (timeout)]');
+        if (glob.logAll) printResult(port, host, '[closed (timeout)]');
         socket.setTimeout(0);
         socket.destroy();
     });
     socket.on('error', function (err) {
         //closed port
         if (err.message.match(/ECONNREFUSED/)) {
-            if (!!glob.logAll) printResult(port, host, '[closed (refused)]');
+            if (glob.logAll) printResult(port, host, '[closed (refused)]');
         } else if (err.message.match(/EHOSTUNREACH/)) {
-            if (!!glob.logAll)
-                printResult(port, host, '[closed (unreacheable)]');
+            if (glob.logAll) printResult(port, host, '[closed (unreacheable)]');
         } else {
-            if (!!glob.logAll) printResult(port, host, '[closed (unknown)]');
+            if (glob.logAll) printResult(port, host, '[closed (unknown)]');
         }
         socket.destroy();
     });
