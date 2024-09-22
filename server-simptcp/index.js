@@ -135,7 +135,7 @@ function startDaytimeServer(host, port) {
                 );
             });
 
-            socket.on('end', function (hadError) {
+            socket.on('end', function () {
                 log(
                     'daytime',
                     host,
@@ -234,7 +234,7 @@ function startDiscardServer(host, port) {
                 );
             });
 
-            socket.on('end', function (socket) {
+            socket.on('end', function () {
                 log(
                     'discard',
                     host,
