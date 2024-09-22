@@ -1,12 +1,12 @@
 {
-	"name": "tar",
-	"version": "1.6.0",
-	"description": "A tool for manipulating .tar files. (Port of UNIX's 'tar' tool).",
-	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"keywords": [],
-	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
-	"license": "MIT"
+    "name": "tar",
+    "version": "1.6.1",
+    "description": "A tool for manipulating .tar files. (Port of UNIX's 'tar' tool).",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
 }

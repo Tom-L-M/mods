@@ -853,7 +853,7 @@ async function appendTAR(tarfilepath, sources) {
     console.log('  [...]\n'); // preexisting entries will be hidden, to increase visibility
 
     for await (let file of sources) {
-        await new Promise((resolve, reject) => {
+        await new Promise(resolve => {
             let headerchunk = mountHeaderChunk(file);
             let blockHeader = unmountHeaderChunk(headerchunk);
             let paddingSize = 512 - (blockHeader.size % 512);
@@ -965,7 +965,7 @@ async function createTAR(tarfilepath, sources) {
     );
 
     for await (let file of sources) {
-        await new Promise((resolve, reject) => {
+        await new Promise(resolve => {
             let headerchunk = mountHeaderChunk(file);
             let blockHeader = unmountHeaderChunk(headerchunk);
             let paddingSize = 512 - (blockHeader.size % 512);
