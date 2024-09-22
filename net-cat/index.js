@@ -57,7 +57,7 @@ function printVersion() {
                 if (pipeto) {
                     fs.appendFileSync(pipeto, str + '\n');
                 }
-            } catch (err) {
+            } catch {
                 pipeto = false;
                 if (!isSilent)
                     console.log(
@@ -84,7 +84,7 @@ function printVersion() {
                 if (!isSilent) console.log(str2);
             }
         );
-    } catch (err) {
+    } catch {
         let str =
             '<> Error while creating connection. Use --help for the help menu.';
         if (!isSilent) console.log(str);
@@ -110,17 +110,16 @@ function printVersion() {
         process.exit(0);
     });
 
-    const rl = readline
-        .createInterface({
-            input: process.stdin,
-            output: process.stdout,
-            terminal: false,
-        })
-        .on('line', line => {
-            if (line.trim() == 'exit') return socket.end();
-            if (pipeto) {
-                fs.appendFileSync(pipeto, line + '\n');
-            }
-            socket.write(line + '\n');
-        });
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false,
+    });
+    rl.on('line', line => {
+        if (line.trim() == 'exit') return socket.end();
+        if (pipeto) {
+            fs.appendFileSync(pipeto, line + '\n');
+        }
+        socket.write(line + '\n');
+    });
 })();
