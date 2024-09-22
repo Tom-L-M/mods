@@ -65,14 +65,14 @@ function buildOutputFileName(appname) {
     try {
         const outputstream = fs.createWriteStream(outputfile);
 
-        await new Promise((resolve, reject) => {
+        await new Promise(resolve => {
             try {
                 const subp = spawn(command[0], command.slice(1));
                 subp.on(
                     'error',
                     err => console.log(` >> Error:`, err.message) || resolve()
                 );
-                subp.on('close', code => outputstream.close() || resolve());
+                subp.on('close', () => outputstream.close() || resolve());
                 subp.on('spawn', () => {
                     subp.stdout.on('data', data => {
                         if (!quiet) process.stdout.write(data);
@@ -91,7 +91,7 @@ function buildOutputFileName(appname) {
                 return resolve();
             }
         });
-    } catch (err) {
+    } catch {
         console.log(
             ` >> Error: Could not create output stream to [${outputfile}]`
         );
