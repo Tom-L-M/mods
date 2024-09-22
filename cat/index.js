@@ -86,7 +86,7 @@ function readStdinAsync() {
     });
 }
 
-const isSTDINActive = () => !Boolean(process.stdin.isTTY);
+const isSTDINActive = () => !process.stdin.isTTY;
 
 const help = `
     [cat-js]
@@ -134,7 +134,7 @@ const help = `
         }
         // If there is no '-' placeholder, append to the end
         if (stdinActive && !args['-']) input.unshift(await readStdinAsync());
-    } catch (err) {
+    } catch {
         return console.log(`Error: Could not read file ${current}`);
     }
 
