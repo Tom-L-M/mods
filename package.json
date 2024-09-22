@@ -10,7 +10,7 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "build-linux": "pkg -c package.json -t node18-linux mods.js",
         "build-win": "pkg -c package.json -t node18-win mods.js",
-        "commits": "git log --pretty=\"format:## Commit %H%n%n> Author: %an <%ae>%n%n> Date:   %ai%n%n`%s`%n%n```%n%b```%n%n<br>%n\" > COMMITS.md"
+        "commits": "git log --pretty=\"format:## `%s`%n%n> Commit: %H%n%n> Author: %an <%ae>%n%n> Date:   %ai%n%n```%n%B```%n%n<br>%n\" > COMMITS.md"
     },
     "pkg": {
         "outputPath": ".dist",
