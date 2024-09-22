@@ -39,20 +39,7 @@ const utils = {
     },
 };
 
-const KNOWN_TEXT_EXTENSIONS = [
-    'txt',
-    'info',
-    'log',
-    'js',
-    'css',
-    'html',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-];
+const KNOWN_TEXT_EXTENSIONS = ['txt', 'info', 'log', 'js', 'css', 'html', ''];
 
 async function build() {
     const readline = require('node:readline');
@@ -63,7 +50,7 @@ async function build() {
     });
 
     const question = q => {
-        return new Promise((res, rej) => rl.question(q, res));
+        return new Promise(resolve => rl.question(q, resolve));
     };
 
     const baseline_prompt = '\n ┌─ ';
@@ -168,7 +155,7 @@ async function build() {
             );
             rl.close();
             return;
-        } catch (err) {
+        } catch {
             console.log(
                 '\n<> Error, could not save gophermap file to [' +
                     fullpath +
@@ -264,6 +251,7 @@ class GopherServer {
                 continue;
             }
             let extension = item.split('.').reverse()[0];
+            let result;
             switch (extension) {
                 case 'info':
                 case 'log':
@@ -291,7 +279,7 @@ class GopherServer {
                     break;
                 default:
                     // If file is binary add a '9' menu, else, add a '0' menu (text file)
-                    let result = fs.readFileSync(path.join(dir, item));
+                    result = fs.readFileSync(path.join(dir, item));
                     if (!!buffer.isAscii && !!buffer.isUtf8) {
                         if (buffer.isAscii(result) || buffer.isUtf8(result))
                             addEntry('0', item);
