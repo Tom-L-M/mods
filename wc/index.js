@@ -1,5 +1,4 @@
 const fs = require('node:fs');
-const path = require('node:path');
 
 function readStdinAsync() {
     return new Promise((resolve, reject) => {
@@ -22,7 +21,7 @@ function readStdinAsync() {
         stream.on('error', onError);
     });
 }
-const isSTDINActive = () => !Boolean(process.stdin.isTTY);
+const isSTDINActive = () => !process.stdin.isTTY;
 
 /**
  * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
@@ -165,7 +164,7 @@ function printVersion() {
     if (!fromSTDIN) {
         try {
             input = fs.readFileSync(file);
-        } catch (err) {
+        } catch {
             return console.log(`Error: Could not read file ${file}`);
         }
     }

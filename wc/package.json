@@ -1,12 +1,12 @@
 {
-	"name": "wc",
-	"version": "1.2.0",
-	"description": "A tool for counting words/lines/bytes from a file. (Port of UNIX's 'wc' tool).",
-	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"keywords": [],
-	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
-	"license": "MIT"
+    "name": "wc",
+    "version": "1.2.1",
+    "description": "A tool for counting words/lines/bytes from a file. (Port of UNIX's 'wc' tool).",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
 }
