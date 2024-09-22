@@ -22,7 +22,7 @@ function readStdinAsync() {
     });
 }
 
-const isSTDINActive = () => !Boolean(process.stdin.isTTY);
+const isSTDINActive = () => !process.stdin.isTTY;
 
 /**
  * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
@@ -130,7 +130,7 @@ function slice(data, { lines, bytes } = {}) {
     if (!fromSTDIN) {
         try {
             input = fs.readFileSync(file);
-        } catch (err) {
+        } catch {
             return console.log(`Error: Could not read file ${file}`);
         }
     }
