@@ -5,13 +5,6 @@ const exeresolve = fname => {
         : __dirname + '/' + fname;
 };
 
-const exeresolve = fname => {
-    const [m0, m1] = fname.replaceAll('\\', '/').split('/');
-    return __dirname.endsWith(m0)
-        ? __dirname + '/' + m1
-        : __dirname + '/' + fname;
-};
-
 function printVersion() {
     try {
         console.log(require(exeresolve('signatures/package.json')).version);
