@@ -128,13 +128,13 @@ const parseArgv = (mapping = {}, argv = process.argv.slice(2)) => {
 
     // For number of passphrases to generate:
     let numberToGenerate = args.count;
-    if (!!numberToGenerate) context.times = Number(numberToGenerate);
+    if (numberToGenerate) context.times = Number(numberToGenerate);
     // For number of words:
     let numberOfWords = args.words;
-    if (!!numberOfWords) context.words = Number(numberOfWords);
+    if (numberOfWords) context.words = Number(numberOfWords);
     // For separator:
     let separator = args.separator;
-    if (!!separator) context.separator = separator;
+    if (separator) context.separator = separator;
     // For ending token:
     if (args['no-ending']) {
         context.endingToken = false;
