@@ -22,7 +22,7 @@ function readStdinAsync() {
     });
 }
 
-const isSTDINActive = () => !Boolean(process.stdin.isTTY);
+const isSTDINActive = () => !process.stdin.isTTY;
 
 /**
  * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
@@ -115,7 +115,6 @@ function diff(data1, data2, { quiet, insensitive, blank, nocolor } = {}) {
             : 'DIFFERENT';
     const lines1 = data1.toString('utf-8').split('\n');
     const lines2 = data2.toString('utf-8').split('\n');
-    const longer = Math.max(lines1.length, lines2.length);
     let diffIn = [];
     let diffOut = [];
 
@@ -218,12 +217,12 @@ function diff(data1, data2, { quiet, insensitive, blank, nocolor } = {}) {
     if (!fromSTDIN) {
         try {
             input = fs.readFileSync(file);
-        } catch (err) {
+        } catch {
             return console.log(`Error: Could not read file ${file}`);
         }
         try {
             inputB = fs.readFileSync(fileB);
-        } catch (err) {
+        } catch {
             return console.log(`Error: Could not read file ${fileB}`);
         }
     }
@@ -234,7 +233,7 @@ function diff(data1, data2, { quiet, insensitive, blank, nocolor } = {}) {
         input = await readStdinAsync();
         try {
             inputB = fs.readFileSync(file);
-        } catch (err) {
+        } catch {
             return console.log(`Error: Could not read file ${file}`);
         }
     }
