@@ -1,6 +1,6 @@
 {
     "name": "mods",
-    "version": "1.10.5+1",
+    "version": "1.10.6+1",
     "description": "An executable wrapper to compile standalone scripts and modules into a single tool.",
     "main": "mods.js",
     "keywords": [],
@@ -10,7 +10,8 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "build-linux": "pkg -c package.json -t node18-linux mods.js",
         "build-win": "pkg -c package.json -t node18-win mods.js",
-        "commits": "git log --pretty=\"format:## `%s`%n%n> Commit: %H%n%n> Author: %an <%ae>%n%n> Date:   %ai%n%n```%n%B```%n%n<br>%n\" > COMMITS.md"
+        "commits": "git log --pretty=\"format:## `%s`%n%n> Commit: %H%n%n> Author: %an <%ae>%n%n> Date:   %ai%n%n```%n%B```%n%n<br>%n\" > COMMITS.md",
+        "update-version": "npm i --package-lock-only"
     },
     "pkg": {
         "outputPath": ".dist",
