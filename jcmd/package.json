@@ -1,12 +1,12 @@
 {
-	"name": "jcmd",
-	"version": "1.4.0",
-	"description": "A tool for editing keys in JSON files from the command line.",
-	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"keywords": [],
-	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
-	"license": "MIT"
+    "name": "jcmd",
+    "version": "1.4.1",
+    "description": "A tool for editing keys in JSON files from the command line.",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
 }

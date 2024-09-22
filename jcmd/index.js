@@ -4,7 +4,7 @@ const fs = require('fs');
 function safeParseJSON(string) {
     try {
         return JSON.parse(string);
-    } catch (e) {
+    } catch {
         return undefined;
     }
 }
@@ -12,7 +12,7 @@ function safeParseJSON(string) {
 function safeStringifyJSON(string) {
     try {
         return JSON.stringify(string, null, '\t');
-    } catch (e) {
+    } catch {
         return undefined;
     }
 }
@@ -109,7 +109,7 @@ function printVersion() {
             'Error: invalid JSON data attribution with { key:' +
                 key +
                 ', value:' +
-                value +
+                val +
                 ' }.'
         );
 
