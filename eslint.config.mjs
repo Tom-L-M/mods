@@ -11,7 +11,6 @@ export default [
     {
         rules: {
             semi: ['error', 'always'],
-            'no-fallthrough': ['error'],
             'for-direction': ['error'],
             'getter-return': ['error'],
             'no-async-promise-executor': ['error'],
