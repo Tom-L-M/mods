@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const sendUdpPacket = context => {
     const { message, keepalive, silent, empty, port, host } = context;
     /* message<String|Buffer>, silent<Boolean>, empty<Boolean>, port<String|Number>, host<String> */
@@ -29,17 +31,8 @@ const sendUdpPacket = context => {
                 console.log(`> Client reached >> [udp@${host}:${port}]`);
             if (!silent) console.log(`> Data sent (${data.length} bytes)`);
         }
-        if (keepalive) {
-        } else {
-            client.close();
-        }
+        if (!keepalive) client.close();
     });
-};
-
-const isIPAddress = v => {
-    return /^(\*|25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/i.test(
-        v
-    );
 };
 
 const exeresolve = fname => {
@@ -126,7 +119,6 @@ function printVersion() {
 
             case '-f':
             case '--file': // --file ./example/file.bin
-                const fs = require('fs');
                 context.message = fs.readFileSync(args[i]);
                 break;
 
