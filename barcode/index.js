@@ -181,7 +181,7 @@ class Barcode {
             '\n\n\t' +
             new Array(16)
                 .fill(0)
-                .map(x => bn)
+                .map(() => bn)
                 .join('\n\t') +
             '\n';
         console.log(bn);
