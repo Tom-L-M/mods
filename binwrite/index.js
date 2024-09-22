@@ -3,7 +3,7 @@ const randomInt = (low, high) => Math.floor(Math.random() * (high - low) + low);
 const randomByte = () => randomInt(0, 256);
 
 const waitStreamWriting = (IStream, content) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
         IStream.once('close', () => resolve(true));
         IStream.once('error', () => resolve(false));
         IStream.write(content);
@@ -126,12 +126,12 @@ async function Main() {
     } else if (datatype == '-f' || datatype == '--file') {
         try {
             res = fs.readFileSync(content.join(' ').trim());
-        } catch (err) {
+        } catch {
             return console.log('ERROR: Content file Not Found');
         }
     } else if (datatype == '-m' || datatype == '--random') {
         res = Buffer.from([
-            ...new Array(parseInt(content)).fill(0).map(x => randomByte()),
+            ...new Array(parseInt(content)).fill(0).map(() => randomByte()),
         ]);
     } else {
         return console.log('ERROR: Invalid Datatype Selected');
