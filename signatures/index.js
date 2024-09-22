@@ -42,7 +42,6 @@ const dumpall = args.includes('--all') || args.includes('-a');
 const signatures = require(exeresolve('signatures/signatures.json'));
 // const signatures = JSON.parse(fs.readFileSync('./signatures/signatures.json', 'utf-8'));
 // Remember: When using it as a compiled package, the execution 'chdir' is one level upper
-const describe = true;
 
 function getSignature(stream) {
     let bytes = stream.toString('hex').toUpperCase();
