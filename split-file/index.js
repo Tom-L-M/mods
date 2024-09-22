@@ -37,15 +37,14 @@ const buildWName = fname =>
     getExtension(fname);
 const parseUnit = (str = '') => {
     if (str.includes('kb')) {
-        val = parseInt(str.replace('kb', '')) * 1024;
+        return parseInt(str.replace('kb', '')) * 1024;
     } else if (str.includes('mb')) {
-        val = parseInt(str.replace('mb', '')) * 1024 * 1024;
+        return parseInt(str.replace('mb', '')) * 1024 * 1024;
     } else if (str.includes('gb')) {
-        val = parseInt(str.replace('gb', '')) * 1024 * 1024 * 1024;
+        return parseInt(str.replace('gb', '')) * 1024 * 1024 * 1024;
     } else {
-        val = parseInt(str);
+        return parseInt(str);
     }
-    return val;
 };
 
 const fs = require('fs');
