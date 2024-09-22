@@ -92,13 +92,10 @@ function printVersion() {
         let point = 0;
         let tmp;
 
-        let counter = 0;
-
         while (sub.includes(searchstring)) {
             const cchars = (c, s) =>
                 s.split('').reduce((a, h) => (h === c ? a + 1 : a), 0);
 
-            counter++;
             point = sub.indexOf(searchstring);
             sub = sub.slice(point + searchstring.length);
             tmp = sub.slice(0, sub.indexOf('&amp;'));
