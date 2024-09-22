@@ -1,11 +1,12 @@
 // Use to create low-security-level cyphers, like NATO, XOR, ROT13, Caesar...
 const reverseObject = obj =>
     Object.fromEntries(Object.entries(obj).map(([key, value]) => [value, key]));
-const chunk = (string, chunkSize = 1) =>
-    string.match(new RegExp(`.{1,${chunkSize >= 1 ? chunkSize : 1}}`, 'gim')) ??
-    [];
+
 const missingParam = str =>
     console.log('Error: Missing parameter [' + str + ']');
+
+const invalidParam = str =>
+    console.log('Error: Invalid parameter [' + str + ']');
 
 const CYPHERS = {};
 
