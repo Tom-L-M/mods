@@ -22,7 +22,7 @@ function startTcpServer(context) {
                 );
                 socket.write(content);
             });
-            socket.on('close', function (data) {
+            socket.on('close', function () {
                 let date = new Date();
                 let now =
                     date.toString().split(' ')[4] +
