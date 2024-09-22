@@ -1,12 +1,12 @@
 {
-	"name": "strings",
-	"version": "1.4.0",
-	"description": "A tool for searching for strings in binary files.",
-	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"keywords": [],
-	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
-	"license": "MIT"
+    "name": "strings",
+    "version": "1.4.1",
+    "description": "A tool for searching for strings in binary files.",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
 }
