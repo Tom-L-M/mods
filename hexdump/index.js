@@ -76,7 +76,7 @@ function printVersion() {
     }
 }
 
-const isSTDINActive = () => !Boolean(process.stdin.isTTY);
+const isSTDINActive = () => !process.stdin.isTTY;
 function readStdinAsync() {
     return new Promise((resolve, reject) => {
         const stream = process.stdin;
@@ -176,7 +176,7 @@ function hexdump(buffer, { offset, count, raw } = {}) {
     if (!fromStdin) {
         try {
             input = fs.readFileSync(file);
-        } catch (err) {
+        } catch {
             return console.log(`Error: Could not read file ${file}`);
         }
     }
