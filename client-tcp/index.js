@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 const sendTcpPacket = context => {
     const { message, killconnection, keepalive, silent, empty, port, host } =
         context;
@@ -116,7 +118,6 @@ function printVersion() {
 
             case '-f':
             case '--file': // --file "./example/file.bin"
-                const fs = require('fs');
                 context.message = fs.readFileSync(args[++i]);
                 break;
 
