@@ -108,7 +108,7 @@ function changeversion(operationToken, currentVersion) {
 function JSONSafeParse(data) {
     try {
         return JSON.parse(data);
-    } catch (err) {
+    } catch {
         return false;
     }
 }
