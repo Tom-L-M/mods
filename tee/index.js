@@ -21,7 +21,7 @@ function readStdinAsync() {
         stream.on('error', onError);
     });
 }
-const isSTDINActive = () => !Boolean(process.stdin.isTTY);
+const isSTDINActive = () => !process.stdin.isTTY;
 
 /**
  * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
