@@ -61,10 +61,10 @@ const gitclone = function (repo = '', branch = 'main', newname = null) {
                 );
             });
         }); // close() is async, call cb after close completes.
-    }).on('error', function (err) {
+
         // Handle errors
-        fs.unlink(dest); // Delete the file async. (But we don't check the result)
-    });
+        // Delete the file async. (But we don't check the result)
+    }).on('error', () => fs.unlink(dest));
 };
 
 const exeresolve = fname => {
