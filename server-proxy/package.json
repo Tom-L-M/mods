@@ -1,12 +1,12 @@
 {
-	"name": "proxy",
-	"version": "1.6.0",
-	"description": "A tool for running local static UDP/TCP proxy servers.",
-	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"keywords": [],
-	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
-	"license": "MIT"
+    "name": "proxy",
+    "version": "1.6.1",
+    "description": "A tool for running local static UDP/TCP proxy servers.",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
 }

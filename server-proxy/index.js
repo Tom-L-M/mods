@@ -49,7 +49,7 @@ function createUdpProxy(host, port, destinationHost, destinationPort) {
 
     server.on('message', (msg, rinfo) => {
         log(rinfo, 'DATA_FROM_CLIENT - ' + msg.length + 'b', '>>', '||');
-        server.send(msg, destinationPort, destinationHost, (err, bytes) => {
+        server.send(msg, destinationPort, destinationHost, err => {
             log(rinfo, 'DATA_TO_REMOTE - ' + msg.length + 'b', '||', '>>');
             if (err)
                 log(rinfo, '(ERR:ToRemoteNotFlushed) - ' + err, '||', '!!');
@@ -74,7 +74,7 @@ function createUdpProxy(host, port, destinationHost, destinationPort) {
 function createTcpProxy(host, port, destinationHost, destinationPort) {
     let pipes = { a1: '??', a2: '??' };
     const server = createServer(clientSocket => {
-        const log = (msg, pipe1, pipe2) => {
+        const log = msg => {
             let date = new Date();
             let now =
                 date.toString().split(' ')[4] +
@@ -111,11 +111,11 @@ function createTcpProxy(host, port, destinationHost, destinationPort) {
             clientSocket.destroy();
         });
 
-        clientSocket.on('connect', function (data) {
+        clientSocket.on('connect', function () {
             // Client and proxy are connected
             log('CONNECT_CLIENT', (pipes.a1 = '<>'), (pipes.a2 = '--'));
         });
-        targetSocket.on('connect', function (data) {
+        targetSocket.on('connect', function () {
             // Client and proxy are connected
             log('CONNECT_REMOTE', (pipes.a1 = '--'), (pipes.a2 = '<>'));
         });
@@ -167,11 +167,11 @@ function createTcpProxy(host, port, destinationHost, destinationPort) {
             clientSocket.resume();
         });
 
-        clientSocket.on('close', function (had_error) {
+        clientSocket.on('close', function () {
             log('CLOSE_CLIENT', (pipes.a1 = '><'), (pipes.a2 = '--'));
             targetSocket.end();
         });
-        targetSocket.on('close', function (had_error) {
+        targetSocket.on('close', function () {
             log('CLOSE_REMOTE', (pipes.a1 = '--'), (pipes.a2 = '><'));
             clientSocket.end();
         });
