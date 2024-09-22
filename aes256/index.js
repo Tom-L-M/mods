@@ -98,35 +98,34 @@ function printVersion() {
               for a colision-safe encription. This means, that even if the iv keyword and password are the same, 
               the IV and key will be different internally.`;
 
-    try {
-        // Getting CLI arguments
-        if (args.length < 2 || args.includes('--help') || args.includes('-h'))
-            return console.log(help);
-        if (args.includes('--version') || args.includes('-v'))
-            return printVersion();
-        else {
-            mode = (() => {
-                if (['-d', '--decrypt'].includes(format(args[0], true))) {
-                    return 'decrypt';
-                } else if (
-                    ['-e', '--encrypt'].includes(format(args[0], true))
-                ) {
-                    return 'encrypt';
-                } else {
-                    throw new Error('ERR:IMS');
-                }
-            })();
-            file = format(args[1]);
-            destinationFile = file + (mode === 'encrypt' ? '.aes' : '.dec');
-            isFile = args.map(x => format(x, true)).includes('--file');
-        }
+    // Getting CLI arguments
+    if (args.length < 2 || args.includes('--help') || args.includes('-h'))
+        return console.log(help);
+    if (args.includes('--version') || args.includes('-v'))
+        return printVersion();
+    else {
+        mode = (() => {
+            if (['-d', '--decrypt'].includes(format(args[0], true))) {
+                return 'decrypt';
+            } else if (['-e', '--encrypt'].includes(format(args[0], true))) {
+                return 'encrypt';
+            } else {
+                throw new Error(`ERR:IMS - ${format(args[0], true)}`);
+            }
+        })();
+        file = format(args[1]);
+        destinationFile = file + (mode === 'encrypt' ? '.aes' : '.dec');
+        isFile = args.map(x => format(x, true)).includes('--file');
+    }
 
-        const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout,
-        });
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
+    try {
         const question = quest =>
-            new Promise((resolve, reject) =>
+            new Promise(resolve =>
                 rl.question(quest, answer =>
                     resolve(answer.trim().toUpperCase())
                 )
@@ -149,7 +148,7 @@ function printVersion() {
                 }
             });
         });
-        process.stdin.on('keypress', function (c, k) {
+        process.stdin.on('keypress', function () {
             readline.moveCursor(rl.output, -rl.line.length, 0); // move cursor back to the beginning of the input:
             readline.clearLine(rl.output, 1); // clear everything to the right of the cursor:
             for (var i = 0; i < rl.line.length; i++) {
@@ -169,7 +168,7 @@ function printVersion() {
                     encrypted = encrypt(content, password, ivkeyword);
                     fs.writeFileSync(destinationFile, encrypted);
                 } catch (err) {
-                    throw new Error('ERR:IFR');
+                    throw new Error(`ERR:IFR - ${err.message}`);
                 }
             } else {
                 try {
@@ -180,7 +179,7 @@ function printVersion() {
                         ivkeyword
                     );
                 } catch (err) {
-                    throw new Error('ERR:IFR');
+                    throw new Error(`ERR:IFR - ${err.message}`);
                 }
             }
         } else if (mode === 'decrypt') {
@@ -191,7 +190,7 @@ function printVersion() {
                     decrypted = decrypt(content, password, ivkeyword);
                     fs.writeFileSync(destinationFile, decrypted);
                 } catch (err) {
-                    throw new Error('ERR:IFR');
+                    throw new Error(`ERR:IFR - ${err.message}`);
                 }
             } else {
                 try {
@@ -202,13 +201,13 @@ function printVersion() {
                         ivkeyword
                     );
                 } catch (err) {
-                    throw new Error('ERR:IFR');
+                    throw new Error(`ERR:IFR - ${err.message}`);
                 }
             }
         }
     } catch (err) {
         let msg = '';
-        switch (err.message) {
+        switch (err.message.split(' ')[0]) {
             case 'ERR:IMS':
                 msg = 'ERROR: INVALID MODE SELECTED';
                 break;
@@ -225,6 +224,6 @@ function printVersion() {
                 msg = err.message;
         }
         rl.close();
-        return console.log(msg + '\n\n' + help);
+        return console.log(msg + ' - ' + err.message + '\n\n' + help);
     }
 })();
