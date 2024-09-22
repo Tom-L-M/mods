@@ -85,7 +85,7 @@ function startHttpExecServer(context) {
                 }`
             );
         }
-        if (!!dump)
+        if (dump)
             console.log(
                 '  & ' +
                     Object.entries(req.headers)
@@ -197,7 +197,7 @@ function startHttpSiteServer(context) {
                 }`
             );
         }
-        if (!!dump)
+        if (dump)
             console.log(
                 '  & ' +
                     Object.entries(req.headers)
@@ -222,7 +222,7 @@ function startHttpSiteServer(context) {
                     fs.constants.F_OK
                 );
                 fileName = req.url + '.html';
-            } catch (e) {
+            } catch {
                 fileName = path.join(req.url, 'index.html');
             }
         }
@@ -333,7 +333,7 @@ function startHttpServer(context) {
                 }`
             );
         }
-        if (!!dump)
+        if (dump)
             console.log(
                 '  & ' +
                     Object.entries(req.headers)
@@ -471,7 +471,7 @@ function startHttpFileServer(context) {
                 }`
             );
         }
-        if (!!dump)
+        if (dump)
             console.log(
                 '  & ' +
                     Object.entries(req.headers)
@@ -668,7 +668,7 @@ function startHttpRedirectionServer(context) {
                 }`
             );
         }
-        if (!!dump)
+        if (dump)
             console.log(
                 '  & ' +
                     Object.entries(req.headers)
@@ -855,7 +855,7 @@ function generateAuthStringPair() {
     for (let i = 1; i < args.length; i++) {
         let arg = args[i];
         let next = args[++i];
-
+        let keyobj;
         switch (arg) {
             case '-h':
             case '--help':
@@ -894,17 +894,12 @@ function generateAuthStringPair() {
 
             case '-s':
             case '--https':
-                let {
-                    key: _key,
-                    cert: _cert,
-                    keypath: _keypath,
-                    certpath: _certpath,
-                } = validateKeys(next);
+                keyobj = validateKeys(next);
                 context.ssl = true;
-                context.sslkey = _key;
-                context.sslcert = _cert;
-                context.sslkeypath = _keypath;
-                context.sslcertpath = _certpath;
+                context.sslkey = keyobj.key;
+                context.sslcert = keyobj.cert;
+                context.sslkeypath = keyobj.keypath;
+                context.sslcertpath = keyobj.certpath;
                 if (
                     !context.sslkey ||
                     !context.sslcert ||
