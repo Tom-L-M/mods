@@ -18,7 +18,10 @@
         "scripts": "mods.js",
         "assets": [
             "/**/*",
-            "!/.*/*"
+            "!.*",
+            "!.*/*",
+            "!node_modules",
+            "!package-lock.json"
         ]
     },
     "devDependencies": {
