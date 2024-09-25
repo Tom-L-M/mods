@@ -151,9 +151,13 @@ function hexdump(buffer, { offset, count, raw, radix, squeeze } = {}) {
         // Enabling syntax highlight if --raw mode is off:
         hexString = raw
             ? hexString
-            : hexString.replace(/00/gim, '\x1b[38;5;236m00\x1b[0m'); //you can't dump to file with colors enabled
+            : hexString.replace(/00/gim, '\x1b[38;5;239m00\x1b[0m'); //you can't dump to file with colors enabled
 
-        let line = `\x1b[38;5;220m${address}\x1b[0m  ${hexString}\x1b[0m  ${padding}|\x1b[38;5;87m${asciiString}\x1b[0m|`;
+        // Paint offset in yellow:
+        // let line = `\x1b[38;5;220m${address}\x1b[0m  ${hexString}\x1b[0m  ${padding}|\x1b[38;5;87m${asciiString}\x1b[0m|`;
+
+        // paint offset in light-gray
+        let line = `\x1b[38;5;242m${address}\x1b[0m  ${hexString}\x1b[0m  ${padding}|\x1b[38;5;87m${asciiString}\x1b[0m|`;
 
         if (raw) {
             line = `${address}  ${hexString}  ${padding}|${asciiString}|`;
@@ -182,7 +186,7 @@ function hexdump(buffer, { offset, count, raw, radix, squeeze } = {}) {
         console.log(addressFromIndex(OFFSET + COUNT, radix));
     } else {
         console.log(
-            `\x1b[38;5;220m${addressFromIndex(OFFSET + COUNT, radix)}\x1b[0m`
+            `\x1b[38;5;242m${addressFromIndex(OFFSET + COUNT, radix)}\x1b[0m`
         );
     }
 }
