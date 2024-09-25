@@ -1,18 +1,4 @@
-const help = `
-    [hexdump-js]
-        A tool for generating file hexdumps
-
-    Usage:
-        hexdump FILE_TO_DUMP [OPTIONS]
-       OR
-        <stdin> | hexdump [OPTIONS]
-
-    Options:
-        -h | --help         Prints the help message and quits.
-        -v | --version      Prints the version info and quits.
-        -r | --raw          Prints the result without coloring.
-        -c | --count <X>    Prints X bytes from the document.
-        -p | --offset <X>   Prints starting from offset X.`;
+const fs = require('fs');
 
 /**
  * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
@@ -77,6 +63,7 @@ function printVersion() {
 }
 
 const isSTDINActive = () => !process.stdin.isTTY;
+
 function readStdinAsync() {
     return new Promise((resolve, reject) => {
         const stream = process.stdin;
@@ -99,12 +86,13 @@ function readStdinAsync() {
     });
 }
 
-const fs = require('fs');
-
-function hexdump(buffer, { offset, count, raw } = {}) {
+function hexdump(buffer, { offset, count, raw, squeeze } = {}) {
     const CHUNK = 16; //default: 16 => MUST BE A EVEN NUMBER (2, 4, 8, 16, 32, 64...)
     const OFFSET = offset || 0;
     const COUNT = count || buffer.length;
+
+    let cachedLinesCount = 0;
+    let cachedLine = '';
 
     for (let i = OFFSET; i < OFFSET + COUNT; i += CHUNK) {
         let address = i.toString(16).padStart(8, '0').toUpperCase(); // address
@@ -149,15 +137,53 @@ function hexdump(buffer, { offset, count, raw } = {}) {
 
         if (raw) {
             line = `${address}  ${hexString}  ${padding}|${asciiString}|`;
-            console.log(line);
-        } else {
-            console.log(line);
         }
+
+        if (squeeze) {
+            let sliced = line.slice(line.indexOf('  '));
+            if (sliced === cachedLine) {
+                cachedLinesCount++;
+            } else {
+                if (cachedLinesCount > 0) {
+                    console.log('*');
+                }
+                cachedLine = sliced;
+                cachedLinesCount = 0;
+                console.log(line);
+            }
+            continue;
+        }
+
+        console.log(line);
     }
 }
 
+const help = `
+    [hexdump-js]
+        A tool for generating file hexdumps
+
+    Usage:
+        hexdump FILE_TO_DUMP [OPTIONS]
+       OR
+        <stdin> | hexdump [OPTIONS]
+
+    Options:
+        -h | --help         Prints the help message and quits.
+        -v | --version      Prints the version info and quits.
+        -r | --raw          Prints the result without coloring.
+        -c | --count <X>    Prints X bytes from the document.
+        -p | --offset <X>   Prints starting from offset X.
+        -s | --no-squeeze   Do not replace identical chunks with *.`;
+
 (async function () {
-    const opts = { h: 'help', r: 'raw', c: 'count', p: 'offset', v: 'version' };
+    const opts = {
+        h: 'help',
+        r: 'raw',
+        c: 'count',
+        p: 'offset',
+        v: 'version',
+        s: 'no-squeeze',
+    };
 
     const args = parseargs(opts);
     const file = process.argv[2];
@@ -166,6 +192,7 @@ function hexdump(buffer, { offset, count, raw } = {}) {
     const count = args.count ? parseInt(args.count) : null;
     const offset = args.offset ? parseInt(args.offset) : null;
     const raw = args.raw || false;
+    const squeeze = args['no-squeeze'] ? false : true;
 
     if (args.help || (!fromStdin && !file)) return console.log(help);
     if (args.version) return printVersion();
@@ -184,5 +211,5 @@ function hexdump(buffer, { offset, count, raw } = {}) {
     // E.g. there is input via pipes
     else input = await readStdinAsync();
 
-    return hexdump(input, { offset, count, raw });
+    return hexdump(input, { offset, count, raw, squeeze });
 })();
