@@ -86,9 +86,26 @@ function readStdinAsync() {
     });
 }
 
-const addressFromIndex = i => i.toString(16).padStart(8, '0').toUpperCase();
+const addressFromIndex = (address, radix) => {
+    // The address must accomodate at max a UInt32 (4 bytes -> up to 4294967296)
+    // This means, the program can dump files with at max 4294967296 bytes (4 GB)
+    // So, the address:
+    //   in hexadecimal form, spans 8 chars
+    //   in decimal, spans 10 chars
+    //   in octal, spans 11 chars
+    //   in binary, spans 32 chars
+    //
+    // To verify how much space a radix takes, use this:
+    //  console.log((2 ** 32 - 1).toString(RADIX).length);
+    //
+    const padLengths = { 2: 32, 8: 11, 10: 10, 16: 8 };
+    return address
+        .toString(radix)
+        .padStart(padLengths[radix], '0')
+        .toUpperCase();
+};
 
-function hexdump(buffer, { offset, count, raw, squeeze } = {}) {
+function hexdump(buffer, { offset, count, raw, radix, squeeze } = {}) {
     const CHUNK = 16; //default: 16 => MUST BE A EVEN NUMBER (2, 4, 8, 16, 32, 64...)
     const OFFSET = offset || 0;
     const COUNT = count || buffer.length;
@@ -98,7 +115,7 @@ function hexdump(buffer, { offset, count, raw, squeeze } = {}) {
     let i;
 
     for (i = OFFSET; i < OFFSET + COUNT; i += CHUNK) {
-        let address = addressFromIndex(i); // address
+        let address = addressFromIndex(i, radix);
         let block = buffer.subarray(
             i,
             i + CHUNK > OFFSET + COUNT ? OFFSET + COUNT : i + CHUNK
@@ -162,9 +179,11 @@ function hexdump(buffer, { offset, count, raw, squeeze } = {}) {
 
     // Print last file offset in the end
     if (raw) {
-        console.log(addressFromIndex(OFFSET + COUNT));
+        console.log(addressFromIndex(OFFSET + COUNT, radix));
     } else {
-        console.log(`\x1b[38;5;220m${addressFromIndex(OFFSET + COUNT)}\x1b[0m`);
+        console.log(
+            `\x1b[38;5;220m${addressFromIndex(OFFSET + COUNT, radix)}\x1b[0m`
+        );
     }
 }
 
@@ -181,9 +200,11 @@ const help = `
         -h | --help         Prints the help message and quits.
         -v | --version      Prints the version info and quits.
         -r | --raw          Prints the result without coloring.
-        -c | --count <X>    Prints X bytes from the document.
-        -p | --offset <X>   Prints starting from offset X.
-        -s | --no-squeeze   Do not replace identical chunks with *.`;
+        -c | --count <X>    Reads X bytes from the document.
+        -p | --offset <X>   Reads starting from offset X.
+        -d | --decimal      Use decimals (base-10) for offsets.
+        -o | --octal        Use octals (base-8) for offsets.
+        -s | --no-squeeze   Do not replace identical chunks with *`;
 
 (async function () {
     const opts = {
@@ -192,6 +213,8 @@ const help = `
         c: 'count',
         p: 'offset',
         v: 'version',
+        d: 'decimal',
+        o: 'octal',
         s: 'no-squeeze',
     };
 
@@ -202,6 +225,7 @@ const help = `
     const count = args.count ? parseInt(args.count) : null;
     const offset = args.offset ? parseInt(args.offset) : null;
     const raw = args.raw || false;
+    const radix = args.decimal ? 10 : args.octal ? 8 : 16;
     const squeeze = args['no-squeeze'] ? false : true;
 
     if (args.help || (!fromStdin && !file)) return console.log(help);
@@ -221,5 +245,5 @@ const help = `
     // E.g. there is input via pipes
     else input = await readStdinAsync();
 
-    return hexdump(input, { offset, count, raw, squeeze });
+    return hexdump(input, { offset, count, raw, radix, squeeze });
 })();
