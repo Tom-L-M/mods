@@ -107,7 +107,7 @@ function hexdump(buffer, { offset, count, raw } = {}) {
     const COUNT = count || buffer.length;
 
     for (let i = OFFSET; i < OFFSET + COUNT; i += CHUNK) {
-        let address = '0x' + i.toString(16).padStart(8, '0').toUpperCase(); // address
+        let address = i.toString(16).padStart(8, '0').toUpperCase(); // address
         let block = buffer.subarray(
             i,
             i + CHUNK > OFFSET + COUNT ? OFFSET + COUNT : i + CHUNK
