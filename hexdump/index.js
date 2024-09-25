@@ -86,6 +86,8 @@ function readStdinAsync() {
     });
 }
 
+const addressFromIndex = i => i.toString(16).padStart(8, '0').toUpperCase();
+
 function hexdump(buffer, { offset, count, raw, squeeze } = {}) {
     const CHUNK = 16; //default: 16 => MUST BE A EVEN NUMBER (2, 4, 8, 16, 32, 64...)
     const OFFSET = offset || 0;
@@ -93,9 +95,10 @@ function hexdump(buffer, { offset, count, raw, squeeze } = {}) {
 
     let cachedLinesCount = 0;
     let cachedLine = '';
+    let i;
 
-    for (let i = OFFSET; i < OFFSET + COUNT; i += CHUNK) {
-        let address = i.toString(16).padStart(8, '0').toUpperCase(); // address
+    for (i = OFFSET; i < OFFSET + COUNT; i += CHUNK) {
+        let address = addressFromIndex(i); // address
         let block = buffer.subarray(
             i,
             i + CHUNK > OFFSET + COUNT ? OFFSET + COUNT : i + CHUNK
@@ -155,6 +158,13 @@ function hexdump(buffer, { offset, count, raw, squeeze } = {}) {
         }
 
         console.log(line);
+    }
+
+    // Print last file offset in the end
+    if (raw) {
+        console.log(addressFromIndex(OFFSET + COUNT));
+    } else {
+        console.log(`\x1b[38;5;220m${addressFromIndex(OFFSET + COUNT)}\x1b[0m`);
     }
 }
 
