@@ -105,8 +105,25 @@ const addressFromIndex = (address, radix) => {
         .toUpperCase();
 };
 
-function hexdump(buffer, { offset, count, raw, radix, squeeze } = {}) {
-    const CHUNK = 16; //default: 16 => MUST BE A EVEN NUMBER (2, 4, 8, 16, 32, 64...)
+function hexdump(
+    buffer,
+    {
+        offset,
+        count,
+        linelength,
+        raw,
+        radix,
+        squeeze,
+        noascii,
+        nooffset,
+        notrailing,
+        bDecimal,
+        bOctal,
+        bBinary,
+        noPaint0,
+    } = {}
+) {
+    const CHUNK = linelength || 16; //default: 16 => MUST BE A EVEN NUMBER (2, 4, 8, 16, 32, 64...)
     const OFFSET = offset || 0;
     const COUNT = count || buffer.length;
 
@@ -124,9 +141,22 @@ function hexdump(buffer, { offset, count, raw, radix, squeeze } = {}) {
         let hexArray = [];
         let asciiArray = [];
         let padding = '';
+        let trailingchar = notrailing ? ' ' : '0';
 
         for (let value of block) {
-            hexArray.push(value.toString(16).padStart(2, '0'));
+            let cbyte = value;
+
+            if (bDecimal) {
+                cbyte = value.toString(10).padStart(3, trailingchar);
+            } else if (bOctal) {
+                cbyte = value.toString(8).padStart(3, trailingchar);
+            } else if (bBinary) {
+                cbyte = value.toString(2).padStart(8, trailingchar);
+            } else {
+                cbyte = value.toString(16).padStart(2, trailingchar);
+            }
+
+            hexArray.push(cbyte);
             asciiArray.push(
                 value >= 0x20 && value < 0x7f ? String.fromCharCode(value) : '.'
             );
@@ -135,33 +165,38 @@ function hexdump(buffer, { offset, count, raw, radix, squeeze } = {}) {
         // if block is less than CHUNK bytes, calculate remaining space
         if (hexArray.length < CHUNK) {
             let space = CHUNK - hexArray.length;
-            padding = ' '.repeat(
-                space * 2 + space + (hexArray.length < CHUNK / 2 + 1 ? 1 : 0)
-            ); // calculate extra space if CHUNK/2 or less
+            let bytesize = bDecimal || bOctal ? 3 : bBinary ? 8 : 2;
+            // calculate extra space if CHUNK/2 or less
+            padding = ' '.repeat(space * bytesize + space);
         }
 
-        let hexString =
-            hexArray.length > CHUNK / 2
-                ? hexArray.slice(0, CHUNK / 2).join(' ') +
-                  '  ' +
-                  hexArray.slice(CHUNK / 2).join(' ')
-                : hexArray.join(' ');
-        let asciiString = asciiArray.join('');
+        let hexString = hexArray.join(' ');
+        let asciiString = asciiArray.join('').padEnd(CHUNK, ' ');
 
         // Enabling syntax highlight if --raw mode is off:
-        hexString = raw
-            ? hexString
-            : hexString.replace(/00/gim, '\x1b[38;5;239m00\x1b[0m'); //you can't dump to file with colors enabled
+        // (paint all null bytes (only zeroes) of gray)
 
-        // Paint offset in yellow:
-        // let line = `\x1b[38;5;220m${address}\x1b[0m  ${hexString}\x1b[0m  ${padding}|\x1b[38;5;87m${asciiString}\x1b[0m|`;
+        if (!raw && !noPaint0)
+            hexString = hexString.replaceAll(
+                RegExp('\\b(0+)\\b', 'gi'),
+                '\x1b[38;5;239m$1\x1b[0m'
+            );
 
-        // paint offset in light-gray
-        let line = `\x1b[38;5;242m${address}\x1b[0m  ${hexString}\x1b[0m  ${padding}|\x1b[38;5;87m${asciiString}\x1b[0m|`;
+        let line = `${hexString}  ${padding}`;
 
         if (raw) {
-            line = `${address}  ${hexString}  ${padding}|${asciiString}|`;
+            if (!noascii) line += `|${asciiString}|`;
+            if (!nooffset) line = `${address}  ` + line;
+        } else {
+            line = `${hexString}\x1b[0m  ${padding}`;
+            if (!noascii) line += `|\x1b[38;5;87m${asciiString}\x1b[0m|`;
+            if (!nooffset) line = `\x1b[38;5;242m${address}\x1b[0m  ` + line;
         }
+
+        // paint offset in light-gray
+        // let line = `\x1b[38;5;242m${address}\x1b[0m  ${hexString}\x1b[0m  ${padding}|\x1b[38;5;87m${asciiString}\x1b[0m|`;
+
+        // if (raw) line = `${address}  ${hexString}  ${padding}|${asciiString}|`;
 
         if (squeeze) {
             let sliced = line.slice(line.indexOf('  '));
@@ -182,12 +217,17 @@ function hexdump(buffer, { offset, count, raw, radix, squeeze } = {}) {
     }
 
     // Print last file offset in the end
-    if (raw) {
-        console.log(addressFromIndex(OFFSET + COUNT, radix));
-    } else {
-        console.log(
-            `\x1b[38;5;242m${addressFromIndex(OFFSET + COUNT, radix)}\x1b[0m`
-        );
+    if (!nooffset) {
+        if (raw) {
+            console.log(addressFromIndex(OFFSET + COUNT, radix));
+        } else {
+            console.log(
+                `\x1b[38;5;242m${addressFromIndex(
+                    OFFSET + COUNT,
+                    radix
+                )}\x1b[0m`
+            );
+        }
     }
 }
 
@@ -204,11 +244,19 @@ const help = `
         -h | --help         Prints the help message and quits.
         -v | --version      Prints the version info and quits.
         -r | --raw          Prints the result without coloring.
-        -c | --count <X>    Reads X bytes from the document.
-        -p | --offset <X>   Reads starting from offset X.
+        -c | --count <N>    Reads N bytes from the document.
+        -p | --offset <N>   Reads starting from offset N.
+        -n | --length <N>   Prints N bytes per line (default: 16).
         -d | --decimal      Use decimals (base-10) for offsets.
         -o | --octal        Use octals (base-8) for offsets.
-        -s | --no-squeeze   Do not replace identical chunks with *`;
+        -S | --no-squeeze   Do not replace identical chunks with *
+        -A | --no-ascii     Do not show ASCII string chars.
+        -T | --no-trailing  Do not add trailing zeroes to bytes.
+        -P | --no-offset    Do not show offset numbers.
+        -Z | --no-paint-0   Do not paint null bytes different.
+        -D | --b-decimal    Show bytes as decimals (base-10).
+        -O | --b-octal      Show bytes as octals (base-8).
+        -B | --b-binary     Show bytes as binary (base-2).`;
 
 (async function () {
     const opts = {
@@ -217,9 +265,17 @@ const help = `
         c: 'count',
         p: 'offset',
         v: 'version',
+        n: 'length',
         d: 'decimal',
         o: 'octal',
-        s: 'no-squeeze',
+        S: 'no-squeeze',
+        A: 'no-ascii',
+        T: 'no-trailing',
+        P: 'no-offset',
+        D: 'b-decimal',
+        O: 'b-octal',
+        B: 'b-binary',
+        Z: 'no-paint-0',
     };
 
     const args = parseargs(opts);
@@ -228,9 +284,17 @@ const help = `
 
     const count = args.count ? parseInt(args.count) : null;
     const offset = args.offset ? parseInt(args.offset) : null;
+    const linelength = args['length'] ? parseInt(args['length']) : null;
     const raw = args.raw || false;
     const radix = args.decimal ? 10 : args.octal ? 8 : 16;
     const squeeze = args['no-squeeze'] ? false : true;
+    const noascii = Boolean(args['no-ascii']);
+    const nooffset = Boolean(args['no-offset']);
+    const notrailing = Boolean(args['no-trailing']);
+    const bDecimal = Boolean(args['b-decimal']);
+    const bOctal = Boolean(args['b-octal']);
+    const bBinary = Boolean(args['b-binary']);
+    const noPaint0 = Boolean(args['no-paint-0']);
 
     if (args.help || (!fromStdin && !file)) return console.log(help);
     if (args.version) return printVersion();
@@ -249,5 +313,19 @@ const help = `
     // E.g. there is input via pipes
     else input = await readStdinAsync();
 
-    return hexdump(input, { offset, count, raw, radix, squeeze });
+    return hexdump(input, {
+        offset,
+        count,
+        linelength,
+        raw,
+        radix,
+        squeeze,
+        noascii,
+        nooffset,
+        notrailing,
+        bDecimal,
+        bOctal,
+        bBinary,
+        noPaint0,
+    });
 })();
