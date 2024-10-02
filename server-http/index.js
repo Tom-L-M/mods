@@ -105,7 +105,7 @@ function startHttpExecServer(context) {
         comm = comm.split('/').join(' ');
         let ls;
         try {
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
+            res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
             ls = execSync(comm);
             res.write(ls);
             res.end();
