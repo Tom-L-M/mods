@@ -1,0 +1,12 @@
+{
+    "name": "msa",
+    "version": "1.0.1",
+    "description": "A tool for packing and archiving files in the custom MSA format.",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
+}
