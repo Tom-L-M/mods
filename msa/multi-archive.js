@@ -391,6 +391,25 @@ class MultiArchiveHeader {
     }
 }
 
+const walkDir = (dir = '.') => {
+    let acc = [];
+    (function walk(ddir) {
+        fs.readdirSync(ddir).forEach(file => {
+            let dpath = path.join(ddir, file);
+            let stat = fs.statSync(dpath);
+            let type = stat.isDirectory() ? 'DIRECTORY' : 'FILE';
+            if (type == 'DIRECTORY') {
+                walk(dpath);
+            } else {
+                acc.push({
+                    path: '.\\' + dpath,
+                });
+            }
+        });
+    })(dir);
+    return acc.map(x => x.path.replace('.\\', '')); //acc.map(x => (x.path.replace('.\\'+dir+'\\', '')));
+};
+
 class MultiArchive {
     static #EXTENSION = '.msa';
     static Header = MultiArchiveHeader;
@@ -424,10 +443,9 @@ class MultiArchive {
         const stats = fs.statSync(inputFile);
         if (stats.isFile()) filelist = [inputFile];
         else if (stats.isDirectory()) {
-            filelist = fs.readdirSync(inputFile, { recursive: true });
-            filelist = filelist
-                .filter(v => fs.statSync(path.join(inputFile, v)).isFile())
-                .map(v => path.join(inputFile, v));
+            filelist = walkDir(inputFile);
+            filelist = filelist.filter(v => fs.statSync(v).isFile());
+            // .map(v => path.join(inputFile, v));
         }
 
         const header = new MultiArchiveHeader({
