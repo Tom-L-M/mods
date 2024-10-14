@@ -102,12 +102,13 @@ const help = `
 
     Info:
         When providing data from STDIN, it will be placed at position of '-'.
-        Or, if no '-' is provided, and STDIN has data, it will be appended at the beginning.
+        Or, if no '-' is provided, and STDIN has data, it will be appended first.
 
     Examples:
         cat something.txt                   # Read file and prints to STDOUT.
         cat somefile.txt otherfile.txt      # Concats the 2 files and print.
-        cat a.txt | cat b.txt               # Reads the first file and concats with the second.
+        cat a.txt | cat b.txt               # Reads a.txt and concat with b.txt.
+        cat a.txt b.txt                     # Also reads a.txt and concat with b.txt.
         ls | cat a.txt - b.txt              # Concats: a.txt + (result of ls) + b.txt.`;
 
 (async function () {
@@ -118,7 +119,6 @@ const help = `
     if (args.help || !files.length) return console.log(help);
     if (args.version) return printVersion();
 
-    const nline = Buffer.from('\n');
     const stdinActive = isSTDINActive();
 
     let input = [];
@@ -130,7 +130,7 @@ const help = `
             if (file === '-') {
                 if (!stdinActive) continue;
                 else input.push(await readStdinAsync());
-            } else input.push(fs.readFileSync(file), nline);
+            } else input.push(fs.readFileSync(file));
         }
         // If there is no '-' placeholder, append to the end
         if (stdinActive && !args['-']) input.unshift(await readStdinAsync());
