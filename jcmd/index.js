@@ -1,5 +1,73 @@
+function readStdinAsync() {
+    return new Promise((resolve, reject) => {
+        const stream = process.stdin;
+        const chunks = [];
+
+        const onData = chunk => chunks.push(chunk);
+        const onEnd = () => quit() && resolve(Buffer.concat(chunks));
+        const onError = err => quit() && reject(err);
+
+        const quit = () => {
+            stream.removeListener('data', onData);
+            stream.removeListener('end', onEnd);
+            stream.removeListener('error', onError);
+            return true;
+        };
+
+        stream.on('data', onData);
+        stream.on('end', onEnd);
+        stream.on('error', onError);
+    });
+}
+
+const isSTDINActive = () => !process.stdin.isTTY;
+
 const fs = require('fs');
-// const util = require('node:util');
+
+/**
+ * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
+ * Multi-word params are divided as "param":"value", while sinle-word params becomes: "param":true.
+ * Lost values will be ignored*. So 'node example.js 000 --param1' will turn into: { param1:true } and '000' will be ignored.
+ *   * Unless they are defined as aliases for other parameters. So, if mapping is defined as { '000':'param0' },
+ *     the result will be { param1:true, param0: true } instead of { param1:true }
+ * Aliases in 'mapping' do not take priority over regular double-word parameters
+ *
+ * @since 1.2.14
+ *
+ * @param {Object} mapping An object mapping the arguments alias. Always take the form of "alias":"originalProperty"
+ * @return {Object} An object containing the arguments parsed, and their values
+ *
+ * @example <caption>  </caption>
+ * // called the script with:
+ * // node example.js build --param1 --param2 pvalue -p 0000
+ * parseArgv({ "p": "param3" })
+ * // creates:
+ * {
+ *   build: true
+ *   param1: true
+ *   param2: p2value
+ *   param3: 0000
+ * }
+ */
+const parseArgv = (mapping = {}, argv = process.argv.slice(2)) => {
+    let params = {};
+    for (let i = 0; i < argv.length; i++) {
+        if (argv[i].startsWith('--'))
+            params[argv[i].slice(2)] =
+                argv[i + 1]?.startsWith('-') || !argv[i + 1] ? true : argv[++i];
+        else if (argv[i].startsWith('-'))
+            params[argv[i].slice(1)] =
+                argv[i + 1]?.startsWith('-') || !argv[i + 1] ? true : argv[++i];
+        else params[argv[i]] = true;
+    }
+    for (let key in mapping) {
+        if (params[key]) {
+            params[mapping[key]] = params[key];
+            delete params[key];
+        }
+    }
+    return params;
+};
 
 function safeParseJSON(string) {
     try {
@@ -11,7 +79,7 @@ function safeParseJSON(string) {
 
 function safeStringifyJSON(string) {
     try {
-        return JSON.stringify(string, null, '\t');
+        return JSON.stringify(string, null, '    ');
     } catch {
         return undefined;
     }
@@ -22,6 +90,14 @@ function unsafeEditObject(string, value, context) {
         `(() => { let _ = (${JSON.stringify(
             context
         )}); _.${string} = ${value}; return _; })()`
+    );
+}
+
+function unsafeReachObject(string, context) {
+    return eval(
+        `(() => { let _ = (${JSON.stringify(
+            context
+        )}); return _.${string}; })()`
     );
 }
 
@@ -42,13 +118,15 @@ function printVersion() {
     }
 }
 
-(function main() {
+(async function main() {
     const help = `
         [jsoncmd-js]
             A tool for editing json fields in files from command line.
 
         Usage:
-            jcmd <file> <-k key> <-v value>
+            jcmd <file> <-k key> [-n value]
+           OR
+            <stdin> | jcmd <-k key> [-n value]
             
         Options:
             -h | --help         Prints the help message and quits.
@@ -57,64 +135,60 @@ function printVersion() {
             -n | --value X
 
         Info:
-            > 'value' field must be any valid JSON-decodable value.
-              Ex: numbers, arrays, literal objects, strings.
             > 'key' must be a valid field name, concatenated by dot notation.
               A field 'target' in the JSON object '{ a: { b: target: 1, c:[] } }' can be
-              changed to 2 by 'jcmd -k a.b.target -v 2';
-              Arrays are accessible with bracket notation: 'jcmd -k a.b.c[1] -v 2';
-
+              changed to 2 by 'jcmd -k a.b.target -n 2';
+              Arrays are accessible with bracket notation: 'jcmd -k a.b.c[1]';
+            > 'value' field must be any valid JSON-decodable value.
+              Ex: numbers, arrays, literal objects, strings.
+            > If value is not provided, the current key value is printed.
             > To remove a key from the object, simply set it to undefined.`;
 
-    const args = process.argv.slice(2);
+    const opts = { h: 'help', v: 'version', k: 'key', n: 'value' };
+    const args = parseArgv(opts);
+    const argv = process.argv.slice(2);
 
-    if (args.length === 0 || args.includes('-h') || args.includes('--help'))
-        return console.log(help);
+    if (argv.length === 0 || args.help) return console.log(help);
+    if (args.version) return printVersion();
 
-    if (args.includes('-v') || args.includes('--version'))
-        return printVersion();
+    let file = argv[0];
+    let context;
 
-    let file = args[0];
-    if (!file || !fs.existsSync(file))
+    if (isSTDINActive() || file === '-') {
+        context = await readStdinAsync();
+    } else if (!file || !fs.existsSync(file)) {
         return console.log('Error: invalid file path provided [' + file + '].');
+    } else {
+        context = fs.readFileSync(file, 'utf-8');
+    }
 
-    let keyindex = args.includes('--key')
-        ? args.indexOf('--key')
-        : args.includes('-k');
-    if (keyindex < 0)
+    let key = args.key;
+    if (!key)
         return console.log(
             'Error: invalid key [undefined] provided. Use --help to see the help menu.'
         );
-    let key = args[keyindex + 1];
 
-    let valindex = args.includes('--value')
-        ? args.indexOf('--value')
-        : args.indexOf('-n');
-    if (valindex < 0)
-        return console.log(
-            'Error: invalid value [undefined] provided. Use --help to see the help menu.'
-        );
-    let val = args[valindex + 1];
+    let val = args.value;
 
-    let context = fs.readFileSync(file, 'utf-8');
     context = safeParseJSON(context);
     if (!context)
         return console.log(
             'Error: invalid JSON data found in file [' + file + '].'
         );
 
-    context = unsafeEditObject(key, val, context);
-    if (!context)
-        return console.log(
-            'Error: invalid JSON data attribution with { key:' +
-                key +
-                ', value:' +
-                val +
-                ' }.'
-        );
+    if (key && val) {
+        context = unsafeEditObject(key, val, context);
+        if (!context)
+            return console.log(
+                'Error: invalid JSON data attribution with { key:' +
+                    key +
+                    ', value:' +
+                    val +
+                    ' }.'
+            );
 
-    context = safeStringifyJSON(context);
-    fs.writeFileSync(file, context);
-
-    console.log(`Changed: \t${key} = ${val}`);
+        console.log(safeStringifyJSON(context));
+    } else {
+        console.log(unsafeReachObject(key, context));
+    }
 })();
