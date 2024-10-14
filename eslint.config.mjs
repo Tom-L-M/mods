@@ -1,4 +1,8 @@
-import globals from 'globals';
+// If you have ESLint and Globals packages in local dir:
+// import globals from 'globals';
+
+// If you have both ESLint and Globals installed globally by NPM:
+import globals from 'file:///C:/Users/Tomas/AppData/Roaming/npm/node_modules/globals/index.js';
 
 export default [
     {
@@ -13,7 +17,6 @@ export default [
             semi: ['error', 'always'],
             'for-direction': ['error'],
             'getter-return': ['error'],
-            'no-async-promise-executor': ['error'],
             'no-case-declarations': ['error'],
             'no-compare-neg-zero': ['error'],
             'no-cond-assign': ['error'],
