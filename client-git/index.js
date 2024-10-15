@@ -57,7 +57,7 @@ const gitclone = function (repo = '', branch = 'main', newname = null) {
                 exec(`del ${dest}`);
 
                 console.log(
-                    `\n\x1b[32m    [*]  Cloned \x1b[0m\x1b[35m@${repo}\x1b[0m \x1b[32m\x1b[0m[\x1b[35m${branch}\x1b[0m\x1b[32m] successfully \x1b[0m`
+                    `\n\x1b[32m    [*]  Cloned \x1b[0m\x1b[35m@${repo}\x1b[0m \x1b[32m[\x1b[0m\x1b[35m${branch}\x1b[0m\x1b[32m] successfully \x1b[0m`
                 );
             });
         }); // close() is async, call cb after close completes.
