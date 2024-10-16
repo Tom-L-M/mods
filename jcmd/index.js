@@ -72,8 +72,9 @@ const parseArgv = (mapping = {}, argv = process.argv.slice(2)) => {
 function safeParseJSON(string) {
     try {
         return JSON.parse(string);
-    } catch {
-        return undefined;
+    } catch (err) {
+        console.log('Error: Invalid JSON data found - ' + err.message);
+        return null;
     }
 }
 
@@ -89,11 +90,12 @@ function unsafeEditObject(string, value, context) {
     return eval(
         `(() => { let _ = (${JSON.stringify(
             context
-        )}); _.${string} = ${value}; return _; })()`
+        )}); _.${string} = ${JSON.stringify(value)}; return _; })()`
     );
 }
 
 function unsafeReachObject(string, context) {
+    if (!string) return JSON.stringify(context, null, '\t');
     return eval(
         `(() => { let _ = (${JSON.stringify(
             context
@@ -126,7 +128,7 @@ function printVersion() {
         Usage:
             jcmd <file> <-k key> [-n value]
            OR
-            <stdin> | jcmd <-k key> [-n value]
+            <stdin> | jcmd [-] <-k key> [-n value]
             
         Options:
             -h | --help         Prints the help message and quits.
@@ -135,46 +137,40 @@ function printVersion() {
             -n | --value X
 
         Info:
+            > Passing a JSON object without selecting a key '-k' will result in it being formatted.
             > 'key' must be a valid field name, concatenated by dot notation.
               A field 'target' in the JSON object '{ a: { b: target: 1, c:[] } }' can be
               changed to 2 by 'jcmd -k a.b.target -n 2';
               Arrays are accessible with bracket notation: 'jcmd -k a.b.c[1]';
             > 'value' field must be any valid JSON-decodable value.
-              Ex: numbers, arrays, literal objects, strings.
             > If value is not provided, the current key value is printed.
-            > To remove a key from the object, simply set it to undefined.`;
+            > To remove a key from the object, set it to undefined.`;
 
     const opts = { h: 'help', v: 'version', k: 'key', n: 'value' };
     const args = parseArgv(opts);
     const argv = process.argv.slice(2);
 
-    if (argv.length === 0 || args.help) return console.log(help);
+    if ((argv.length === 0 && !isSTDINActive()) || args.help)
+        return console.log(help);
     if (args.version) return printVersion();
 
     let file = argv[0];
+    let val = args.value;
+    let key = args.key;
     let context;
 
     if (isSTDINActive() || file === '-') {
-        context = await readStdinAsync();
-    } else if (!file || !fs.existsSync(file)) {
-        return console.log('Error: invalid file path provided [' + file + '].');
+        context = (await readStdinAsync()).toString('utf-8');
     } else {
+        if (!fs.existsSync(file))
+            return console.log(
+                'Error: invalid file path provided [' + file + '].'
+            );
         context = fs.readFileSync(file, 'utf-8');
     }
 
-    let key = args.key;
-    if (!key)
-        return console.log(
-            'Error: invalid key [undefined] provided. Use --help to see the help menu.'
-        );
-
-    let val = args.value;
-
     context = safeParseJSON(context);
-    if (!context)
-        return console.log(
-            'Error: invalid JSON data found in file [' + file + '].'
-        );
+    if (!context) return;
 
     if (key && val) {
         context = unsafeEditObject(key, val, context);

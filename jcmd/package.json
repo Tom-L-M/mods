@@ -1,6 +1,6 @@
 {
     "name": "jcmd",
-    "version": "1.5.0",
+    "version": "1.5.1",
     "description": "A tool for editing keys in JSON files from the command line.",
     "main": "index.js",
     "scripts": {
