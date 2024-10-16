@@ -1,7 +1,7 @@
 {
-    "name": "split-file",
-    "version": "1.6.1",
-    "description": "A tool for splitting and merging files in custom-sized blocks.",
+    "name": "split",
+    "version": "2.0.0",
+    "description": "A tool for splitting files in custom-sized blocks.",
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
