@@ -219,12 +219,8 @@ class SingleArchive {
             inStream.pipe(outStream, { end: false });
             inStream.on('close', () => {
                 if (!(output instanceof stream.Writable)) {
-                    fs.chmodSync(internalName, header.FILE_MODE);
-                    fs.chownSync(
-                        internalName,
-                        header.FILE_UID,
-                        header.FILE_GID
-                    );
+                    if (fs.existsSync(internalName))
+                        fs.chmodSync(internalName, header.FILE_MODE);
                 }
                 resolve(header);
             });
@@ -460,7 +456,14 @@ class MultiArchive {
         //   C:\\somedir\\somefile.txt -> %CWD%/somefile.sa
         let outStream = output;
         if (!(output instanceof stream.Writable)) {
-            const outFile = output || inputFile + MultiArchive.#EXTENSION;
+            const outFile =
+                output ||
+                path.join(
+                    process.cwd(),
+                    path.basename(inputFile) + MultiArchive.#EXTENSION
+                );
+
+            // const outFile = output || inputFile + MultiArchive.#EXTENSION;
             const outFileBasepath = path.parse(outFile).dir;
             if (outFileBasepath && !fs.existsSync(outFileBasepath))
                 fs.mkdirSync(outFileBasepath, { recursive: true });
@@ -727,7 +730,8 @@ class MultiArchive {
 
             await new Promise(resolve => {
                 inStream.on('end', () => {
-                    fs.chmodSync(destination, tempheader.FILE_MODE);
+                    if (fs.existsSync(destination))
+                        fs.chmodSync(destination, tempheader.FILE_MODE);
                     outStream.close();
                     inStream.close();
                     resolve();
