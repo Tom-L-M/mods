@@ -122,22 +122,30 @@ const help = `
         -h | --help         Prints the help message and quits.
         -v | --version      Prints the version info and quits.
         -s | --size N       Select a size for splitting.
+        -q | --quiet        Prevents printing of count of generated files.
         -o | --output N     A directory name to place the fragments.
                             Defaults to current directory.
 
     Info:
         > The default value for splitting blocks is 1kb.
         > Values for splitting may be passed in bytes or with units (kb, mb, gb).
+        > Prints the number of files generated.
 
     Example:
-        (Split file into blocks of 10mb (1048576 bytes))
+        > Split file into blocks of 10mb (1048576 bytes)
           split -f file.txt -s 10mb
-        (Split file into default blocks of 1024 bytes)
+        > Split file into default blocks of 1024 bytes
           split -f file.txt`;
 
 (async function main() {
     const argv = process.argv.slice(2);
-    const args = parseArgv({ v: 'version', h: 'help', s: 'size', o: 'output' });
+    const args = parseArgv({
+        v: 'version',
+        h: 'help',
+        s: 'size',
+        o: 'output',
+        q: 'quiet',
+    });
     const DEFAULT_SIZE = 1024 * 1024;
     let file = argv[0];
 
@@ -160,6 +168,9 @@ const help = `
         const filestats = fs.statSync(file);
         inputSize = filestats.size;
     }
+
+    if (inputSize <= 1)
+        return console.log(`Error: Invalid input file size [${inputSize}]`);
 
     if (args.size >= inputSize) args.size = inputSize;
     if (!args.size || args.size < 1)
@@ -188,6 +199,7 @@ const help = `
             counter++;
         }
         await Promise.all(promises);
+        if (!args.quiet) console.log(counter);
     }
 
     // file = input file name
@@ -205,6 +217,7 @@ const help = `
         let fileCount = 0;
         let currentFileStream;
         let writtenBytes = 0;
+        let totalWritten = 0;
 
         readStream.on('data', async chunk => {
             let remainingChunk = chunk;
@@ -235,17 +248,21 @@ const help = `
                 );
 
                 writtenBytes += bytesToWrite;
+                totalWritten += bytesToWrite;
                 remainingChunk = remainingChunk.slice(bytesToWrite); // Reduce the remaining chunk to be processed
             }
+
+            // If all data was consumed, print total numer of files
+            if (totalWritten === inputSize)
+                if (!args.quiet) console.log(fileCount + 1);
         });
 
         readStream.on('end', () => {
             if (currentFileStream) currentFileStream.end(); // Ensure the last file is closed
-            console.log('File split completed.');
         });
 
         readStream.on('error', err => {
-            console.error('Error reading the file:', err);
+            console.log('Error: Could not read file -', err.message);
             if (currentFileStream) currentFileStream.end();
         });
     }
