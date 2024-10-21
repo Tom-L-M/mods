@@ -81,23 +81,30 @@ const parseArgv = (mapping = {}, argv = process.argv.slice(2)) => {
 };
 
 (function main() {
-    // Set help message:
     const help = `
     [passkey-js]
         A tool for generating random passkeys.
     
-    passkey [options]
+        passkey [options]
 
     Options:
-        -h | --help         Prints the help message and quits.
-        -v | --version      Prints the version info and quits.
-        -c | --count X      Number of passphrases to generate (defaults to 1)
-        -w | --words X      Number of words in passphrase (defaults to 3)
-        -s | --separator X  Separator for passphrase (defaults to "-")
-        -e | --no-ending    Remove ending token
-        -p | --password X   Creates a password instead of passphrase 
-                            (one word with length X and all char types)
-                            (this overrides other flags, except '-n')`;
+        -h | --help           Prints the help message and quits.
+        -v | --version        Prints the version info and quits.
+        -c | --count N        Number of passphrases to generate (defaults to 1).
+        -l | --lowercase      Returns the string as lowercase.
+        -u | --uppercase      Returns the string as uppercase.
+    
+    Passphrase-specific options:
+        -W | --words N        Number of words in passphrase (defaults to 3)
+        -S | --separator N    Separator for passphrase (defaults to "-")
+        -E | --no-ending      Remove ending symbols in the passphrase
+
+    Alternatives to passphrase generation:
+    (overrides passphrase-specific options and change the generated string)
+        -p | --password N     Generates a password (length N and all char types)
+        -t | --token N        Generates a token (length N and [0-9A-Za-z])
+        -n | --numeric N      Generates a numeric string (length N and [0-9])
+        -a | --alphabetic N   Generates an alphabetic string (length N and [A-Za-z])`;
 
     // Set context namespace
     const context = {};
@@ -105,41 +112,55 @@ const parseArgv = (mapping = {}, argv = process.argv.slice(2)) => {
     context.times = 1; // number of passphrases to generate
     context.words = 3; // number of words per passphrasee
     context.separator = '-';
-    context.endingToken = true;
-    context.isPassword = false;
     context.passlength = 12;
+    context.endingToken = true;
+
+    context.isPassword = false;
+    context.isToken = false;
+    context.isNumeric = false;
+    context.isAlphabetic = false;
 
     const args = parseArgv({
         h: 'help',
         v: 'version',
         c: 'count',
-        w: 'words',
-        s: 'separator',
-        e: 'no-ending',
+
+        W: 'words',
+        S: 'separator',
+        E: 'no-ending',
+
         p: 'password',
+        t: 'token',
+        n: 'numeric',
+        a: 'alphabetic',
+
+        l: 'lowercase',
+        u: 'uppercase',
     });
 
     // PARSE ARGUMENTS
 
-    // Return help if no args
     if (args.help) return console.log(help);
-
     if (args.version) return printVersion();
 
     // For number of passphrases to generate:
     let numberToGenerate = args.count;
     if (numberToGenerate) context.times = Number(numberToGenerate);
+
     // For number of words:
     let numberOfWords = args.words;
     if (numberOfWords) context.words = Number(numberOfWords);
+
     // For separator:
     let separator = args.separator;
     if (separator) context.separator = separator;
+
     // For ending token:
     if (args['no-ending']) {
         context.endingToken = false;
         context.words -= 1; // remove the word replacer for ending token
     }
+
     // For password instead of passkey
     if (args.password) {
         context.isPassword = true;
@@ -147,61 +168,123 @@ const parseArgv = (mapping = {}, argv = process.argv.slice(2)) => {
             args.password !== true ? args.password : context.passlength;
     }
 
-    let results = [];
-
-    if (context.isPassword) {
-        // START PASSWORD GENERATION
-        function generatePassword(size) {
-            let acc = '';
-            const charlist =
-                'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890123456789!@#$%&*;:'.split(
-                    ''
-                );
-            for (let i = 0; i < size; i++) {
-                acc += charlist[randomInt(0, 81)];
-            }
-            return acc;
-        }
-        for (let i = 0; i < context.times; i++) {
-            results.push(generatePassword(context.passlength));
-        }
-    } else {
-        // START PASSPHRASE GENERATION:
-        // Set 'digits' array
-        const digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-        const specials = ['#']; // currently using only '#', as it is easier to remember
-        for (let i = 0; i < context.times; i++) {
-            // Get X random words from the wordlist
-            let passphrase = samples(words, 1 + context.words);
-
-            // Get a random digit sequence from 'digits' array
-            let passdigit = samples(digits, 1).join('');
-
-            // Get a random special char from 'specials' array
-            let special = samples(specials, 1).join('');
-
-            if (context.endingToken) {
-                // Replace one word for a capital letter + 2 Digits
-                // Info: This 3-letter pseudo-word is important for
-                //  passing both capital-letter-checking and number
-                //  checking on password input fields.
-                passphrase[passphrase.length - 1] = [
-                    // Position the special char
-                    special,
-                    // Capitalize first letter
-                    passphrase[passphrase.length - 1][0].toUpperCase(),
-                    // Position the digit
-                    passdigit,
-                ].join('');
-            }
-
-            // Merge words
-            passphrase = passphrase.join(context.separator);
-
-            // Push to results
-            results.push(passphrase);
-        }
+    // For token instead of passkey
+    if (args.token) {
+        context.isToken = true;
+        context.passlength =
+            args.token !== true ? args.token : context.passlength;
     }
 
-    console.log(results.join('\n'));
+    // For numeric instead of passkey
+    if (args.numeric) {
+        context.isNumeric = true;
+        context.passlength =
+            args.numeric !== true ? args.numeric : context.passlength;
+    }
+
+    // For alphabetic instead of passkey
+    if (args.alphabetic) {
+        context.isAlphabetic = true;
+        context.passlength =
+            args.alphabetic !== true ? args.alphabetic : context.passlength;
+    }
+
+    let results = [];
+
+    function generateCustom(size, chars) {
+        let acc = '';
+        const charlist = chars.split('');
+        for (let i = 0; i < size; i++)
+            acc += charlist[randomInt(0, charlist.length)];
+        return acc;
+    }
+
+    const CHARS = {
+        alphalow: 'abcdefghijklmnopqrstuvwxyz',
+        alphahigh: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+        numeric: '01234567890123456789',
+        special: '!@#$%&*;:',
+    };
+
+    if (context.isPassword) {
+        const chars =
+            (args.lowercase
+                ? CHARS.alphalow
+                : args.uppercase
+                ? CHARS.alphahigh
+                : CHARS.alphalow + CHARS.alphahigh) +
+            CHARS.numeric +
+            CHARS.special;
+        for (let i = 0; i < context.times; i++)
+            results.push(generateCustom(context.passlength, chars));
+        return console.log(results.join('\n'));
+    }
+
+    if (context.isToken) {
+        const chars =
+            (args.lowercase
+                ? CHARS.alphalow
+                : args.uppercase
+                ? CHARS.alphahigh
+                : CHARS.alphalow + CHARS.alphahigh) + CHARS.numeric;
+        for (let i = 0; i < context.times; i++)
+            results.push(generateCustom(context.passlength, chars));
+        return console.log(results.join('\n'));
+    }
+
+    if (context.isNumeric) {
+        const chars = CHARS.numeric;
+        for (let i = 0; i < context.times; i++)
+            results.push(generateCustom(context.passlength, chars));
+        return console.log(results.join('\n'));
+    }
+
+    if (context.isAlphabetic) {
+        const chars = args.lowercase
+            ? CHARS.alphalow
+            : args.uppercase
+            ? CHARS.alphahigh
+            : CHARS.alphalow + CHARS.alphahigh;
+        for (let i = 0; i < context.times; i++)
+            results.push(generateCustom(context.passlength, chars));
+        return console.log(results.join('\n'));
+    }
+
+    // START PASSPHRASE GENERATION:
+    // Set 'digits' array
+    const digits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const specials = ['#']; // currently using only '#', as it is easier to remember
+    for (let i = 0; i < context.times; i++) {
+        // Get X random words from the wordlist
+        let passphrase = samples(words, 1 + context.words);
+
+        // Get a random digit sequence from 'digits' array
+        let passdigit = samples(digits, 1).join('');
+
+        // Get a random special char from 'specials' array
+        let special = samples(specials, 1).join('');
+
+        if (context.endingToken) {
+            // Replace one word for a capital letter + 2 Digits
+            // Info: This 3-letter pseudo-word is important for
+            //  passing both capital-letter-checking and number
+            //  checking on password input fields.
+            passphrase[passphrase.length - 1] = [
+                // Position the special char
+                special,
+                // Capitalize first letter
+                passphrase[passphrase.length - 1][0].toUpperCase(),
+                // Position the digit
+                passdigit,
+            ].join('');
+        }
+
+        // Merge words
+        passphrase = passphrase.join(context.separator);
+
+        // Push to results
+        results.push(passphrase);
+    }
+
+    return console.log(results.join('\n'));
 })();
