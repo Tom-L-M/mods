@@ -84,6 +84,18 @@ function readStdinAsync() {
     });
 }
 
+function streamToSTDOUT(fname) {
+    return new Promise((resolve, reject) => {
+        try {
+            const stream = fs.createReadStream(fname);
+            stream.pipe(process.stdout);
+            stream.on('end', resolve);
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
+
 const isSTDINActive = () => !process.stdin.isTTY;
 
 const help = `
@@ -125,8 +137,6 @@ const help = `
     // If no STDIN output token is used, append to the end
     if (stdinActive && !files.includes('-')) files.push('-');
 
-    let input = [];
-
     let current,
         stdindata = stdinActive ? await readStdinAsync() : '';
     try {
@@ -142,25 +152,21 @@ const help = `
                         .map(v => v.trim())
                         .filter(v => !!v);
 
-                    // TODO use streams here
-                    // (create each stream, pipe it to stdout, await for end, and start another)
                     for (let subfile of filelist)
                         try {
-                            input.push(fs.readFileSync(subfile));
+                            await streamToSTDOUT(subfile);
                         } catch (err) {
                             return console.log(
                                 `Error: Could not read file from STDIN "${subfile}" (${err.message})`
                             );
                         }
                 } else {
-                    input.push(stdindata);
+                    process.stdout.write(stdindata);
                 }
             } else if (file.startsWith('-')) {
                 continue; // Ignore flags
             } else {
-                // TODO use streams here
-                // (create each stream, pipe it to stdout, await for end, and start another)
-                input.push(fs.readFileSync(file));
+                await streamToSTDOUT(file);
             }
         }
     } catch (err) {
@@ -168,5 +174,4 @@ const help = `
             `Error: Could not read file "${current}" (${err.message})`
         );
     }
-    process.stdout.write(Buffer.concat(input));
 })();
