@@ -75,14 +75,12 @@ function readStdinAsync() {
 
         const quit = () => {
             stream.removeListener('data', onData);
-            stream.removeListener('end', onEnd);
-            stream.removeListener('error', onError);
             return true;
         };
 
         stream.on('data', onData);
-        stream.on('end', onEnd);
-        stream.on('error', onError);
+        stream.once('end', onEnd);
+        stream.once('error', onError);
     });
 }
 
@@ -99,6 +97,8 @@ const help = `
     Options:        
         -h | --help             Prints the help message and quits.
         -v | --version          Prints the version info and quits.
+        -f | --file-list        Interprets STDIN as a list of files instead of data.
+                                Files in list should be separated by newlines.
 
     Info:
         When providing data from STDIN, it will be placed at position of '-'.
@@ -109,34 +109,64 @@ const help = `
         cat somefile.txt otherfile.txt      # Concats the 2 files and print.
         cat a.txt | cat b.txt               # Reads a.txt and concat with b.txt.
         cat a.txt b.txt                     # Also reads a.txt and concat with b.txt.
-        ls | cat a.txt - b.txt              # Concats: a.txt + (result of ls) + b.txt.`;
+        ls | cat a.txt - b.txt              # Concats: a.txt + (result of ls) + b.txt.
+        dir /B /A-D | cat -f -              # Concats all files from current cwd`;
 
 (async function () {
     const files = process.argv.slice(2);
-    const opts = { h: 'help', v: 'version' };
+    const opts = { h: 'help', v: 'version', f: 'file-list' };
     const args = parseArgv(opts);
-
-    if (args.help || !files.length) return console.log(help);
-    if (args.version) return printVersion();
 
     const stdinActive = isSTDINActive();
 
+    if (args.help || (!files.length && !stdinActive)) return console.log(help);
+    if (args.version) return printVersion();
+
+    // If no STDIN output token is used, append to the end
+    if (stdinActive && !files.includes('-')) files.push('-');
+
     let input = [];
 
-    let current;
+    let current,
+        stdindata = stdinActive ? await readStdinAsync() : '';
     try {
         for (let file of files) {
             current = file;
             if (file === '-') {
                 if (!stdinActive) continue;
-                else input.push(await readStdinAsync());
-            } else input.push(fs.readFileSync(file));
-        }
-        // If there is no '-' placeholder, append to the end
-        if (stdinActive && !args['-']) input.unshift(await readStdinAsync());
-    } catch {
-        return console.log(`Error: Could not read file ${current}`);
-    }
+                // If the '-f' modifier is used, interpret STDIN as a file list
+                if (args['file-list']) {
+                    let filelist = stdindata
+                        .toString()
+                        .split('\n')
+                        .map(v => v.trim())
+                        .filter(v => !!v);
 
+                    // TODO use streams here
+                    // (create each stream, pipe it to stdout, await for end, and start another)
+                    for (let subfile of filelist)
+                        try {
+                            input.push(fs.readFileSync(subfile));
+                        } catch (err) {
+                            return console.log(
+                                `Error: Could not read file from STDIN "${subfile}" (${err.message})`
+                            );
+                        }
+                } else {
+                    input.push(stdindata);
+                }
+            } else if (file.startsWith('-')) {
+                continue; // Ignore flags
+            } else {
+                // TODO use streams here
+                // (create each stream, pipe it to stdout, await for end, and start another)
+                input.push(fs.readFileSync(file));
+            }
+        }
+    } catch (err) {
+        return console.log(
+            `Error: Could not read file "${current}" (${err.message})`
+        );
+    }
     process.stdout.write(Buffer.concat(input));
 })();
