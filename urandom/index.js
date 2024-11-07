@@ -234,16 +234,19 @@ const help = `
                             Has no effect if digest base is 10 or lower (no letters).
                             Has no effect over prefixes, only on the numeric part.`;
 
-const exeresolve = fname => {
+const _require = file => {
+    const fname = process.env.MODULE_NAME + '/' + file;
+    const fdirname = __dirname.replaceAll('\\', '/');
     const [m0, m1] = fname.replaceAll('\\', '/').split('/');
-    return __dirname.endsWith(m0)
-        ? __dirname + '/' + m1
-        : __dirname + '/' + fname;
+    const final = fdirname.endsWith(m0)
+        ? fdirname + '/' + m1
+        : fdirname + '/' + fname;
+    return require(final);
 };
 
 function printVersion() {
     try {
-        console.log(require(exeresolve('urandom/package.json')).version);
+        console.log(_require('package.json').version);
     } catch (err) {
         console.log(
             `Error: could not read package descriptor - ${err.message}`

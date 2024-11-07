@@ -30,16 +30,19 @@ const help = `
                 conversor txt hex "s a l v e" --pad 2 --separator -
                     returns:    73-61-6c-76-65`;
 
-const exeresolve = fname => {
+const _require = file => {
+    const fname = process.env.MODULE_NAME + '/' + file;
+    const fdirname = __dirname.replaceAll('\\', '/');
     const [m0, m1] = fname.replaceAll('\\', '/').split('/');
-    return __dirname.endsWith(m0)
-        ? __dirname + '/' + m1
-        : __dirname + '/' + fname;
+    const final = fdirname.endsWith(m0)
+        ? fdirname + '/' + m1
+        : fdirname + '/' + fname;
+    return require(final);
 };
 
 function printVersion() {
     try {
-        console.log(require(exeresolve('conversor/package.json')).version);
+        console.log(_require('package.json').version);
     } catch (err) {
         console.log(
             `Error: could not read package descriptor - ${err.message}`
