@@ -8,7 +8,7 @@ const _require = file => {
     return require(final);
 };
 
-const MultiArchive = require(exeresolve('msa/multi-archive.js'));
+const MultiArchive = _require('multi-archive.js');
 
 const fs = require('node:fs');
 const path = require('node:path');

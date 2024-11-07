@@ -8,7 +8,7 @@ const _require = file => {
     return require(final);
 };
 
-const words = require(exeresolve('passkey/words.json'));
+const words = _require('words.json');
 // JSON.parse(require('fs').readFileSync('./passkey/words.json','utf8'));
 // Remember: When using it as a compiled package, the execution 'chdir' is one level upper
 

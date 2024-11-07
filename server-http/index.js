@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
-const types = require(exeresolve('server-http/mime.json'));
+const types = _require('mime.json');
 // Remember: When using it as a compiled package, the execution 'chdir' is one level upper
 
 function printVersion() {
