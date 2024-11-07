@@ -268,15 +268,8 @@ const formatVerticalList = arr => {
             console.log(pkg.version + '.' + compileContentVersionHash());
         }
     } else if (fs.existsSync(path)) {
-        // let code = `console.log(require('path').join(__dirname,'tool')); process.chdir(require('path').join(__dirname,'${tool}'));` + fs.readFileSync(path,'utf-8');
+        process.env.MODULE_NAME = tool;
         let code = fs.readFileSync(path, 'utf-8');
-        // IMPORTANT:
-        // ERRO: A modificação não funciona com ele empacotado
-        // this modification changes the current chdir to into the proper folder
-        // this was not tested - and may break something, but is the proper way of doing it
-        // it removes access to the MODS folder from inside a package, but allows that package to
-        // use its own internal secondary files (package.json, mime.json, ...)
-        // HOWEVER - IT IS NOT POSSIBLE TO 'REQUIRE' MODULES OR JSON FILES INSIDE THE PACKAGES YET
         eval(code);
     } else {
         let partials = partialMatches(tool);
