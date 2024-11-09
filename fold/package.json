@@ -1,0 +1,12 @@
+{
+    "name": "fold",
+    "version": "1.1.0",
+    "description": "A tool for folding data in lines according to width context. (Port of UNIX's 'fold' tool).",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
+}
