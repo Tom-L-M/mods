@@ -102,94 +102,87 @@ const help = `
         -h | --help             Prints the help message and quits.
         -v | --version          Prints the version info and quits.
         -q | --quiet            Shows only if the files are different or not.
-        -i | --insensitive      Ignores case in diff analysis.
-        -b | --blank            Ignores blank spaces in diff analysis.
-        -c | --no-color         Prints result without color ANSI tokens.
-`;
+        -c | --no-color         Prints result without color ANSI tokens.`;
 
-const COLOR_RED = '\x1b[31m';
-const COLOR_GREEN = '\x1b[32m';
-const COLOR_OFF = '\x1b[0m';
+const green = string => `\x1b[32m${string}\x1b[0m`;
+const red = string => `\x1b[31m${string}\x1b[0m`;
 
-function diff(data1, data2, { quiet, insensitive, blank, nocolor } = {}) {
-    if (quiet)
-        return data1.toString('hex') === data2.toString('hex')
-            ? 'EQUAL'
-            : 'DIFFERENT';
-    const lines1 = data1.toString('utf-8').split('\n');
-    const lines2 = data2.toString('utf-8').split('\n');
-    let diffIn = [];
-    let diffOut = [];
-
-    let lines1ConsumedIndices = [];
-    let lines2ConsumedIndices = [];
-
-    let modlines1 = insensitive ? lines1.map(v => v.toLowerCase()) : lines1;
-    modlines1 = blank
-        ? modlines1.map(v => v.replaceAll(/\s+/gim, ''))
-        : modlines1;
-    let modlines2 = insensitive ? lines2.map(v => v.toLowerCase()) : lines2;
-    modlines2 = blank
-        ? modlines2.map(v => v.replaceAll(/\s+/gim, ''))
-        : modlines2;
-
-    for (let i = 0; i < lines1.length; i++) {
-        let line = lines1[i];
-        if (insensitive) line = line.toLowerCase();
-        if (blank) line = line.replaceAll(/\s+/gim, '');
-
-        if (!modlines2.includes(line) && !lines2ConsumedIndices.includes(i)) {
-            diffIn.push([i + 1, lines1[i]]);
-        } else lines2ConsumedIndices.push(i);
+/**
+ * Generates a new Modification patch array from two data sources using Myer's Diff Algorithm.
+ * @param {string|Array<string>} source The data to compare as 'source'. May be a string, buffer or array.
+ * @param {string|Array<string>} destinatin The data to compare as 'destination'. May be a string, buffer or array.
+ * @returns {Array<{action:string,data:string}>} A list of "new Modification" objects, representing the steps needed to build the patch.
+ */
+function diff(source, destination) {
+    class Modification {
+        constructor(action, data) {
+            this.action = action;
+            this.data = data;
+        }
     }
 
-    for (let i = 0; i < lines2.length; i++) {
-        let line = lines2[i];
-        if (insensitive) line = line.toLowerCase();
-        if (blank) line = line.replaceAll(/\s+/gim, '');
+    let frontier = { 1: { x: 0, history: [] } };
+    let aMax = source.length;
+    let bMax = destination.length;
 
-        // if (!modlines1.includes(line))
-        //     diffOut.push([i, lines2[i]]);
+    for (let d = 0; d <= aMax + bMax; d++) {
+        for (let k = -d; k <= d; k += 2) {
+            let goDown =
+                k === -d || (k !== d && frontier[k - 1].x < frontier[k + 1].x);
 
-        if (!modlines1.includes(line) && !lines1ConsumedIndices.includes(i)) {
-            diffOut.push([i + 1, lines2[i]]);
-        } else lines1ConsumedIndices.push(i);
+            let oldX, history;
+            if (goDown) {
+                oldX = frontier[k + 1].x;
+                history = frontier[k + 1].history;
+            } else {
+                oldX = frontier[k - 1].x + 1;
+                history = frontier[k - 1].history;
+            }
+
+            history = history.slice();
+            let y = oldX - k;
+
+            if (1 <= y && y <= bMax && goDown) {
+                history.push(new Modification('insert', destination[y - 1]));
+            } else if (1 <= oldX && oldX <= aMax) {
+                history.push(new Modification('remove', source[oldX - 1]));
+            }
+
+            while (oldX < aMax && y < bMax && source[oldX] === destination[y]) {
+                oldX++;
+                y++;
+                history.push(new Modification('keep', source[oldX - 1]));
+            }
+
+            if (oldX >= aMax && y >= bMax) {
+                return history;
+            } else {
+                frontier[k] = { x: oldX, history };
+            }
+        }
     }
 
-    // for (let i = 0; i < longer; i++) {
-    //     let line1 = (lines1[i] || '');
-    //     let line2 = (lines2[i] || '');
+    throw new Error('Could not find edit script');
+}
 
-    //     if (insensitive) {
-    //         line1 = line1.toLowerCase();
-    //         line2 = line2.toLowerCase();
-    //     }
-    //     if (blank) {
-    //         line1 = line1.replaceAll(/\s+/gi, '').replaceAll(/\r{0,}\n{0,}/gi, '');
-    //         line2 = line2.replaceAll(/\s+/gi, '').replaceAll(/\r{0,}\n{0,}/gi, '');
-    //     }
-    //     if (line1 !== line2) {
-    //         if (line1) diffIn.push([i, lines1[i]]);
-    //         if (line2) diffOut.push([i, lines2[i]]);
-    //     }
-    // }
+function patch(data1, data2, { quiet, nocolor } = {}) {
+    const dataSource1 = data1.trim().split('\n');
+    const dataSource2 = data2.trim().split('\n');
+    const difflist = diff(dataSource1, dataSource2);
 
-    return (
-        (diffIn.length > 0 || diffOut.length > 0 ? '\n' : '') +
-        (nocolor || diffIn.length <= 0 ? '' : COLOR_RED) +
-        (diffIn.length > 0
-            ? diffIn.map(v => `<${v[0]}\t${v[1]}`).join('\n')
-            : '') +
-        (diffIn.length > 0 ? '\n\n' : '') +
-        (nocolor || diffOut.length <= 0 ? '' : COLOR_GREEN) +
-        (diffOut.length > 0
-            ? diffOut.map(v => `>${v[0]}\t${v[1]}`).join('\n')
-            : '') +
-        (nocolor || (diffIn.length <= 0 && diffOut.length <= 0)
-            ? ''
-            : COLOR_OFF) +
-        (diffIn.length > 0 || diffOut.length > 0 ? '\n' : '')
-    );
+    if (quiet) {
+        return console.log(difflist.length > 0);
+    }
+
+    for (let { action, data } of difflist) {
+        if (action === 'insert') {
+            console.log('+ ' + (nocolor ? data : green(data)));
+        } else if (action === 'remove') {
+            console.log('- ' + (nocolor ? data : red(data)));
+        } else {
+            console.log('  ' + data);
+        }
+    }
 }
 
 (async function () {
@@ -200,8 +193,6 @@ function diff(data1, data2, { quiet, insensitive, blank, nocolor } = {}) {
         h: 'help',
         v: 'version',
         q: 'quiet',
-        i: 'insensitive',
-        b: 'blank',
         c: 'no-color',
     };
     const args = parseArgv(opts);
@@ -211,8 +202,6 @@ function diff(data1, data2, { quiet, insensitive, blank, nocolor } = {}) {
 
     let input, inputB;
     const quiet = args.quiet || null;
-    const insensitive = args.insensitive || null;
-    const blank = args.blank || null;
     const nocolor = args['no-color'] || null;
 
     // If it is called like:    node script.js [somefile] [somefileB] [flags]
@@ -241,7 +230,8 @@ function diff(data1, data2, { quiet, insensitive, blank, nocolor } = {}) {
         }
     }
 
-    return console.log(
-        diff(input, inputB, { quiet, insensitive, blank, nocolor })
-    );
+    return patch(input.toString(), inputB.toString(), {
+        quiet,
+        nocolor,
+    });
 })();
