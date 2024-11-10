@@ -1,5 +1,3 @@
-const fs = require('node:fs');
-
 /**
  * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
  * Multi-word params are divided as "param":"value", while sinle-word params becomes: "param":true.
@@ -224,24 +222,11 @@ function readStdinAsync() {
     });
 }
 
-function streamToSTDOUT(fname) {
-    return new Promise((resolve, reject) => {
-        try {
-            const stream = fs.createReadStream(fname);
-            stream.pipe(process.stdout);
-            stream.on('end', resolve);
-        } catch (err) {
-            reject(err);
-        }
-    });
-}
-
 const isSTDINActive = () => !process.stdin.isTTY;
 
 module.exports = {
     _parseArgv,
     parseArgv,
-    streamToSTDOUT,
     isSTDINActive,
     readStdinAsync,
 };

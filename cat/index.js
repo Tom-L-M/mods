@@ -1,25 +1,5 @@
 const fs = require('fs');
-const { parseArgv } = require('../shared');
-
-function readStdinAsync() {
-    return new Promise((resolve, reject) => {
-        const stream = process.stdin;
-        const chunks = [];
-
-        const onData = chunk => chunks.push(chunk);
-        const onEnd = () => quit() && resolve(Buffer.concat(chunks));
-        const onError = err => quit() && reject(err);
-
-        const quit = () => {
-            stream.removeListener('data', onData);
-            return true;
-        };
-
-        stream.on('data', onData);
-        stream.once('end', onEnd);
-        stream.once('error', onError);
-    });
-}
+const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
 
 function streamToSTDOUT(fname) {
     return new Promise((resolve, reject) => {
@@ -32,8 +12,6 @@ function streamToSTDOUT(fname) {
         }
     });
 }
-
-const isSTDINActive = () => !process.stdin.isTTY;
 
 const help = `
     [cat-js]

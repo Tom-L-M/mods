@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { isSTDINActive, readStdinAsync } = require('../shared');
 
 /**
  * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
@@ -44,30 +45,6 @@ const parseargs = (mapping = {}, args = process.argv.slice(2)) => {
     }
     return params;
 };
-
-const isSTDINActive = () => !process.stdin.isTTY;
-
-function readStdinAsync() {
-    return new Promise((resolve, reject) => {
-        const stream = process.stdin;
-        const chunks = [];
-
-        const onData = chunk => chunks.push(chunk);
-        const onEnd = () => quit() && resolve(Buffer.concat(chunks));
-        const onError = err => quit() && reject(err);
-
-        const quit = () => {
-            stream.removeListener('data', onData);
-            stream.removeListener('end', onEnd);
-            stream.removeListener('error', onError);
-            return true;
-        };
-
-        stream.on('data', onData);
-        stream.on('end', onEnd);
-        stream.on('error', onError);
-    });
-}
 
 const addressFromIndex = (address, radix) => {
     // The address must accomodate at max a UInt32 (4 bytes -> up to 4294967296)

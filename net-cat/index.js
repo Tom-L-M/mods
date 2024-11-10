@@ -20,8 +20,7 @@ const fs = require('fs');
                             copied to a file.
         -s | --silent       The console output will be suppressed. This does
                             not interfere with --pipe. This does not supress 
-                            the user input on the screen, only the terminal output
-`;
+                            the user input on the screen, only the terminal output`;
     let pipeto = false;
     let isSilent = false;
     if (args.includes('--help') || args.includes('-h') || args.length < 2)

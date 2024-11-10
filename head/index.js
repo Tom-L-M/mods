@@ -1,29 +1,5 @@
 const fs = require('fs');
-const { parseArgv } = require('../shared');
-
-function readStdinAsync() {
-    return new Promise((resolve, reject) => {
-        const stream = process.stdin;
-        const chunks = [];
-
-        const onData = chunk => chunks.push(chunk);
-        const onEnd = () => quit() && resolve(Buffer.concat(chunks));
-        const onError = err => quit() && reject(err);
-
-        const quit = () => {
-            stream.removeListener('data', onData);
-            stream.removeListener('end', onEnd);
-            stream.removeListener('error', onError);
-            return true;
-        };
-
-        stream.on('data', onData);
-        stream.on('end', onEnd);
-        stream.on('error', onError);
-    });
-}
-
-const isSTDINActive = () => !process.stdin.isTTY;
+const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
 
 const help = `
     [head-js]
@@ -42,8 +18,7 @@ const help = `
 
     Examples:
         cat somefile.txt | node head -n 5       # Prints first 5 lines from file
-        node head somefile.txt -n 5             # Also prints first 5 lines from file
-`;
+        node head somefile.txt -n 5             # Also prints first 5 lines from file`;
 
 function slice(data, { lines, bytes } = {}) {
     // bytes have preference over lines

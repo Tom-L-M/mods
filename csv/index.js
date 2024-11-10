@@ -1,29 +1,5 @@
 const fs = require('node:fs');
-const { parseArgv } = require('../shared');
-
-const isSTDINActive = () => !process.stdin.isTTY;
-
-function readStdinAsync() {
-    return new Promise((resolve, reject) => {
-        const stream = process.stdin;
-        const chunks = [];
-
-        const onData = chunk => chunks.push(chunk);
-        const onEnd = () => quit() && resolve(Buffer.concat(chunks));
-        const onError = err => quit() && reject(err);
-
-        const quit = () => {
-            stream.removeListener('data', onData);
-            stream.removeListener('end', onEnd);
-            stream.removeListener('error', onError);
-            return true;
-        };
-
-        stream.on('data', onData);
-        stream.on('end', onEnd);
-        stream.on('error', onError);
-    });
-}
+const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
 
 /**
  * Parses a CSV string and returns an Array representation as a table.

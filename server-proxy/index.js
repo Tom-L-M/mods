@@ -26,8 +26,7 @@ const help = `
 
         server-proxy -t 192.168.15.11:8080/10.3.51.13:80 -u 192.168.15.11:5000/10.3.51.13:5000 
         > Redirects all TCP traffic received on 192.168.15.11:8080 to 10.3.51.13:80, and
-          redirects all UDP traffic received on 192.168.15.11:5000 to 10.3.51.13:5000
-`;
+          redirects all UDP traffic received on 192.168.15.11:5000 to 10.3.51.13:5000`;
 
 function generateRange(start, end) {
     return new Array(end - start + 1).fill(start).map((x, i) => x + i);
