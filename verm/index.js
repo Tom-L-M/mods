@@ -113,17 +113,7 @@ function JSONSafeParse(data) {
     }
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     // Get args as: script <operation> [files]
     const args = process.argv.slice(2);
     const op = args[0] || '--help';
@@ -135,7 +125,7 @@ function printVersion() {
 
     // Check if there are no arguments
     if (args.includes('-v') || args.includes('--version'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     // Special case:        'node verm <file>' (forgot operation)
     if (

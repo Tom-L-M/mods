@@ -189,17 +189,7 @@ class Barcode {
     }
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const help = `
         [barcode-js]
             Generates barcodes from strings
@@ -226,7 +216,7 @@ function printVersion() {
     ) {
         console.log(help);
     } else if (args.includes('-v') || args.includes('--version')) {
-        return printVersion();
+        return console.log(require('./package.json')?.version);
     } else {
         new Barcode(args.join(' ')).render();
     }

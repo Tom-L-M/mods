@@ -349,16 +349,6 @@ function startEchoServer(host, port) {
         });
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 (function wrapper() {
     const args = process.argv.slice(2);
 
@@ -410,7 +400,7 @@ function printVersion() {
                 return console.log(help);
             case '-v':
             case '--version':
-                return printVersion();
+                return console.log(require('./package.json')?.version);
             case '-o':
             case '--host':
                 context.host = next;

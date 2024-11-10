@@ -50,17 +50,7 @@ async function decryptFile(_origin, _target, _password, _ivkeyword) {
     );
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(async function Main() {
+(async function () {
     // storage <mode:(encrypt|decrypt)> <file>
     const args = process.argv.slice(2);
     let mode, file, content, destinationFile, password, ivkeyword, isFile;
@@ -95,7 +85,7 @@ function printVersion() {
     if (args.length < 2 || args.includes('--help') || args.includes('-h'))
         return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
     else {
         mode = (() => {
             if (['-d', '--decrypt'].includes(format(args[0], true))) {

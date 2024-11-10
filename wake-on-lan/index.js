@@ -47,17 +47,7 @@ const buildMessage = MACaddr => {
     ]);
 };
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const help = `
         [wake-on-lan-js]
             A tool to send Wake-On-LAN magic packets
@@ -94,7 +84,7 @@ function printVersion() {
     }
 
     if (args.includes('-v') || args.includes('--version')) {
-        return printVersion();
+        return console.log(require('./package.json')?.version);
     }
 
     if (!network || !isValidIP(network)) {

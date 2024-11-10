@@ -1069,17 +1069,7 @@ const help = `
         - Sources must be separed by a space, and can be relative or absolute 
           paths of directories, files, links (soft or hard) or other file types`;
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     // tar <verb> [options]
     // tar list <tarfile>
     // tar extract <tarfile>
@@ -1093,7 +1083,7 @@ function printVersion() {
         return console.log(help);
 
     if (args.includes('-v') || args.includes('--version'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     const verb = args[0];
     const tarfile = args[1] || '';

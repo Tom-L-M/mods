@@ -424,16 +424,6 @@ class GopherServer {
     }
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 (async function main() {
     // Info: the default IP is not 0.0.0.0, it is the base interface (192.168...)
     // it is this way, to avoid redirection problems when writing the gophermap file,
@@ -486,8 +476,7 @@ function printVersion() {
                 return;
             case '--version':
             case '-v':
-                printVersion();
-                return;
+                return console.log(require('./package.json')?.version);
             case '--port':
             case '-p':
                 port = next;

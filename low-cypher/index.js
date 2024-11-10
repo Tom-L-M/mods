@@ -223,17 +223,7 @@ CYPHERS.ATBASH.handler = args => {
 // and must parse it into a usable resource for the cypher method
 // You can pass multiple '-d' options in sequence, to concat multiple data blocks
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const help = `
     [low-cypher-js]
         A tool for running low-level and pseudo-encryption (atbash, morse, nato...).
@@ -257,7 +247,7 @@ function printVersion() {
     if (!cyphername || args.includes('-h') || args.includes('--help'))
         return console.log(help);
     if (args.includes('-v') || args.includes('--version'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
     if (!CYPHERS[cyphername.toUpperCase()])
         return console.log('Error: Invalid cypher type [' + cyphername + ']');
     return console.log(CYPHERS[cyphername.toUpperCase()].handler(args));

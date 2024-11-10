@@ -30,21 +30,11 @@ const help = `
                 conversor txt hex "s a l v e" --pad 2 --separator -
                     returns:    73-61-6c-76-65`;
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const args = process.argv.slice(2);
 
     if (args.includes('--version') || args.includes('-v'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     if (args.includes('--help') || args.includes('-h'))
         return console.log(help);

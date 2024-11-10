@@ -11,16 +11,6 @@ const waitStreamWriting = (IStream, content) => {
     });
 };
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 const helpmsg = `
     [binwrite-js]
         A tool to write content to files as binary data
@@ -68,14 +58,15 @@ const helpmsg = `
         > binwrite -w -x -r 10 test.bin 77 88 99
             > Writes 10 times the trio of bytes '77 88 99' in test.bin: (77 88 99 77 88 99 77 88 99 ...)`;
 
-async function Main() {
+(async function () {
     // binwrite <mode> <datatype> <file> <content>
     let args = process.argv.slice(2);
     let mode = args[0];
     if (mode == '-h' || mode == '--help' || !mode || args.length < 4)
         return console.log(helpmsg);
 
-    if (mode == '-v' || mode == '--version') return printVersion();
+    if (mode == '-v' || mode == '--version')
+        return console.log(require('./package.json')?.version);
 
     let datatype = args[1];
     let file = args[2];
@@ -161,5 +152,4 @@ async function Main() {
         .join('\n');
 
     return console.log(formatted);
-}
-Main();
+})();

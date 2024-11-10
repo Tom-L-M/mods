@@ -67,17 +67,7 @@ const gitclone = function (repo = '', branch = 'main', newname = null) {
     }).on('error', () => fs.unlink(dest));
 };
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const args = process.argv.slice(2);
     const help = `
     [client-git-js]
@@ -109,7 +99,7 @@ function printVersion() {
     if (args.length == 0 || args.includes('-h') || args.includes('--help')) {
         return console.log(help);
     } else if (args.includes('-v') || args.includes('--version')) {
-        return printVersion();
+        return console.log(require('./package.json')?.version);
     } else {
         let repo = args[0];
         let branch = undefined;

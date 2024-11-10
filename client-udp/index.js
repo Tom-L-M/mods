@@ -35,16 +35,6 @@ const sendUdpPacket = context => {
     });
 };
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 (function _wrapper() {
     const args = process.argv.slice(2);
 
@@ -78,7 +68,7 @@ function printVersion() {
         return console.log(help);
 
     if (args.includes('--version') || args.includes('-v'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     if (args.length < 2)
         return console.log(

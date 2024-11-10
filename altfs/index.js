@@ -135,17 +135,7 @@ function deleteADS(target) {
     return;
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const HELP = `
     [altfs-js]
         A tool for manipulating Alternate Data Streams (ADSs) in WindowsOS
@@ -176,7 +166,7 @@ function printVersion() {
     if (!args[0] || args.includes('--help') || args.includes('-h'))
         return console.log(HELP);
     if (args.includes('--version') || args.includes('-v'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     const command = args[0];
     const target = args[1] || '.';

@@ -153,16 +153,6 @@ function printASCIITable() {
     `);
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 function analysis(data = '', colorize = false) {
     const isAbnormalChar = code =>
         (code < 31 || code > 128) &&
@@ -193,7 +183,7 @@ function analysis(data = '', colorize = false) {
     console.log(acc);
 }
 
-(function main() {
+(function () {
     let [mode, data] = process.argv.slice(2);
     if (!mode) mode = '-h';
 
@@ -204,8 +194,7 @@ function analysis(data = '', colorize = false) {
             break;
         case '-v':
         case '--version':
-            printVersion();
-            break;
+            return console.log(require('./package.json')?.version);
         case '-t':
         case '--table':
             printASCIITable();

@@ -5,16 +5,6 @@ const https = require('https');
 const types = require('./mime.json');
 // Remember: When using it as a compiled package, the execution 'chdir' is one level upper
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 function startHttpExecServer(context) {
     // An exec server is an HTTP server, that executes commands locally based on a passed URL
     const { execSync } = require('child_process');
@@ -856,7 +846,7 @@ function generateAuthStringPair() {
                 return console.log(help);
             case '-v':
             case '--version':
-                return printVersion();
+                return console.log(require('./package.json')?.version);
 
             case '-o':
             case '--host':

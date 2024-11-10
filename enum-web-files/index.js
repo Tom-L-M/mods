@@ -1,15 +1,5 @@
 const https = require('https');
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 (async function main() {
     const help = `
     [enum-web-files-js]
@@ -30,7 +20,7 @@ function printVersion() {
     if (args.includes('--help') || args.includes('-h') || !args[0])
         return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     const domain = args[0];
     let filetypes = [];

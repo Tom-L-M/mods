@@ -73,16 +73,6 @@ function fetchARPTable() {
     }
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 (async function main() {
     const help = `
     [net-arp-js]
@@ -109,7 +99,7 @@ function printVersion() {
     if (args.includes('--help') || args.includes('-h') || !args[0])
         return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
     if (args.length < 1)
         return console.log(
             '<> Error: Not enought arguments passed. Use --help to access the help menu'

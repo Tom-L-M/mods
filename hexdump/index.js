@@ -45,16 +45,6 @@ const parseargs = (mapping = {}, args = process.argv.slice(2)) => {
     return params;
 };
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 const isSTDINActive = () => !process.stdin.isTTY;
 
 function readStdinAsync() {
@@ -290,7 +280,7 @@ const help = `
     const noPaint0 = Boolean(args['no-paint-0']);
 
     if (args.help || (!fromStdin && !file)) return console.log(help);
-    if (args.version) return printVersion();
+    if (args.version) return console.log(require('./package.json')?.version);
 
     let input;
     // If it is called like:    node script.js [somefile] [flags]

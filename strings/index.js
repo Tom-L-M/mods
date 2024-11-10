@@ -1,16 +1,6 @@
 const fs = require('fs');
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const help = `
     [strings-js]
         A tool to search for strings in a file
@@ -46,7 +36,7 @@ function printVersion() {
     if (args.length < 1 || args.includes('--help') || args.includes('-h'))
         return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     let strings = '';
     const file = args[0];

@@ -1,14 +1,4 @@
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const help = `
     [bitwise-js]
         A tool for quickly executing bitwise operations on numbers
@@ -41,7 +31,7 @@ function printVersion() {
             break;
         case '--version':
         case '-v':
-            return printVersion();
+            return console.log(require('./package.json')?.version);
         case 'or':
             res = data1 | data2;
             break;

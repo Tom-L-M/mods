@@ -70,16 +70,6 @@ const resolveDNSQuery = async context => {
     }
 };
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 (async function main() {
     const help = `
     [client-dns-js]
@@ -122,7 +112,7 @@ function printVersion() {
         return console.log(help);
 
     if (args.includes('-v') || args.includes('--version'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     const options = {
         target: args[0],

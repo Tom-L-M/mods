@@ -23,17 +23,7 @@ const generate = (mod = 4096, pass = undefined) => {
     };
 };
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const WARNS = {
         'fatal-invalid-writing': 'Error: Invalid writing\n',
         'fatal-invalid-generate': 'Error: Invalid generation scheme\n',
@@ -89,7 +79,7 @@ function printVersion() {
         return console.log(help);
 
     if (args.includes('-v') || args.includes('--version'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     if (!save && !out) return console.log(help);
 

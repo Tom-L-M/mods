@@ -120,7 +120,7 @@ const formatVerticalList = arr => {
     return acc;
 };
 
-(function main() {
+(function () {
     const fs = require('fs');
     const argv = process.argv;
     const args = argv.slice(1);

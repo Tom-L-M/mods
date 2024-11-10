@@ -164,16 +164,6 @@ const sendPacket = async context => {
     req.end();
 };
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 function readStdinAsync() {
     return new Promise((resolve, reject) => {
         const stream = process.stdin;
@@ -255,7 +245,7 @@ const isSTDINActive = () => !process.stdin.isTTY;
         return console.log(help);
 
     if (args.includes('-v') || args.includes('--version'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     // If multiple URLs are passed in a file, split them on '\n' and use the first as default url,
     // and the rest as '--next' parameters

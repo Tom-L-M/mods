@@ -328,22 +328,12 @@ function parseArgs() {
     return routes;
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const args = process.argv.slice(2);
     if (args.includes('--help') || args.includes('-h') || args.length === 0)
         return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     const routes = parseArgs();
     for (const route of routes) {

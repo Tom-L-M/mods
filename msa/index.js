@@ -48,16 +48,6 @@ const parseargs = (mapping = {}, args = process.argv.slice(2)) => {
     return params;
 };
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 const help = `
     [msa-js]
         A tool for handling MSA archives.
@@ -86,7 +76,7 @@ const help = `
     const source = process.argv[4];
 
     if (args.help || !command) return console.log(help);
-    if (args.version) return printVersion();
+    if (args.version) return console.log(require('./package.json')?.version);
 
     if (!fs.existsSync(archive))
         return console.log('Error: invalid archive path provided');

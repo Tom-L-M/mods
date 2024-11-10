@@ -44,16 +44,6 @@ function startUdpServer(context) {
     return server;
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 (function wrapper() {
     const fs = require('fs');
     const args = process.argv.slice(2);
@@ -93,7 +83,7 @@ function printVersion() {
 
             case '-v':
             case '--version':
-                return printVersion();
+                return console.log(require('./package.json')?.version);
 
             case '-o':
             case '--host':

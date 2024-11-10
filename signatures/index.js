@@ -1,13 +1,3 @@
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 const help = `
     [signatures-js]
         A tool for extracting file signatures (magic numbers)
@@ -27,7 +17,7 @@ if (args.includes('-h') || args.includes('--help')) {
 }
 
 if (args.includes('-v') || args.includes('--version')) {
-    return printVersion();
+    return console.log(require('./package.json')?.version);
 }
 
 const file = (args[0] || '').toLowerCase();
@@ -85,7 +75,7 @@ function getSignature(stream) {
     return results;
 }
 
-(function main() {
+(function () {
     if (file === '--help' || !file) return console.log(help);
     try {
         let stream = fs.readFileSync(file);

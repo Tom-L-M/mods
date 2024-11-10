@@ -111,16 +111,6 @@ const glob = {
                                 If no flags are provided, this is activated by default.`,
 };
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 function PORT_CHECK(host = glob.host, port) {
     let socket = new net.Socket();
     socket.setTimeout(glob.timeout);
@@ -169,7 +159,7 @@ const generateRange = (a = 0, b = 0, step = 1) => {
     if (args.length < 1 || args.includes('--help') || args.includes('-h'))
         return console.log(glob.help);
     if (args.includes('--version') || args.includes('-v'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     glob.host = glob.args[0];
 

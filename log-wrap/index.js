@@ -2,16 +2,6 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 const help = `
     [log-wrap-js]
         A tool for catching STDOUT from a command and creating a log file
@@ -47,7 +37,7 @@ function buildOutputFileName(appname) {
     const argv = process.argv.slice(2);
     if (argv.length < 2) return console.log(help);
     if (argv.includes('-v') || argv.includes('--version'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     const appname = argv[1];
     const outputdir = path.resolve(argv[0]);

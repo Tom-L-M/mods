@@ -45,16 +45,6 @@ function xorFiles(file1, file2, outputFile) {
     fs.closeSync(fdOut);
 }
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 (async function main() {
     const help = `
     [xcrypt-js]
@@ -87,7 +77,7 @@ function printVersion() {
     if (args.includes('-h') || args.includes('--help'))
         return console.log(help);
     if (args.includes('-v') || args.includes('--version'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     if (args.length < 2 || args.length > 3)
         return console.log(

@@ -2,17 +2,7 @@ const net = require('net');
 const readline = require('readline');
 const fs = require('fs');
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
-(function main() {
+(function () {
     const args = process.argv.slice(2);
     const targetAddress = args[0];
     const targetPort = args[1];
@@ -37,7 +27,7 @@ function printVersion() {
     if (args.includes('--help') || args.includes('-h') || args.length < 2)
         return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
-        return printVersion();
+        return console.log(require('./package.json')?.version);
 
     if (args.includes('--silent')) isSilent = true;
     if (args.includes('--pipe')) {

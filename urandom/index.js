@@ -234,16 +234,6 @@ const help = `
                             Has no effect if digest base is 10 or lower (no letters).
                             Has no effect over prefixes, only on the numeric part.`;
 
-function printVersion() {
-    try {
-        console.log(require('./package.json').version);
-    } catch (err) {
-        console.log(
-            `Error: could not read package descriptor - ${err.message}`
-        );
-    }
-}
-
 (function () {
     const args = parseargs({
         h: 'help',
@@ -262,7 +252,7 @@ function printVersion() {
     if (args.help || !args.count || process.argv.length < 3)
         return console.log(help);
 
-    if (args.version) return printVersion();
+    if (args.version) return console.log(require('./package.json')?.version);
 
     const count = parseInt(args.count);
     if (!count || isNaN(count) || count > 65535 || count < 1)
