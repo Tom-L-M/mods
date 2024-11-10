@@ -1,7 +1,5 @@
 const { parseArgv } = require('../shared');
 
-const WORDS_FILE = './words.json';
-
 // Returns a random int between 'min' and 'max' ('min' is inclusive, 'max' is exclusive)
 const randomInt = (min = 0, max = 100) =>
     Math.floor(Math.random() * (Math.floor(max) - Math.ceil(min))) +
@@ -188,7 +186,7 @@ const samples = ([...arr], sampleSize = 1) => {
         return console.log(results.join('\n'));
     }
 
-    const words = require(WORDS_FILE);
+    const words = require('./words.json');
     // JSON.parse(require('fs').readFileSync('./passkey/words.json','utf8'));
     // Remember: When using it as a compiled package, the execution 'chdir' is one level upper
 

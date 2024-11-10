@@ -1,5 +1,5 @@
 {
-    "name": "passphrase",
+    "name": "passkey",
     "version": "1.4.0",
     "description": "A tool for generating random passkeys and passwords.",
     "main": "index.js",
