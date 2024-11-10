@@ -208,12 +208,7 @@ const formatVerticalList = arr => {
         if (args[2]) {
             process.argv = process.argv.slice(1);
             process.argv.push('--help');
-            // Call module with help flag active, to get its help message
-            let code = fs.readFileSync(
-                `${__dirname}/${args[2]}/index.js`,
-                'utf-8'
-            );
-            eval(code);
+            return require(path);
         } else {
             console.log(help);
         }
@@ -268,9 +263,7 @@ const formatVerticalList = arr => {
             console.log(pkg.version + '.' + compileContentVersionHash());
         }
     } else if (fs.existsSync(path)) {
-        process.env.MODULE_NAME = tool;
-        let code = fs.readFileSync(path, 'utf-8');
-        eval(code);
+        return require(path);
     } else {
         let partials = partialMatches(tool);
         if (partials.length == 0) {

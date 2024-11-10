@@ -10,6 +10,7 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "build-linux": "pkg -c package.json -t node18-linux mods.js",
         "build-win": "pkg -c package.json -t node18-win mods.js",
+        "build-debug": "pkg --debug -c package.json -t node18-win mods.js > build.log && echo. && echo Run with \"set DEBUG_PKG=1 & mods.exe\"",
         "git-commits": "git log --pretty=\"format:## `%s`%n%n> Commit: %H%n%n> Author: %an <%ae>%n%n> Date:   %ai%n%n```%n%B```%n%n<br>%n\" > COMMITS.md",
         "git-logs": "git log --oneline > COMMITS.log",
         "update-version": "npm i --package-lock-only",
@@ -17,13 +18,14 @@
     },
     "pkg": {
         "outputPath": ".dist",
-        "scripts": "mods.js",
+        "scripts": [
+            "mods.js",
+            "*/*.js"
+        ],
         "assets": [
-            "/**/*",
-            "!.*",
+            "*/*.json",
             "!.*/*",
-            "!node_modules",
-            "!package-lock.json"
+            "!node_modules"
         ]
     }
 }
