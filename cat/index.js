@@ -11,19 +11,23 @@ const fs = require('fs');
  * @since 1.2.14
  *
  * @param {Object} mapping An object mapping the arguments alias. Always take the form of "alias":"originalProperty"
+ * @param {{ args, allowWithNoDash, allowMultiple }} options The "allowWithNoDash" allows for parameters without '--' or '-' to be considered.
+ * And the "args" parameter allows for specifiying a custom array instead of process.argv.
+ * And the "allowMultiple" parameter allows for repeated options to be added as an array.
  * @return {Object} An object containing the arguments parsed, and their values
  *
  * @example <caption>  </caption>
  * // called the script with:
- * // node example.js build --param1 --param2 pvalue -p 0000
+ * // node example.js build --param1 pvalue -p 0000
  * parseArgv({ "p": "param3" })
- * // creates:
- * {
- *   build: true
- *   param1: true
- *   param2: p2value
- *   param3: 0000
- * }
+ * // returns:  { build: true, param1: p2value, param3: 0000 }
+ *
+ * @example <caption> With allowWithNoDash = false </caption>
+ * // called the script with:
+ * // node example.js build --param1 pvalue -p 0000
+ * parseArgv({ "p": "param3" }, { allowWithNoDash: false })
+ * // returns:  { param1: p2value, param3: 0000 }
+ * // The 'build' param is not considered, as it does not start with a dash
  */
 const parseArgv = (mapping = {}, argv = process.argv.slice(2)) => {
     let params = {};
@@ -114,6 +118,7 @@ const help = `
         -v | --version          Prints the version info and quits.
         -f | --file-list        Interprets STDIN as a list of files instead of data.
                                 Files in list should be separated by newlines.
+        -s | --separator N      Writes a separator after each item added (if more than 1).
 
     Info:
         When providing data from STDIN, it will be placed at position of '-'.
@@ -128,9 +133,13 @@ const help = `
         dir /B /A-D | cat -f -              # Concats all files from current cwd`;
 
 (async function () {
-    const files = process.argv.slice(2);
-    const opts = { h: 'help', v: 'version', f: 'file-list' };
+    const opts = { h: 'help', v: 'version', f: 'file-list', s: 'separator' };
     const args = parseArgv(opts);
+
+    const files = process.argv.slice(
+        Object.keys(args).length +
+            Object.values(args).filter(v => typeof v !== 'boolean').length
+    );
 
     const stdinActive = isSTDINActive();
 
@@ -140,11 +149,13 @@ const help = `
     // If no STDIN output token is used, append to the end
     if (stdinActive && !files.includes('-')) files.push('-');
 
-    let current,
+    const separator = typeof args.separator === 'string' ? args.separator : '';
+
+    let file,
         stdindata = stdinActive ? await readStdinAsync() : '';
     try {
-        for (let file of files) {
-            current = file;
+        for (let i = 0; i < files.length; i++) {
+            file = files[i];
             if (file === '-') {
                 if (!stdinActive) continue;
                 // If the '-f' modifier is used, interpret STDIN as a file list
@@ -157,6 +168,7 @@ const help = `
 
                     for (let subfile of filelist)
                         try {
+                            if (i > 0) process.stdout.write(separator);
                             await streamToSTDOUT(subfile);
                         } catch (err) {
                             return console.log(
@@ -164,17 +176,17 @@ const help = `
                             );
                         }
                 } else {
+                    if (i > 0) process.stdout.write(separator);
                     process.stdout.write(stdindata);
                 }
-            } else if (file.startsWith('-')) {
-                continue; // Ignore flags
             } else {
+                if (i > 0) process.stdout.write(separator);
                 await streamToSTDOUT(file);
             }
         }
     } catch (err) {
         return console.log(
-            `Error: Could not read file "${current}" (${err.message})`
+            `Error: Could not read file "${file}" (${err.message})`
         );
     }
 })();

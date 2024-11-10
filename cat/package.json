@@ -1,6 +1,6 @@
 {
     "name": "cat",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "description": "A tool for reading and outputting file data.",
     "main": "index.js",
     "scripts": {
