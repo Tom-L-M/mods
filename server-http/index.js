@@ -1,22 +1,13 @@
-const _require = file => {
-    const fname = process.env.MODULE_NAME + '/' + file;
-    const fdirname = __dirname.replaceAll('\\', '/');
-    const [m0, m1] = fname.replaceAll('\\', '/').split('/');
-    const final = fdirname.endsWith(m0)
-        ? fdirname + '/' + m1
-        : fdirname + '/' + fname;
-    return require(final);
-};
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
-const types = _require('mime.json');
+const types = require('./mime.json');
 // Remember: When using it as a compiled package, the execution 'chdir' is one level upper
 
 function printVersion() {
     try {
-        console.log(_require('package.json').version);
+        console.log(require('./package.json').version);
     } catch (err) {
         console.log(
             `Error: could not read package descriptor - ${err.message}`

@@ -1,14 +1,4 @@
-const _require = file => {
-    const fname = process.env.MODULE_NAME + '/' + file;
-    const fdirname = __dirname.replaceAll('\\', '/');
-    const [m0, m1] = fname.replaceAll('\\', '/').split('/');
-    const final = fdirname.endsWith(m0)
-        ? fdirname + '/' + m1
-        : fdirname + '/' + fname;
-    return require(final);
-};
-
-const MultiArchive = _require('multi-archive.js');
+const MultiArchive = require('./multi-archive.js');
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -60,7 +50,7 @@ const parseargs = (mapping = {}, args = process.argv.slice(2)) => {
 
 function printVersion() {
     try {
-        console.log(_require('package.json').version);
+        console.log(require('./package.json').version);
     } catch (err) {
         console.log(
             `Error: could not read package descriptor - ${err.message}`

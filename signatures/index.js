@@ -1,16 +1,6 @@
-const _require = file => {
-    const fname = process.env.MODULE_NAME + '/' + file;
-    const fdirname = __dirname.replaceAll('\\', '/');
-    const [m0, m1] = fname.replaceAll('\\', '/').split('/');
-    const final = fdirname.endsWith(m0)
-        ? fdirname + '/' + m1
-        : fdirname + '/' + fname;
-    return require(final);
-};
-
 function printVersion() {
     try {
-        console.log(_require('package.json').version);
+        console.log(require('./package.json').version);
     } catch (err) {
         console.log(
             `Error: could not read package descriptor - ${err.message}`
@@ -42,7 +32,7 @@ if (args.includes('-v') || args.includes('--version')) {
 
 const file = (args[0] || '').toLowerCase();
 const dumpall = args.includes('--all') || args.includes('-a');
-const signatures = _require('signatures.json');
+const signatures = require('./signatures.json');
 // const signatures = JSON.parse(fs.readFileSync('./signatures/signatures.json', 'utf-8'));
 // Remember: When using it as a compiled package, the execution 'chdir' is one level upper
 

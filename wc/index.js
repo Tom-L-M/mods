@@ -122,19 +122,9 @@ const help = `
         Multiple options can be selected at a time, and printing 
         is always in the following order: line, word, character, byte.`;
 
-const _require = file => {
-    const fname = process.env.MODULE_NAME + '/' + file;
-    const fdirname = __dirname.replaceAll('\\', '/');
-    const [m0, m1] = fname.replaceAll('\\', '/').split('/');
-    const final = fdirname.endsWith(m0)
-        ? fdirname + '/' + m1
-        : fdirname + '/' + fname;
-    return require(final);
-};
-
 function printVersion() {
     try {
-        console.log(_require('package.json').version);
+        console.log(require('./package.json').version);
     } catch (err) {
         console.log(
             `Error: could not read package descriptor - ${err.message}`

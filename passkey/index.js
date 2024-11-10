@@ -1,16 +1,4 @@
-const _require = file => {
-    const fname = process.env.MODULE_NAME + '/' + file;
-    const fdirname = __dirname.replaceAll('\\', '/');
-    const [m0, m1] = fname.replaceAll('\\', '/').split('/');
-    const final = fdirname.endsWith(m0)
-        ? fdirname + '/' + m1
-        : fdirname + '/' + fname;
-    return require(final);
-};
-
-const words = _require('words.json');
-// JSON.parse(require('fs').readFileSync('./passkey/words.json','utf8'));
-// Remember: When using it as a compiled package, the execution 'chdir' is one level upper
+const WORDS_FILE = './words.json';
 
 // Returns a random int between 'min' and 'max' ('min' is inclusive, 'max' is exclusive)
 const randomInt = (min = 0, max = 100) =>
@@ -30,7 +18,7 @@ const samples = ([...arr], sampleSize = 1) => {
 
 function printVersion() {
     try {
-        console.log(_require('package.json').version);
+        console.log(require('./package.json').version);
     } catch (err) {
         console.log(
             `Error: could not read package descriptor - ${err.message}`
@@ -252,6 +240,10 @@ const parseArgv = (mapping = {}, argv = process.argv.slice(2)) => {
             results.push(generateCustom(context.passlength, chars));
         return console.log(results.join('\n'));
     }
+
+    const words = require(WORDS_FILE);
+    // JSON.parse(require('fs').readFileSync('./passkey/words.json','utf8'));
+    // Remember: When using it as a compiled package, the execution 'chdir' is one level upper
 
     // START PASSPHRASE GENERATION:
     // Set 'digits' array
