@@ -32,7 +32,7 @@
  * // returns:  { param1: p2value, param3: 0000 }
  * // The 'build' param is not considered, as it does not start with a dash
  */
-const _parseArgv = (
+const parseArgv = (
     mapping = {},
     {
         allowWithNoDash = true,
@@ -42,12 +42,15 @@ const _parseArgv = (
         args,
     } = {}
 ) => {
-    const meta = { lastIndex: 0, count: 0 };
     const argv = args || process.argv.slice(2);
-    let params = {};
+    const params = {};
     for (let i = 0; i < argv.length; i++) {
         let temp, keyname;
-        if (argv[i].startsWith('--')) {
+        if (argv[i] === '-') {
+            // Special case used in STDIN-reading modules (like 'cat')
+            keyname = '-';
+            temp = true;
+        } else if (argv[i].startsWith('--')) {
             keyname = argv[i].slice(2);
             if (allowNegation && keyname.startsWith('no-')) {
                 keyname = keyname.slice(3);
@@ -80,8 +83,6 @@ const _parseArgv = (
         }
 
         if (temp === null) continue;
-        meta.count++;
-        meta.lastIndex++;
 
         if (allowNegation) {
             if (keyname.startsWith('no-')) {
@@ -113,7 +114,7 @@ const _parseArgv = (
             delete params[key];
         }
     }
-    return { args: params, meta };
+    return params;
 };
 
 //
@@ -121,7 +122,7 @@ const _parseArgv = (
 // the new one breaks old versions by returning a {"args":{}, "meta":{}} object instead of a plain object
 // so this one keeps compatibility while not properly fixing all modules
 //
-const parseArgv = (
+const _parseArgv = (
     mapping = {},
     {
         allowWithNoDash = true,
