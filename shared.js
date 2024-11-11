@@ -241,7 +241,8 @@ class ArgvParser {
             // Special case 2:
             // User informs the special '-' parameter
             if (arg === '-') {
-                params['-'] = true;
+                params['-'] = true; // Add as a token of usage (even if not selected as flag)
+                rest.push('-'); // Add to 'rest' queue, for usage as positional parameter
                 continue;
             }
 
