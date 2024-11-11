@@ -5,7 +5,7 @@
  *   * Unless they are defined as aliases for other parameters. So, if mapping is defined as { '000':'param0' },
  *     the result will be { param1:true, param0: true } instead of { param1:true }
  * Aliases in 'mapping' do not take priority over regular double-word parameters
- *
+ * @deprecated Use "ArgvParser" instead.
  * @param {Object} mapping An object mapping the arguments alias. Always take the form of "alias":"originalProperty"
  * @param {{ args, allowWithNoDash, allowMultiple }} options
  * - The "args" parameter allows for specifiying a custom array instead of process.argv.
