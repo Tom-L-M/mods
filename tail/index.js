@@ -6,18 +6,23 @@ const help = `
         A "tail" command line utility in NodeJS.
 
     Usage:
-        node tail [file] [options]
+        node tail [options] [file]...
       OR
-        <stdin> | node tail [options]
+        <stdin> | node tail [options] [file]...
 
     Options:
         -h | --help             Prints the help message and quits.
         -v | --version          Prints the version info and quits.
         -n | --lines <[+]N>     The number of lines to read (default: 10).
         -c | --bytes <[+]N>     The number of bytes to read (instead of lines).
+        -V | --verbose          Always print the file name separator header.    
+        -q | --quiet            Never print the file name separator header.    
+             --silent
 
     Info:
-        Line and byte numeric options may be prefixed with '+' in order
+      - When multiple 'file's are provided, or when 'file' is '-', reads from each one and
+        prints the sequences with a separator: "==> FILENAME <==".
+      - Line and byte numeric options may be prefixed with '+' in order
         to reverse counting start. E.g. "-n 2" selects the last 2 lines, while
         "-n +2" selects everything except the first 2 lines.
 
@@ -47,31 +52,42 @@ function slice(data, { lines, bytes, reverse } = {}) {
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('lines', { alias: 'n' });
     parser.option('bytes', { alias: 'c' });
-    parser.argument('file');
+    parser.option('verbose', { alias: 'V', allowValue: false });
+    parser.option('silent', { alias: ['q', 'quiet'], allowValue: false });
 
     const args = parser.parseArgv();
 
-    if (args.help || (!fromSTDIN && !args.file)) return console.log(help);
+    if (args.help || (!fromSTDIN && !args._.length)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
     let input,
         reverse = args.bytes?.startsWith('+') || args.lines?.startsWith('+');
     let lines = parseInt(args.lines) || 10;
     let bytes = parseInt(args.bytes) || null;
-
-    // If it is called like:    node script.js [somefile] [flags]
-    // E.g. there is no input via pipes
-    if (!fromSTDIN) {
-        try {
-            input = fs.readFileSync(args.file);
-        } catch {
-            return console.log(`Error: Could not read file ${args.file}`);
-        }
-    }
+    let verbose = args.verbose;
 
     // If it is called like:   cat somefile | node script.js [flags]
     // E.g. there is input via pipes
-    else input = await readStdinAsync();
+    let inputFromSTDIN = fromSTDIN ? await readStdinAsync() : '';
 
-    process.stdout.write(slice(input, { lines, bytes, reverse }));
+    for (let i = 0; i < args._.length; i++) {
+        let file = args._[i];
+        try {
+            if (file === '-') {
+                file = 'standard input';
+                input = inputFromSTDIN;
+            } else {
+                input = fs.readFileSync(file);
+            }
+        } catch {
+            return console.log(`Error: Could not read file ${args.file}`);
+        }
+
+        if (!args.silent && (args._.length > 1 || verbose)) {
+            if (i > 0) process.stdout.write('\n');
+            process.stdout.write('==> ' + file + ' <==\n');
+        }
+
+        process.stdout.write(slice(input, { lines, bytes, reverse }));
+    }
 })();
