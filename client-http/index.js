@@ -198,7 +198,7 @@ const sendPacket = async context => {
         It is possible to pass in multiple URLs from STDIN, by dividing them with newlines ('\\n');
         This will cause the first URL to be the main one, and the rest to be passed as "--next" arguments.
         (Spaces in beginning/end of a URL are ignored)
-        E.g. The call:      echo "link1 \n link2" | client-http
+        E.g. The call:      echo "link1 \\n link2" | client-http
         is the same as:     client-http link1 -n link2
 
     Example:
@@ -209,10 +209,10 @@ const sendPacket = async context => {
             cat link.txt | client-http -d -n https://google.com.br/
 
         Querying Google with a custom useragent and special 'test' header:
-            client-http https://google.com.br/ -hu MY_USER_AGENT -hh "test: something"
+            client-http https://google.com.br/ -U MY_USER_AGENT -H "test: something"
         
         Querying Google with a custom useragent and some data in a POST request:
-            client-http https://google.com.br/ -hu MY_USER_AGENT -x POST -t "some text"`;
+            client-http https://google.com.br/ -U MY_USER_AGENT -x POST -t "some text"`;
 
     if (
         args[0] == '--help' ||
