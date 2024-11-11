@@ -44,10 +44,8 @@ const help = `
     const opts = { h: 'help', v: 'version', f: 'file-list', s: 'separator' };
     const args = parseArgv(opts);
 
-    const files = process.argv.slice(
-        Object.keys(args).length +
-            Object.values(args).filter(v => typeof v !== 'boolean').length
-    );
+    const files = process.argv.slice(2);
+    //.slice(Object.values(args).filter(v => typeof v !== 'boolean'));
 
     const stdinActive = isSTDINActive();
 
@@ -87,6 +85,8 @@ const help = `
                     if (i > 0) process.stdout.write(separator);
                     process.stdout.write(stdindata);
                 }
+            } else if (file.startsWith('-')) {
+                continue;
             } else {
                 if (i > 0) process.stdout.write(separator);
                 await streamToSTDOUT(file);
