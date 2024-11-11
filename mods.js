@@ -125,7 +125,7 @@ const formatVerticalList = arr => {
     const argv = process.argv;
     const args = argv.slice(1);
     const tool = args[1];
-    const path = `${__dirname}/${tool}/index.js`;
+    const rpath = `${__dirname}/${tool}/index.js`;
 
     process.argv = args;
 
@@ -178,17 +178,20 @@ const formatVerticalList = arr => {
         return acc;
     };
 
-    //       ╔═════════════════════╗
-    //     ╔═╣  mmmmm       mmmmm  ║
-    //   ╔═╣ ║   mmmmm     mmmmm   ║
-    //   ║ ║ ║    mm mm   mm mm    ║
-    //   ║ ║ ║    mm  mm mm  mm    ║
-    //   ║ ║ ║    mm   mmm   mm    ║
-    //   ║ ║ ║    mm    m    mm    ║
-    //   ║ ║ ║   mmmm       mmmm   ║
-    //   ║ ║ ╚═══════════════════╦═╝
-    //   ║ ╚═══════════════════╦═╝
-    //   ╚═════════════════════╝
+    /*
+    `
+        ╔═════════════════════╗
+      ╔═╣  mmmmm       mmmmm  ║
+    ╔═╣ ║   mmmmm     mmmmm   ║
+    ║ ║ ║    mm mm   mm mm    ║
+    ║ ║ ║    mm  mm mm  mm    ║
+    ║ ║ ║    mm   mmm   mm    ║
+    ║ ║ ║    mm    m    mm    ║
+    ║ ║ ║   mmmm       mmmm   ║
+    ║ ║ ╚═══════════════════╦═╝
+    ║ ╚═══════════════════╦═╝
+    ╚═════════════════════╝`;
+*/
 
     const help = `
 
@@ -208,7 +211,7 @@ const formatVerticalList = arr => {
         if (args[2]) {
             process.argv = process.argv.slice(1);
             process.argv.push('--help');
-            return require(path);
+            return require(rpath);
         } else {
             console.log(help);
         }
@@ -262,8 +265,8 @@ const formatVerticalList = arr => {
             let pkg = require(`./package.json`);
             console.log(pkg.version + '.' + compileContentVersionHash());
         }
-    } else if (fs.existsSync(path)) {
-        return require(path);
+    } else if (fs.existsSync(rpath)) {
+        return require(rpath);
     } else {
         let partials = partialMatches(tool);
         if (partials.length == 0) {
@@ -291,20 +294,3 @@ const formatVerticalList = arr => {
         }
     }
 })();
-
-/*
-
-
-    `
-        ╔═════════════════════╗
-      ╔═╣  mmmmm       mmmmm  ║
-    ╔═╣ ║   mmmmm     mmmmm   ║
-    ║ ║ ║    mm mm   mm mm    ║
-    ║ ║ ║    mm  mm mm  mm    ║
-    ║ ║ ║    mm   mmm   mm    ║
-    ║ ║ ║    mm    m    mm    ║
-    ║ ║ ║   mmmm       mmmm   ║
-    ║ ║ ╚═══════════════════╦═╝
-    ║ ╚═══════════════════╦═╝
-    ╚═════════════════════╝`;
-*/
