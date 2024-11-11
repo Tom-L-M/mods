@@ -1,6 +1,6 @@
 {
     "name": "head",
-    "version": "1.5.1",
+    "version": "1.6.0",
     "description": "A tool for reading lines/bytes from a file's beggining. (Port of UNIX's 'head' tool).",
     "main": "index.js",
     "scripts": {
