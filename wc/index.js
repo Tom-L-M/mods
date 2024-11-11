@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
 
 /**
  * @param {buffer} input
@@ -39,7 +39,7 @@ const help = `
         A "wc" command line utility in NodeJS.
         It stands for a word/line/byte counting utility.
     Usage:
-        node wc [file] [options]
+        node wc [options] <file> 
       OR
         <stdin> | node wc [options]
 
@@ -57,20 +57,20 @@ const help = `
 
 (async function () {
     const fromSTDIN = isSTDINActive();
-    const file = process.argv[2];
-    const opts = {
-        h: 'help',
-        v: 'version',
-        n: 'lines',
-        c: 'bytes',
-        m: 'chars',
-        w: 'words',
-        L: 'max-line-length',
-    };
 
-    const args = parseArgv(opts);
+    // TODO: add flag "L: 'max-line-length'"
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('lines', { alias: 'n', allowValue: false });
+    parser.option('bytes', { alias: 'c', allowValue: false });
+    parser.option('chars', { alias: 'm', allowValue: false });
+    parser.option('words', { alias: 'w', allowValue: false });
+    parser.argument('file');
 
-    if (args.help || (!fromSTDIN && !file)) return console.log(help);
+    const args = parser.parseArgv();
+
+    if (args.help || (!fromSTDIN && !args.file)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
     let input;
@@ -79,9 +79,9 @@ const help = `
     // E.g. there is no input via pipes
     if (!fromSTDIN) {
         try {
-            input = fs.readFileSync(file);
+            input = fs.readFileSync(args.file);
         } catch {
-            return console.log(`Error: Could not read file ${file}`);
+            return console.log(`Error: Could not read file ${args.file}`);
         }
     }
 
