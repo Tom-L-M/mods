@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
 
 const help = `
     [tail-js]
@@ -13,30 +13,49 @@ const help = `
     Options:
         -h | --help             Prints the help message and quits.
         -v | --version          Prints the version info and quits.
-        -n | --lines <X>        The number of lines to read (default: 10).
-        -c | --bytes <X>        The number of bytes to read (instead of lines).
+        -n | --lines <[+]N>     The number of lines to read (default: 10).
+        -c | --bytes <[+]N>     The number of bytes to read (instead of lines).
+
+    Info:
+        Line and byte numeric options may be prefixed with '+' in order
+        to reverse counting start. E.g. "-n 2" selects the last 2 lines, while
+        "-n +2" selects everything except the first 2 lines.
 
     Examples:
-        cat somefile.txt | node tail -n 5       # Prints last 5 lines from file
-        node tail somefile.txt -n 5             # Also prints last 5 lines from file`;
+        cat file.txt | node tail -n 5       # Prints last 5 lines from file
+        node tail file.txt -n 5             # Also prints last 5 lines from file
+        node tail file.txt -n +5            # Prints everything except the first 5 lines`;
 
-function slice(data, { lines, bytes } = {}) {
-    if (bytes)
-        // bytes have preference over lines
-        return data.slice(-bytes - 1);
-    else return data.toString('utf-8').split('\n').slice(-lines).join('\n');
+function slice(data, { lines, bytes, reverse } = {}) {
+    // bytes have preference over lines
+    if (bytes) {
+        if (reverse) return data.slice(bytes - 1);
+        return data.slice(-bytes);
+    }
+    if (lines) {
+        data = data.toString('utf-8').split('\n');
+        if (reverse) return data.slice(lines - 1).join('\n');
+        return data.slice(-lines - 1).join('\n');
+    }
 }
 
 (async function () {
     const fromSTDIN = isSTDINActive();
-    const file = process.argv[2];
-    const opts = { n: 'lines', h: 'help', c: 'bytes', v: 'version' };
-    const args = parseArgv(opts);
 
-    if (args.help || (!fromSTDIN && !file)) return console.log(help);
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('lines', { alias: 'n' });
+    parser.option('bytes', { alias: 'c' });
+    parser.argument('file');
+
+    const args = parser.parseArgv();
+
+    if (args.help || (!fromSTDIN && !args.file)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
-    let input;
+    let input,
+        reverse = args.bytes?.startsWith('+') || args.lines?.startsWith('+');
     let lines = parseInt(args.lines) || 10;
     let bytes = parseInt(args.bytes) || null;
 
@@ -44,9 +63,9 @@ function slice(data, { lines, bytes } = {}) {
     // E.g. there is no input via pipes
     if (!fromSTDIN) {
         try {
-            input = fs.readFileSync(file);
+            input = fs.readFileSync(args.file);
         } catch {
-            return console.log(`Error: Could not read file ${file}`);
+            return console.log(`Error: Could not read file ${args.file}`);
         }
     }
 
@@ -54,6 +73,5 @@ function slice(data, { lines, bytes } = {}) {
     // E.g. there is input via pipes
     else input = await readStdinAsync();
 
-    process.stdout.write(slice(input, { lines, bytes }));
-    // process.stdout.');
+    process.stdout.write(slice(input, { lines, bytes, reverse }));
 })();
