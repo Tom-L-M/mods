@@ -177,7 +177,7 @@ class ArgvParser {
             allowMultiple = false,
             allowCasting = false,
             allowNegation = false,
-        }
+        } = {}
     ) {
         this.registered.push({
             name,
@@ -202,7 +202,7 @@ class ArgvParser {
      * // A command line like: "curl -x post http://google.com.br/" will have
      * // the 'post' value set to flag 'x', and the URL set to the argument 'url-target'
      */
-    argument(name, { allowCasting = false }) {
+    argument(name, { allowCasting = false } = {}) {
         if (!name || typeof name !== 'string')
             throw new TypeError('Argument name must be a valid string');
         this.arguments.push({ name, allowCasting });
