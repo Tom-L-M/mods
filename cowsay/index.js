@@ -142,6 +142,12 @@ function renderBalloon(
         endlines = lines.map(v => '( ' + justify(v, longest) + ' )');
     }
 
+    if (style === 'box') {
+        roof = '+' + '-'.repeat(longest + 2) + '+\n';
+        floor = '\n+' + '-'.repeat(longest + 2) + '+';
+        endlines = lines.map(v => '| ' + justify(v, longest) + ' |');
+    }
+
     return roof + endlines.join('\n') + floor;
 }
 
@@ -176,6 +182,12 @@ function renderSkin(
         result = result.replaceAll('{$tongue}', tongue);
     }
 
+    if (style && style === 'think') {
+        result = result
+            .replaceAll(/\{\$tl\} /gim, '()')
+            .replaceAll(/\{\$tr\} /gim, '()');
+    }
+
     for (let key in combined) {
         result = result.replaceAll(`{$${key}}`, combined[key]);
     }
@@ -208,7 +220,8 @@ const help = `
         -T | --tongue           Specifies a 2-chars-long string to use as the tongue.
 
       Balloon Style:
-        -M | --modern           Uses box-building ASCII chars.
+        -M | --modern           Uses modern box-building ASCII chars.
+        -B | --box              Uses regular box-building ASCII chars.
         -D | --dream | --think  Uses a "thinking" balloon (round walls).
 
       Cow Style:
@@ -251,6 +264,7 @@ const help = `
     parser.option('youthful', { alias: 'y', allowValue: false });
 
     parser.option('modern', { alias: 'M', allowValue: false });
+    parser.option('box', { alias: 'B', allowValue: false });
     parser.option('think', { alias: ['D', 'dream'], allowValue: false });
 
     parser.argument('string');
@@ -286,7 +300,13 @@ const help = `
         ? 'youthful'
         : 'default';
 
-    const style = args.modern ? 'modern' : args.think ? 'think' : 'default';
+    const style = args.modern
+        ? 'modern'
+        : args.think
+        ? 'think'
+        : args.box
+        ? 'box'
+        : 'default';
 
     if (listing)
         return console.log(
