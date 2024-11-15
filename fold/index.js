@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
 
 const help = `
     [fold-js]
@@ -21,62 +21,95 @@ const chunkify = (string, chunkSize = 1) =>
     string.match(new RegExp(`.{1,${chunkSize >= 1 ? chunkSize : 1}}`, 'gim')) ??
     [];
 
-function foldText(input, width, ignoreLF) {
+function splitStringWithSpaces(inputString) {
+    const result = [];
+    let buffer = ''; // To accumulate words or spaces
+
+    for (let char of inputString) {
+        if (char === ' ') {
+            // If we encounter a space, check if buffer has a word
+            if (buffer && buffer !== ' ') {
+                result.push(buffer);
+                buffer = '';
+            }
+            // Accumulate spaces
+            buffer += char;
+        } else {
+            // If we encounter a non-space, check if buffer has spaces
+            if (buffer.startsWith(' ')) {
+                result.push(buffer);
+                buffer = '';
+            }
+            // Accumulate non-space characters
+            buffer += char;
+        }
+    }
+
+    // Push the final buffer content, if any
+    if (buffer) {
+        result.push(buffer);
+    }
+
+    return result;
+}
+
+function foldString(input, width) {
     if (width < 1) throw new Error('Width must be at least 1');
 
-    const words = input.split(ignoreLF ? / +/ : /\s+/); // Split input by whitespace
+    // const words = input.split(/( )/).map(v => (v === '' ? ' ' : v)); // Split input by whitespace
+    const words = splitStringWithSpaces(input);
     let lines = []; // To hold each line of the final output
     let currentLine = ''; // The current line being built
 
-    for (const word of words) {
+    for (let i = 0; i < words.length; i++) {
+        let word = words[i];
         // Check if adding this word would exceed the width
-        if ((currentLine + word).length > width) {
+        if ((currentLine + word).length > width || word.includes('\n')) {
             // Push the current line and reset it
-            lines.push(currentLine.trim());
-            currentLine = word + ' '; // Start a new line with the current word
+            lines.push(currentLine);
+            if (word.startsWith(' ')) word = word.slice(1);
+            currentLine = word; // Start a new line with the current word
         } else {
             // Otherwise, add the word to the current line
-            currentLine += word + ' ';
+            currentLine += word;
         }
     }
 
     // Push the last line if it has any content
     if (currentLine.trim()) {
-        lines.push(currentLine.trim());
+        lines.push(currentLine);
     }
 
-    // Join lines with newline characters
-    return lines.join('\n');
+    return lines
+        .map(v => v.split('\n'))
+        .flat()
+        .join('\n');
 }
 
-function formatInput(
-    input,
-    { width = 80, preserveWords = false, ignoreLF = false }
-) {
-    if (preserveWords) return foldText(input, width, ignoreLF);
-    if (ignoreLF) input = input.replaceAll('\n', ' ');
+function formatInput(input, { width = 80, preserveWords = false, ignoreLF }) {
+    if (ignoreLF) input = input.replaceAll(/\r?\n/gi, ' ');
+    if (preserveWords) return foldString(input, width);
     return chunkify(input, width).join('\n');
 }
 
 (async function () {
     const fromSTDIN = isSTDINActive();
-    const opts = {
-        h: 'help',
-        v: 'version',
-        w: 'width',
-        i: 'ignore-lf',
-        s: 'spaces',
-    };
 
-    const args = parseArgv(opts, { allowWithNoDash: false });
-    const file = process.argv[2];
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('spaces', { alias: 's', allowValue: false });
+    parser.option('width', { alias: 'w', allowCasting: true });
+    parser.option('ignore-lf', { alias: 'i', allowValue: false });
+    parser.argument('file');
 
-    if (args.help || (!fromSTDIN && !file)) return console.log(help);
+    const args = parser.parseArgv();
+
+    if (args.help || (!fromSTDIN && !args.file)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
     let input;
-
-    let ignoreLF = args['ignore-lf'];
+    const ignoreLF = Boolean(args['ignore-lf']);
 
     let width = parseInt(args.width);
     if (isNaN(width) || !width) width = undefined;
@@ -86,9 +119,9 @@ function formatInput(
     // E.g. there is no input via pipes
     if (!fromSTDIN) {
         try {
-            input = fs.readFileSync(file);
+            input = fs.readFileSync(args.file);
         } catch {
-            return console.log(`Error: Could not read file ${file}`);
+            return console.log(`Error: Could not read file ${args.file}`);
         }
     }
 
