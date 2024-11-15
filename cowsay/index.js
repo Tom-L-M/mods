@@ -31,9 +31,10 @@ function getLocalSkin(skin) {
 
 function splitStringWithSpaces(inputString) {
     const result = [];
-    let buffer = ''; // To accumulate words or spaces
+    let buffer = inputString[0]; // To accumulate words or spaces
 
-    for (let char of inputString) {
+    for (let i = 1; i < inputString.length; i++) {
+        let char = inputString[i];
         if (char === ' ') {
             // If we encounter a space, check if buffer has a word
             if (buffer && buffer !== ' ') {
@@ -63,10 +64,13 @@ function splitStringWithSpaces(inputString) {
 
 function foldStringIntoArray(input, width) {
     if (width < 1) throw new Error('Width must be at least 1');
+    // If it has at least 1 newline, then it is multiline
+    // and multiline strings need an initial blank space,
+    // otherwise, they lose the original alignment
+    if (input.indexOf('\n') >= 0) input = ' ' + input;
     // Turn newlines into words
     input = input.replaceAll(/\n/gi, ' \n ');
 
-    // const words = input.split(/( )/).map(v => (v === '' ? ' ' : v)); // Split input by whitespace
     const words = splitStringWithSpaces(input);
     let lines = []; // To hold each line of the final output
     let currentLine = ''; // The current line being built
@@ -258,8 +262,9 @@ const help = `
     if (args.version) return console.log(require('./package.json')?.version);
 
     const input = fromSTDIN
-        ? (await readStdinAsync()).toString('utf8').trim()
+        ? (await readStdinAsync()).toString('utf8').trimEnd()
         : args.string || '';
+
     const skin = args.file || 'cow';
     const listing = Boolean(args.list);
 
