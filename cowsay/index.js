@@ -70,6 +70,8 @@ function foldStringIntoArray(input, width) {
     if (input.indexOf('\n') >= 0) input = ' ' + input;
     // Turn newlines into words
     input = input.replaceAll(/\n/gi, ' \n ');
+    // Remove all rewind chars '\r'
+    input = input.replaceAll(/\r/gi, '');
 
     const words = splitStringWithSpaces(input);
     let lines = []; // To hold each line of the final output
