@@ -1,0 +1,43 @@
+{
+    "borg": {
+        "eye1": "=",
+        "eye2": "="
+    },
+    "dead": {
+        "tongue": "U",
+        "eye1": "X",
+        "eye2": "X"
+    },
+    "greedy": {
+        "eye1": "$",
+        "eye2": "$"
+    },
+    "paranoid": {
+        "eye1": "@",
+        "eye2": "@"
+    },
+    "stoned": {
+        "tongue": "U",
+        "eye1": "*",
+        "eye2": "*"
+    },
+    "tired": {
+        "eye1": "-",
+        "eye2": "-"
+    },
+    "wired": {
+        "eye1": "O",
+        "eye2": "O"
+    },
+    "youthful": {
+        "eye1": ".",
+        "eye2": "."
+    },
+    "default": {
+        "tongue": " ",
+        "tl": "\\",
+        "tr": "/",
+        "eye1": "o",
+        "eye2": "o"
+    }
+}

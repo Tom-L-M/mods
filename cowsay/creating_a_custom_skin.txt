@@ -1,0 +1,24 @@
+Small tutorial on creating and using a custom skin:
+
+1. Get an ascii art (or whatever you want)
+
+2. Place the following text fields in proper places on the ascii art:
+    {$balloon}          - Where the balloon will be placed *
+    {$tl}               - A "\\" char (balloon connector on the left-side)
+    {$tr}               - A "/" char (balloon connector on the right-side)
+    {$eye1}             - The left eye char
+    {$eye2}             - The right eye char
+    {$tongue}           - The tongue char
+
+   The only mandatory field is the $balloon, the rest is actually optional.
+   But placing the rest allows for changing the eyes and tongue style with 
+   the style modifiers (stoned, dead, borg, ...), which is very nice.
+
+3. Call the program in command line with the '-f' flag and the path to the 
+   custom skin.
+
+4. Enjoy!
+
+
+* If the balloon field is placed in a way that is not in column zero
+of some line, it will not be displayed properly aligned.
