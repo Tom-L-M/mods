@@ -219,7 +219,7 @@ class ArgvParser {
      * All other properties have as keys the respective defined option flag or argument.
      */
     parseArgv(args) {
-        const isOption = v => v.startsWith('-');
+        const isOption = v => v && v.startsWith('-');
         const argv = args || process.argv.slice(2);
 
         const params = {};
