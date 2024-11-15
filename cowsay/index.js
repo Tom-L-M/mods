@@ -29,74 +29,135 @@ function getLocalSkin(skin) {
     return tryf(() => fs.readFileSync(path.join(SKINS_DIR, skin), 'utf8'));
 }
 
-function splitStringWithSpaces(inputString) {
-    const result = [];
-    let buffer = inputString[0]; // To accumulate words or spaces
+function foldStringIntoArray(message, wrap) {
+    // No wrap text
+    if (typeof wrap !== 'number' || isNaN(wrap)) {
+        // Break lines and replace tabs by spaces
+        return message
+            .split(/\r\n|[\n\r\f\v\u2028\u2029\u0085]/g)
+            .map(function (line) {
+                // Find tabs
+                var tab = line.indexOf('\t');
 
-    for (let i = 1; i < inputString.length; i++) {
-        let char = inputString[i];
-        if (char === ' ') {
-            // If we encounter a space, check if buffer has a word
-            if (buffer && buffer !== ' ') {
-                result.push(buffer);
-                buffer = '';
+                if (tab === -1) {
+                    return line;
+                }
+
+                // Replace tabs
+                var tabbed = line;
+
+                do {
+                    var spaces = Array(9 - (tab % 8)).join(' ');
+                    tabbed =
+                        tabbed.slice(0, tab) + spaces + tabbed.slice(tab + 1);
+                    tab = tabbed.indexOf('\t', tab + spaces.length);
+                } while (tab !== -1);
+
+                return tabbed;
+            });
+    }
+
+    // Fix tabs, breaklines and split lines
+    var lines = message
+        .replace(/(?:\r\n|[\n\r\f\v\u2028\u2029\u0085])(\S)/g, ' $1')
+        .replace(/(?:\r\n|[\n\r\f\v\u2028\u2029\u0085])\s+/g, '\n\n')
+        .replace(/(?:\r\n|[\t\n\r\f\v\u2028\u2029\u0085])$/g, ' ')
+        .split(/\r\n|[\n\r\f\v\u2028\u2029\u0085]/g);
+
+    // Process lines
+    lines = lines
+        .map(function (line, i) {
+            // Empty line
+            if (/^\s*$/.test(line)) {
+                return '';
             }
-            // Accumulate spaces
-            buffer += char;
-        } else {
-            // If we encounter a non-space, check if buffer has spaces
-            if (buffer.startsWith(' ')) {
-                result.push(buffer);
-                buffer = '';
+
+            // Remove duplicated spaces and trim left for non first line
+            var fixed = line.replace(/\s+/g, ' ');
+            return i > 0 ? fixed.replace(/^\s+/, '') : fixed;
+        })
+        .filter(function (line, i, lines) {
+            // Allways allow not empty lines and the first line
+            if (line.length > 0 || i <= 1) {
+                return true;
             }
-            // Accumulate non-space characters
-            buffer += char;
+
+            // Remove duplicated empty lines
+            return lines[i - 1].length > 0;
+        });
+
+    // Check empty message
+    if (
+        lines.every(function (line) {
+            return line.length === 0;
+        })
+    ) {
+        return [''];
+    }
+
+    // Trim last empty line
+    if (lines[lines.length - 1].length === 0) {
+        lines.pop();
+    }
+
+    /** @type{string[]} */
+    var initial = [];
+    var max = wrap;
+    var col = wrap - 1;
+
+    // Wrap words
+    return lines.reduce(function (acc, line, i, src) {
+        // Empty line
+        if (line.length === 0) {
+            return acc.concat(line);
         }
-    }
 
-    // Push the final buffer content, if any
-    if (buffer) {
-        result.push(buffer);
-    }
+        // Too small word wrap column or invalid value
+        if (max < 2) {
+            // Ends if the next line is not empty
+            if (src[i + 1] !== '') {
+                src.splice(0);
+            }
 
-    return result;
-}
-
-function foldStringIntoArray(input, width) {
-    if (width < 1) throw new Error('Width must be at least 1');
-    // If it has at least 1 newline, then it is multiline
-    // and multiline strings need an initial blank space,
-    // otherwise, they lose the original alignment
-    if (input.indexOf('\n') >= 0) input = ' ' + input;
-    // Turn newlines into words
-    input = input.replaceAll(/\n/gi, ' \n ');
-    // Remove all rewind chars '\r'
-    input = input.replaceAll(/\r/gi, '');
-
-    const words = splitStringWithSpaces(input);
-    let lines = []; // To hold each line of the final output
-    let currentLine = ''; // The current line being built
-
-    for (let i = 0; i < words.length; i++) {
-        let word = words[i];
-        // Check if adding this word would exceed the width
-        if ((currentLine + word).length > width || word.includes('\n')) {
-            // Push the current line and reset it
-            lines.push(currentLine);
-            if (word.startsWith(' ')) word = word.slice(1);
-            currentLine = word === '\n' ? '' : word; // Start a new line with the current word
-        } else {
-            // Otherwise, add the word to the current line
-            currentLine += word;
+            // Add a "0" character and continue like wraping at second column
+            max = 2;
+            col = 1;
+            return acc.concat('0');
         }
-    }
 
-    // Push the last line if it has any content
-    if (currentLine.trim()) {
-        lines.push(currentLine);
-    }
+        // Get break position
+        var last = i > 0 ? acc[acc.length - 1] + line : line;
+        var space =
+            last.length < max ? last.length : last.lastIndexOf(' ', col);
+        var br =
+            space > 0 && space < col
+                ? space
+                : last.length === max && last[last.length - 1] === ' '
+                ? max
+                : col;
 
-    return lines.map(v => v.split('\n')).flat();
+        // Wrap line
+        var words = acc.concat(last.slice(0, br));
+        var rest = line.slice(br).replace(/^\s+/, '');
+
+        // Wrap rest of line
+        while (rest.length > 0) {
+            space =
+                rest.length < max ? rest.length : rest.lastIndexOf(' ', col);
+            br =
+                space > 0 && space < col
+                    ? space
+                    : rest.length === max && rest[rest.length - 1] === ' '
+                    ? max
+                    : col;
+
+            words.push(rest.slice(0, br));
+            rest = rest.slice(br).replace(/^\s+/, '');
+        }
+
+        // Return words
+        return words;
+    }, initial);
 }
 
 function justify(string, length) {
@@ -111,7 +172,7 @@ function renderBalloon(
     string,
     { maxLength = 40, style = 'default', noWrap = false }
 ) {
-    const lines = foldStringIntoArray(string, noWrap ? 10000 : maxLength);
+    const lines = foldStringIntoArray(string, noWrap ? null : maxLength + 1);
     const longest = Math.max(...lines.map(v => v.length));
     const isMultiline = lines.length > 1;
 
