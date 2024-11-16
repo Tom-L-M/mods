@@ -55,10 +55,10 @@ function foldStringIntoArray(
     const chunkify = (s, w) =>
         s.match(new RegExp(`.{1,${w >= 1 ? w : 1}}`, 'gim')) ?? [];
 
-    if (!width) width === 10000;
+    if (!width) width = 10000;
     if (ignoreLf) string = string.replaceAll(/\r?\n/gi, ' ');
 
-    const lines = string.split(/\r?\n\r?/gi);
+    const lines = string.replaceAll('\t', '  ').split(/\r?\n\r?/gi);
     const result = [];
     for (let line of lines) {
         if (force) {
@@ -72,7 +72,7 @@ function foldStringIntoArray(
                 result.push(maxslice.slice(0, spaceindex));
             } else {
                 maxslice = line;
-                spaceindex = maxslice.lastIndexOf(' ');
+                spaceindex = maxslice.indexOf(' ');
                 if (spaceindex >= 0) {
                     result.push(maxslice.slice(0, spaceindex));
                 } else {
@@ -89,7 +89,7 @@ function foldStringIntoArray(
 
 function renderBalloon(
     string,
-    { maxLength = 40, style = 'default', noWrap = false }
+    { maxLength = 80, style = 'default', noWrap = false }
 ) {
     const lines = foldStringIntoArray(string, noWrap ? null : maxLength + 1);
     const longest = Math.max(...lines.map(v => v.length));

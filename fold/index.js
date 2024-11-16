@@ -90,7 +90,7 @@ function fold(string, width = 80, { force = false, ignoreLf = false } = {}) {
     const chunkify = (s, w) =>
         s.match(new RegExp(`.{1,${w >= 1 ? w : 1}}`, 'gim')) ?? [];
 
-    if (!width) width === 10000;
+    if (!width) width = 10000;
     if (ignoreLf) string = string.replaceAll(/\r?\n/gi, ' ');
 
     const lines = string.split(/\r?\n\r?/gi);
