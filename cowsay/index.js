@@ -29,143 +29,62 @@ function getLocalSkin(skin) {
     return tryf(() => fs.readFileSync(path.join(SKINS_DIR, skin), 'utf8'));
 }
 
-function foldStringIntoArray(message, wrap) {
-    // No wrap text
-    if (typeof wrap !== 'number' || isNaN(wrap)) {
-        // Break lines and replace tabs by spaces
-        return message
-            .split(/\r\n|[\n\r\f\v\u2028\u2029\u0085]/g)
-            .map(function (line) {
-                // Find tabs
-                var tab = line.indexOf('\t');
-
-                if (tab === -1) {
-                    return line;
-                }
-
-                // Replace tabs
-                var tabbed = line;
-
-                do {
-                    var spaces = Array(9 - (tab % 8)).join(' ');
-                    tabbed =
-                        tabbed.slice(0, tab) + spaces + tabbed.slice(tab + 1);
-                    tab = tabbed.indexOf('\t', tab + spaces.length);
-                } while (tab !== -1);
-
-                return tabbed;
-            });
-    }
-
-    // Fix tabs, breaklines and split lines
-    var lines = message
-        .replace(/(?:\r\n|[\n\r\f\v\u2028\u2029\u0085])(\S)/g, ' $1')
-        .replace(/(?:\r\n|[\n\r\f\v\u2028\u2029\u0085])\s+/g, '\n\n')
-        .replace(/(?:\r\n|[\t\n\r\f\v\u2028\u2029\u0085])$/g, ' ')
-        .split(/\r\n|[\n\r\f\v\u2028\u2029\u0085]/g);
-
-    // Process lines
-    lines = lines
-        .map(function (line, i) {
-            // Empty line
-            if (/^\s*$/.test(line)) {
-                return '';
-            }
-
-            // Remove duplicated spaces and trim left for non first line
-            var fixed = line.replace(/\s+/g, ' ');
-            return i > 0 ? fixed.replace(/^\s+/, '') : fixed;
-        })
-        .filter(function (line, i, lines) {
-            // Allways allow not empty lines and the first line
-            if (line.length > 0 || i <= 1) {
-                return true;
-            }
-
-            // Remove duplicated empty lines
-            return lines[i - 1].length > 0;
-        });
-
-    // Check empty message
-    if (
-        lines.every(function (line) {
-            return line.length === 0;
-        })
-    ) {
-        return [''];
-    }
-
-    // Trim last empty line
-    if (lines[lines.length - 1].length === 0) {
-        lines.pop();
-    }
-
-    /** @type{string[]} */
-    var initial = [];
-    var max = wrap;
-    var col = wrap - 1;
-
-    // Wrap words
-    return lines.reduce(function (acc, line, i, src) {
-        // Empty line
-        if (line.length === 0) {
-            return acc.concat(line);
-        }
-
-        // Too small word wrap column or invalid value
-        if (max < 2) {
-            // Ends if the next line is not empty
-            if (src[i + 1] !== '') {
-                src.splice(0);
-            }
-
-            // Add a "0" character and continue like wraping at second column
-            max = 2;
-            col = 1;
-            return acc.concat('0');
-        }
-
-        // Get break position
-        var last = i > 0 ? acc[acc.length - 1] + line : line;
-        var space =
-            last.length < max ? last.length : last.lastIndexOf(' ', col);
-        var br =
-            space > 0 && space < col
-                ? space
-                : last.length === max && last[last.length - 1] === ' '
-                ? max
-                : col;
-
-        // Wrap line
-        var words = acc.concat(last.slice(0, br));
-        var rest = line.slice(br).replace(/^\s+/, '');
-
-        // Wrap rest of line
-        while (rest.length > 0) {
-            space =
-                rest.length < max ? rest.length : rest.lastIndexOf(' ', col);
-            br =
-                space > 0 && space < col
-                    ? space
-                    : rest.length === max && rest[rest.length - 1] === ' '
-                    ? max
-                    : col;
-
-            words.push(rest.slice(0, br));
-            rest = rest.slice(br).replace(/^\s+/, '');
-        }
-
-        // Return words
-        return words;
-    }, initial);
-}
-
 function justify(string, length) {
     // To center the string, instead of justifying, use this:
     // const pre = ' '.repeat(Math.floor((length - string.length) / 2));
     // const post = ' '.repeat(Math.ceil((length - string.length) / 2));
     // return pre + string + post;
     return string.padEnd(length);
+}
+
+/**
+ * Paginates a string by folding it at a specific column, instead of
+ * at original line breaks.
+ * @param {string} string
+ * @param {number|null} width
+ * @param {{force: boolean, ignoreLf: boolean}} options Configuration:
+ *  - force:    If set to true, breaks words to fold at exact column
+ *  - ignoreLf: If set to true, removes all "\\r?\\n" before folding
+ * @returns {Array<string>|string[]} An array of lines
+ */
+function foldStringIntoArray(
+    string,
+    width = 80,
+    { force = false, ignoreLf = false } = {}
+) {
+    const chunkify = (s, w) =>
+        s.match(new RegExp(`.{1,${w >= 1 ? w : 1}}`, 'gim')) ?? [];
+
+    if (!width) width === 10000;
+    if (ignoreLf) string = string.replaceAll(/\r?\n/gi, ' ');
+
+    const lines = string.split(/\r?\n\r?/gi);
+    const result = [];
+    for (let line of lines) {
+        if (force) {
+            result.push(...chunkify(line, width));
+            continue;
+        }
+        while (line.length > width) {
+            let maxslice = line.slice(0, width);
+            let spaceindex = maxslice.lastIndexOf(' ');
+            if (spaceindex >= 0) {
+                result.push(maxslice.slice(0, spaceindex));
+            } else {
+                maxslice = line;
+                spaceindex = maxslice.lastIndexOf(' ');
+                if (spaceindex >= 0) {
+                    result.push(maxslice.slice(0, spaceindex));
+                } else {
+                    result.push(...maxslice.split(' '));
+                    spaceindex = maxslice.length;
+                }
+            }
+            line = line.slice(spaceindex + 1);
+        }
+        if (line.length <= width) result.push(line);
+    }
+    return result;
 }
 
 function renderBalloon(
