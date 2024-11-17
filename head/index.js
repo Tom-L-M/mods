@@ -70,6 +70,8 @@ function slice(data, { lines, bytes, reverse } = {}) {
     // E.g. there is input via pipes
     let inputFromSTDIN = fromSTDIN ? await readStdinAsync() : '';
 
+    if (inputFromSTDIN && !args._.includes('-')) args._.unshift('-');
+
     for (let i = 0; i < args._.length; i++) {
         let file = args._[i];
         try {
