@@ -4,6 +4,8 @@ const PROPS = require('./props.json');
 const SKINS_DIR = path.join(__dirname, 'skins');
 const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
 
+const randomItem = array => array[Math.floor(Math.random() * array.length)];
+
 const ERROR = {
     E_NO_SKIN_DIR: s => `Error: Invalid skins directory "${s}"`,
     E_NO_SKIN: s => `Error: Missing selected skin "${s}"`,
@@ -166,8 +168,8 @@ function renderSkin(
 
     if (style && style === 'think') {
         result = result
-            .replaceAll(/\{\$tl\} /gim, '()')
-            .replaceAll(/\{\$tr\} /gim, '()');
+            .replaceAll(/\{\$tl\}/gim, 'O')
+            .replaceAll(/\{\$tr\}/gim, 'O');
     }
 
     for (let key in combined) {
@@ -200,11 +202,13 @@ const help = `
         -f | --file N           Specified a local or external skin name/file.
         -e | --eyes             Specifies a 2-chars-long string to use as the eyes.
         -T | --tongue           Specifies a 2-chars-long string to use as the tongue.
+        -r | --random           Randomize the skin.
 
       Balloon Style:
         -M | --modern           Uses modern box-building ASCII chars.
         -B | --box              Uses regular box-building ASCII chars.
         -D | --dream | --think  Uses a "thinking" balloon (round walls).
+        -R | --random-balloon   Randomize the balloon style.
 
       Cow Style:
         -b | --borg             "Borg mode", uses '==' for the eyes.
@@ -215,6 +219,7 @@ const help = `
         -t | --tired            "Tired", uses '--' for the eyes.
         -w | --wired            "Wired", uses 'OO' for the eyes.
         -y | --youthful         "Youthful", uses '..' for smaller eyes.
+        -x | --random-style     Randomize cow style.
 
     Examples:
         STDIN reading with the Tux skin:
@@ -235,6 +240,7 @@ const help = `
     parser.option('file', { alias: 'f' });
     parser.option('eyes', { alias: 'e' });
     parser.option('tongue', { alias: 'T' });
+    parser.option('random', { alias: 'r', allowValue: false });
 
     parser.option('borg', { alias: 'b', allowValue: false });
     parser.option('dead', { alias: 'd', allowValue: false });
@@ -244,10 +250,12 @@ const help = `
     parser.option('tired', { alias: 't', allowValue: false });
     parser.option('wired', { alias: 'w', allowValue: false });
     parser.option('youthful', { alias: 'y', allowValue: false });
+    parser.option('random-style', { alias: 'x', allowValue: false });
 
     parser.option('modern', { alias: 'M', allowValue: false });
     parser.option('box', { alias: 'B', allowValue: false });
     parser.option('think', { alias: ['D', 'dream'], allowValue: false });
+    parser.option('random-balloon', { alias: 'R', allowValue: false });
 
     parser.argument('string');
 
@@ -261,10 +269,22 @@ const help = `
         ? (await readStdinAsync()).toString('utf8').trimEnd()
         : args.string || '';
 
-    const skin = args.file || 'cow';
+    const skin = args.random ? randomItem(listSkins()) : args.file || 'cow';
     const listing = Boolean(args.list);
 
-    const prop = args.borg
+    const prop = args['random-style']
+        ? randomItem([
+              'borg',
+              'dead',
+              'greedy',
+              'paranoid',
+              'stoned',
+              'tired',
+              'wired',
+              'youthful',
+              'default',
+          ])
+        : args.borg
         ? 'borg'
         : args.dead
         ? 'dead'
@@ -282,7 +302,9 @@ const help = `
         ? 'youthful'
         : 'default';
 
-    const style = args.modern
+    const style = args['random-balloon']
+        ? randomItem(['modern', 'think', 'box', 'default'])
+        : args.modern
         ? 'modern'
         : args.think
         ? 'think'
