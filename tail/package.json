@@ -1,6 +1,6 @@
 {
     "name": "tail",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "description": "A tool for reading lines/bytes from a file's ending. (Port of UNIX's 'tail' tool).",
     "main": "index.js",
     "scripts": {
