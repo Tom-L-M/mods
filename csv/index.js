@@ -5,11 +5,22 @@ const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
  * Parses a CSV string and returns an Array representation as a table.
  * @param {string} data
  * @param {string} separator The cell separator used. Default for CSV is ','.
+ * @param {boolean} addIndex If set to true, adds a 'Index' column to the right, indexing starts at 1.
  * @returns {string[]} A 2D-Array representing the CSV table
  */
-function parseCSV(data, { separator = ',' } = {}) {
-    const rows = data.trim().split('\n');
-    const cols = rows.map(row => {
+function parseCSV(data, { separator = ',', addIndex = false } = {}) {
+    let rows = data.trim().split('\n');
+    if (addIndex) {
+        rows = [
+            'Index' + separator + rows[0],
+            ...rows.slice(1).map((v, i) => i + 1 + separator + v),
+        ];
+    }
+    let cols = rows.map(row => {
+        // Add a separator in the end of the line, so that
+        // the last field is parsed as a regular one
+        // avoids the need of a special-case handler
+        row = row.trim() + separator;
         let insideQuotes = false;
         let cell = '';
         const cells = [];
@@ -22,6 +33,21 @@ function parseCSV(data, { separator = ',' } = {}) {
         return cells;
     });
     return cols;
+}
+
+function activateSpecialChars(string) {
+    return string
+        .replaceAll('\\t', '\t')
+        .replaceAll('\\n', '\n')
+        .replaceAll('\\s', ' ');
+}
+
+function listify(rawtable, separator) {
+    if (typeof separator !== 'string') separator = ',';
+    separator = activateSpecialChars(separator);
+    return rawtable
+        .map(v => (Array.isArray(v) ? v.join(separator) : v))
+        .join('\n');
 }
 
 /**
@@ -192,22 +218,31 @@ const help = `
         -l | --rulers           Add horizontal rulers between lines.
         -m | --max-cell-size N  The max number of chars per cell.
         -e | --header           Prints the table header and/or include in computations.
+        -E | --no-header        Do NOT print the table header nor include in computations.
         -f | --field N,M        Prints the content of the cell at COL N x ROW M.
         -c | --cols N,M,X-Y     Prints the selected columns.
         -r | --rows N,M,X-Y     Prints the selected rows.
         -C | --col-count        Prints the number of columns.
         -R | --row-count        Prints the number of rows.
         -F | --field-count      Prints the number of fields.
+        -L | --list N           Prints the selected information as a list with separator N.
+        -i | --index            Adds an "index" column as the first column.
         
+    Info:
+        If more than one of '-C', '-R', '-F' is selected, the order in which they are printed
+        is always:   columns > rows > fields. (e.g. "csv file.csv -R -F -C" prints "{COLS} {ROWS} {FIELDS}")
+
     Examples:
         > Print number of cells, including the header cells:
             csv file.csv -F -e
-        > Print whole file as a TSV instead of CSV:
+        > Read a TSV file instead of a CSV:
             csv file.tsv -s "\\t"
         > Print rows 0 to 10, 14, and 20 up to the end:
             csv file.csv -c 0-10,14,20-
         > Prints the last rows, with the header:
-            csv file.csv -c 900- -e`;
+            csv file.csv -c 900- -e
+        > Reads a CSV file and print the first 2 columns as a TSV:
+            csv file.csv -c 1,2 -L "\\t"`;
 
 (async function () {
     const opts = {
@@ -217,12 +252,15 @@ const help = `
         l: 'rulers',
         m: 'max-cell-size',
         e: 'header',
+        E: 'no-header',
         C: 'col-count',
         R: 'row-count',
         F: 'field-count',
         f: 'field',
         c: 'cols',
         r: 'rows',
+        L: 'list',
+        i: 'index',
     };
     const args = parseArgv(opts);
     const file = process.argv[2];
@@ -241,21 +279,15 @@ const help = `
 
     const maxCellSize = parseInt(args['max-cell-size']) || null;
     const rulers = Boolean(args.rulers);
-    const separator =
+    const separator = activateSpecialChars(
         args.separator && typeof args.separator === 'string'
             ? args.separator
-            : ',';
+            : ','
+    );
 
-    let csv = parseCSV(input, { separator });
+    const addIndex = Boolean(args.index);
 
-    // If asking for field count:
-    if (args['field-count'])
-        if (args['header']) return console.log(csv[0].length * csv.length);
-        else return console.log(csv[0].length * (csv.length - 1));
-    // If asking for column count
-    if (args['col-count']) return console.log(csv[0].length);
-    // If asking for row count
-    if (args['row-count']) return console.log(csv.length);
+    let csv = parseCSV(input, { separator, addIndex });
 
     if (args['field']) {
         let [N, M] = args['field'].split(',');
@@ -309,15 +341,72 @@ const help = `
         csv = csv.map(v => v.filter((_, i) => selected.includes(i)));
     }
 
+    // If asking for column count
+    if (args['col-count']) process.stdout.write(csv[0].length + ' ');
+    // If asking for row count
+    if (args['row-count'])
+        if (args['header']) process.stdout.write(csv.length + ' ');
+        else process.stdout.write(csv.length - 1 + ' ');
+    // If asking for field count:
+    if (args['field-count'])
+        if (args['header'])
+            process.stdout.write(csv[0].length * csv.length + ' ');
+        else process.stdout.write(csv[0].length * (csv.length - 1) + ' ');
+
+    // If any of the above was selected, return
+    if (args['field-count'] || args['col-count'] || args['row-count']) return;
+
     // If asking for header
-    else if (args['header'] && !args['cols'] && !args['rows'])
-        return console.log(tableify(csv[0]));
+    if (args['header'] && !args['cols'] && !args['rows']) {
+        if (args['list']) console.log(listify(csv[0], args['list']));
+        else console.log(tableify(csv[0]));
+        return;
+    }
+    // If asking without header -> pretty print without header
+    else if (args['no-header'] && !args['cols'] && !args['rows']) {
+        if (args['list']) console.log(listify(csv.slice(1), args['list']));
+        else
+            console.log(
+                tableify(csv.slice(1), {
+                    rulers,
+                    maxCellSize,
+                    noHeader: true,
+                })
+            );
+        return;
+    }
     // If not asking for something specific -> pretty print with header
-    else if (!args['header'] && !args['cols'] && !args['rows'])
-        return console.log(tableify(csv, { rulers, maxCellSize }));
+    else if (!args['header'] && !args['cols'] && !args['rows']) {
+        if (args['list']) console.log(listify(csv, args['list']));
+        else console.log(tableify(csv, { rulers, maxCellSize }));
+        return;
+    }
 
     // Else, just prints table:
-    return console.log(
-        tableify(csv, { rulers, maxCellSize, noHeader: !args['header'] })
-    );
+    if (args['list']) console.log(listify(csv, args['list']));
+    else
+        console.log(
+            tableify(csv, {
+                rulers,
+                maxCellSize,
+                noHeader: args['header']
+                    ? false
+                    : args['no-header']
+                    ? true
+                    : false,
+            })
+        );
 })();
+
+/**
+ *
+ * TODO:
+ *
+ * add flags for filtering, matching, and sorting the table
+ *
+ * // Sort rows according to a specific column
+ * -s | --sort < column-index | column-name >,<ascending|descending>
+ * // Return only rows that have the cell at a specific column matching the regex
+ * -f | --filter < column-index | column-name | - >,<regex|string>
+ *
+ */
