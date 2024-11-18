@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
 
 /**
  * Parses a CSV string and returns an Array representation as a table.
@@ -245,25 +245,26 @@ const help = `
             csv file.csv -c 1,2 -L "\\t"`;
 
 (async function () {
-    const opts = {
-        h: 'help',
-        v: 'version',
-        s: 'separator',
-        l: 'rulers',
-        m: 'max-cell-size',
-        e: 'header',
-        E: 'no-header',
-        C: 'col-count',
-        R: 'row-count',
-        F: 'field-count',
-        f: 'field',
-        c: 'cols',
-        r: 'rows',
-        L: 'list',
-        i: 'index',
-    };
-    const args = parseArgv(opts);
-    const file = process.argv[2];
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('separator', { alias: 's' });
+    parser.option('rulers', { alias: 'l', allowValue: false });
+    parser.option('max-cell-size', { alias: 'm', allowCasting: true });
+    parser.option('header', { alias: 'e', allowValue: false });
+    parser.option('no-header', { alias: 'E', allowValue: false });
+    parser.option('col-count', { alias: 'C', allowValue: false });
+    parser.option('row-count', { alias: 'R', allowValue: false });
+    parser.option('field-count', { alias: 'F', allowValue: false });
+    parser.option('cols', { alias: 'c' });
+    parser.option('rows', { alias: 'r' });
+    parser.option('list', { alias: 'L' });
+    parser.option('index', { alias: 'i', allowValue: false });
+    parser.option('field', { alias: 'f', allowValue: true });
+    parser.argument('file');
+
+    const args = parser.parseArgv();
+    const file = args.file;
 
     const stdinActive = isSTDINActive();
 
