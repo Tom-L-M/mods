@@ -380,14 +380,35 @@ class ArgvParser {
     }
 }
 
-function readStdinAsync() {
+function parseControlChars(string) {
+    return string
+        .replaceAll('\\s', ' ')
+        .replaceAll('\\t', '\t')
+        .replaceAll('\\n', '\n')
+        .replaceAll('\\b', '\b')
+        .replaceAll('\\r', '\r')
+        .replaceAll('\\f', '\f')
+        .replaceAll(/\\x([a-z0-9])/gi, (match, n1) =>
+            String.fromCharCode(parseInt(n1))
+        );
+}
+
+function readStdinAsync({ controlChars = false } = {}) {
     return new Promise((resolve, reject) => {
         const stream = process.stdin;
         const chunks = [];
 
         const onData = chunk => chunks.push(chunk);
-        const onEnd = () => quit() && resolve(Buffer.concat(chunks));
         const onError = err => quit() && reject(err);
+        const onEnd = () =>
+            quit() &&
+            resolve(
+                Buffer.from(
+                    (controlChars ? parseControlChars : v => v)(
+                        Buffer.concat(chunks).toString()
+                    )
+                )
+            );
 
         const quit = () => {
             stream.removeListener('data', onData);
@@ -407,4 +428,5 @@ module.exports = {
     parseArgv,
     isSTDINActive,
     readStdinAsync,
+    parseControlChars,
 };
