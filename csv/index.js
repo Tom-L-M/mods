@@ -72,6 +72,8 @@ function tableify(
     const T3 = '├';
     const T4 = '┤';
 
+    if (rawtable.length === 1) rawtable = rawtable[0];
+
     const is2D = arr => Array.isArray(arr[0]);
     const maxsize = parseInt(maxCellSize) || null;
     const table =
@@ -346,13 +348,14 @@ const fullHelp = `
     const addIndex = Boolean(args.index);
 
     let csv = parseCSV(input, { separator, addIndex });
+    const originalHeader = csv[0];
 
     if (args['field']) {
         for (let xfield of args['field']) {
             let [N, M] = xfield.split(',');
             const xN = parseInt(N);
             if (isNaN(xN)) {
-                N = csv[0].indexOf(N);
+                N = originalHeader.indexOf(N);
                 if (N < 0) {
                     return console.log(
                         'Error: field selector for column should be either a valid column name or index'
@@ -409,6 +412,14 @@ const fullHelp = `
         }
 
         selected = [...new Set(selected)].sort((a, b) => a - b);
+        // selected = selected
+        //     .map(v => {
+        //         let nV = parseInt(v);
+        //         if (!isNaN(nV) && nV.toString() === v) return v;
+        //         nV = originalHeader.indexOf(v);
+        //         if (nV < 0) return null;
+        //     })
+        //     .filter(v => v !== null);
         csv = csv.map(v => v.filter((_, i) => selected.includes(i)));
     }
 
@@ -445,7 +456,7 @@ const fullHelp = `
         if (!isNaN(parseInt(xcol))) {
             xcol = parseInt(xcol);
         } else {
-            xcol = csv[0].indexOf(xcol);
+            xcol = originalHeader.indexOf(xcol);
         }
         if ((!xcol && typeof xcol !== 'number') || xcol < 0)
             return console.log(
@@ -492,7 +503,7 @@ const fullHelp = `
         if (!isNaN(numxcol) && numxcol.toString() === xcol) {
             xcol = numxcol;
         } else {
-            xcol = csv[0].indexOf(xcol);
+            xcol = originalHeader.indexOf(xcol);
         }
         if ((!xcol && typeof xcol !== 'number') || xcol < 0)
             return console.log(
@@ -505,8 +516,8 @@ const fullHelp = `
 
     // If asking for header
     if (args['header'] && !args['cols'] && !args['rows']) {
-        if (args['list']) console.log(listify(csv[0], args['list']));
-        else console.log(tableify(csv[0]));
+        if (args['list']) console.log(listify(originalHeader, args['list']));
+        else console.log(tableify(originalHeader));
         return;
     }
     // If asking without header -> pretty print without header
