@@ -38,6 +38,7 @@ const help = `
         cat a.txt | cat b.txt               # Reads a.txt and concat with b.txt.
         cat a.txt b.txt                     # Also reads a.txt and concat with b.txt.
         ls | cat a.txt - b.txt              # Concats: a.txt + (result of ls) + b.txt.
+        ls | cat a.txt - b.txt              # Concats: (result of ls) + a.txt + b.txt.
         dir /B /A-D | cat -f -              # Concats all files from current cwd`;
 
 (async function () {
@@ -53,7 +54,7 @@ const help = `
     if (args.version) return console.log(require('./package.json')?.version);
 
     // If no STDIN output token is used, append to the end
-    if (stdinActive && !files.includes('-')) files.push('-');
+    if (stdinActive && !files.includes('-')) files.unshift('-');
 
     const separator = typeof args.separator === 'string' ? args.separator : '';
 

@@ -1,7 +1,7 @@
 {
     "name": "cat",
     "version": "1.4.2",
-    "description": "A tool for reading and outputting file data.",
+    "description": "A tool for reading and outputting file data. (Port of UNIX's 'grep' tool).",
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1"
