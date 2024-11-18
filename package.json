@@ -12,7 +12,7 @@
         "build-win": "pkg -c package.json -t node18-win mods.js",
         "build-debug": "pkg --debug -c package.json -t node18-win mods.js > build.log && echo. && echo Run with \"set DEBUG_PKG=1 & mods.exe\"",
         "git-commits": "git log --pretty=\"format:## `%s`%n%n> Commit: %H%n%n> Author: %an <%ae>%n%n> Date:   %ai%n%n```%n%B```%n%n<br>%n\" > COMMITS.md",
-        "git-logs": "git log --oneline > COMMITS.log",
+        "git-logs": "git log --format=\"%h%x09%ai%x09%an%x09%s\" | mods.exe tee COMMITS.log | mods.exe echo \"Hash\\tDate\\tAuthor\\tSubject\" - | mods.exe head -n 11 | mods.exe echo - \"...\\t...\\t...\\t...\" | mods.exe csv -s \\t",
         "update-version": "npm i --package-lock-only",
         "movebin": "move .\\.dist\\mods.exe %BIN%\\mods.exe"
     },
