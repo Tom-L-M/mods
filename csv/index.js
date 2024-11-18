@@ -39,7 +39,10 @@ function activateSpecialChars(string) {
     return string
         .replaceAll('\\t', '\t')
         .replaceAll('\\n', '\n')
-        .replaceAll('\\s', ' ');
+        .replaceAll('\\s', ' ')
+        .replaceAll('\\b', '\b')
+        .replaceAll('\\r', '\r')
+        .replaceAll('\\f', '\f');
 }
 
 function listify(rawtable, separator) {
