@@ -1,0 +1,12 @@
+{
+    "name": "echo",
+    "version": "1.0.1",
+    "description": "A tool for reading and outputting file from STDIN and ARGV. (Port of UNIX's 'echo' tool).",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
+}
