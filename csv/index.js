@@ -1,5 +1,10 @@
 const fs = require('node:fs');
-const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
+const {
+    isSTDINActive,
+    readStdinAsync,
+    ArgvParser,
+    parseControlChars,
+} = require('../shared');
 
 /**
  * Parses a CSV string and returns an Array representation as a table.
@@ -35,19 +40,9 @@ function parseCSV(data, { separator = ',', addIndex = false } = {}) {
     return cols;
 }
 
-function activateSpecialChars(string) {
-    return string
-        .replaceAll('\\t', '\t')
-        .replaceAll('\\n', '\n')
-        .replaceAll('\\s', ' ')
-        .replaceAll('\\b', '\b')
-        .replaceAll('\\r', '\r')
-        .replaceAll('\\f', '\f');
-}
-
 function listify(rawtable, separator) {
     if (typeof separator !== 'string') separator = ',';
-    separator = activateSpecialChars(separator);
+    separator = parseControlChars(separator);
     return rawtable
         .map(v => (Array.isArray(v) ? v.join(separator) : v))
         .join('\n');
@@ -342,7 +337,7 @@ const fullHelp = `
 
     const maxCellSize = parseInt(args['max-cell-size']) || null;
     const rulers = Boolean(args.rulers);
-    const separator = activateSpecialChars(
+    const separator = parseControlChars(
         args.separator && typeof args.separator === 'string'
             ? args.separator
             : ','

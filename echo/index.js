@@ -1,14 +1,9 @@
-const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
-
-function activateSpecialChars(string) {
-    return string
-        .replaceAll('\\t', '\t')
-        .replaceAll('\\n', '\n')
-        .replaceAll('\\s', ' ')
-        .replaceAll('\\b', '\b')
-        .replaceAll('\\r', '\r')
-        .replaceAll('\\f', '\f');
-}
+const {
+    isSTDINActive,
+    readStdinAsync,
+    ArgvParser,
+    parseControlChars,
+} = require('../shared');
 
 const help = `
     [echo-js]
@@ -47,7 +42,7 @@ const help = `
     parser.option('stdall', { alias: 'a', allowValue: false });
     parser.option('separator', { alias: 's' });
     const args = parser.parseArgv();
-    const texts = args._;
+    const texts = args._.map(parseControlChars);
     const stdinActive = isSTDINActive();
 
     if (args.help || (!texts.length && !stdinActive)) return console.log(help);
@@ -56,7 +51,7 @@ const help = `
     // If no STDIN output token is used, append to the start
     if (stdinActive && !texts.includes('-')) texts.unshift('-');
 
-    const separator = activateSpecialChars(
+    const separator = parseControlChars(
         typeof args.separator === 'string'
             ? args.separator
             : typeof args.separator === 'boolean'
@@ -66,7 +61,7 @@ const help = `
     const useSTDERR = Boolean(args.stderr);
     const useSTDALL = Boolean(args.stdall);
     const stdindata = stdinActive
-        ? (await readStdinAsync()).toString().trim()
+        ? (await readStdinAsync({ controlChars: true })).toString().trim()
         : '';
     const output = string => {
         if (useSTDERR || useSTDALL) process.stderr.write(string);
