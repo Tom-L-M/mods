@@ -10,7 +10,7 @@ const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
  */
 function parseCSV(data, { separator = ',', addIndex = false } = {}) {
     let rows = data.trim().split('\n');
-    if (addIndex) {
+    if (addIndex && !rows[0].startsWith('Index' + separator)) {
         rows = [
             'Index' + separator + rows[0],
             ...rows.slice(1).map((v, i) => i + 1 + separator + v),
@@ -205,6 +205,39 @@ function range(start, end, step = 1) {
 
 const help = `
     [csv-js]
+            A csv viewer command line utility in NodeJS.
+
+        Usage:
+            node csv <file> [options]
+            <stdin> | node csv [options]
+
+        Options:        
+            -h | --help             Prints the help message and quits.
+            -H | --help-all         Prints the entire help menu and quits.
+            -v | --version          Prints the version info and quits.
+            -s | --separator N      The cell separator. Defaults to a comma: ','.
+            -l | --rulers           Add horizontal rulers between lines.
+            -m | --max-cell-size N  The max number of chars allowed per cell (the rest is truncated).
+            -i | --index            Adds an "index" column in index 0.
+            -f | --field N,M        Prints the content of the cell at COL N x ROW M ("N" may be a name or index).
+            -c | --cols N,M,X-Y     Prints the selected columns.
+            -r | --rows N,M,X-Y     Prints the selected rows.
+            -e | --header           Prints the table header and/or include in computations.
+            -E | --no-header        Do NOT print the table header nor include in computations.
+            -C | --col-count        Prints the number of columns.
+            -R | --row-count        Prints the number of rows.
+            -F | --field-count      Prints the number of fields.
+            -L | --list N           Prints the selected information as a list with separator N.
+            -I | --insensitive      If used with '-M', makes the regexp case insensitive.
+            -S | --sort N,M         Sorts a table using column N as reference.
+                                    "N" must be either a column name, or its index.
+                                    "M" must be one of: "asc", "ascending", "des" or "descending".
+            -M | --match N,M        Filters a table with RegExp using column N as reference.
+                                    "N" must be either a column name, or its index.
+                                    "M" must be a regular expression string.`;
+
+const fullHelp = `
+    [csv-js]
         A csv viewer command line utility in NodeJS.
 
     Usage:
@@ -213,22 +246,40 @@ const help = `
 
     Options:        
         -h | --help             Prints the help message and quits.
+        -H | --help-all         Prints the entire help menu and quits.
         -v | --version          Prints the version info and quits.
         -s | --separator N      The cell separator. Defaults to a comma: ','.
         -l | --rulers           Add horizontal rulers between lines.
-        -m | --max-cell-size N  The max number of chars per cell.
-        -e | --header           Prints the table header and/or include in computations.
-        -E | --no-header        Do NOT print the table header nor include in computations.
-        -f | --field N,M        Prints the content of the cell at COL N x ROW M.
+        -m | --max-cell-size N  The max number of chars allowed per cell (the rest is truncated).
+        -i | --index            Adds an "index" column in index 0 (only if first column is NOT already called 'Index').
+        -f | --field N,M        Prints the content of the cell at COL N x ROW M ("N" may be a name or index).
         -c | --cols N,M,X-Y     Prints the selected columns.
         -r | --rows N,M,X-Y     Prints the selected rows.
+        -e | --header           Prints the table header and/or include in computations.
+        -E | --no-header        Do NOT print the table header nor include in computations.
         -C | --col-count        Prints the number of columns.
         -R | --row-count        Prints the number of rows.
         -F | --field-count      Prints the number of fields.
         -L | --list N           Prints the selected information as a list with separator N.
-        -i | --index            Adds an "index" column as the first column.
+
+    Sorting and filtering:
+        -S | --sort N,M         Sorts a table using column N as reference.
+                                "N" must be either a column name, or its index.
+                                "M" must be one of: "asc", "ascending", "des" or "descending".
+
+        -M | --match N,M        Filters a table with RegExp using column N as reference.
+                                "N" must be either a column name, or its index.
+                                "M" must be a regular expression string.
+
+        -I | --insensitive      If used with '-M', makes the regexp case insensitive.
         
     Info:
+        Indexing in starts at 1 vertically. But starts at 1 horizontally only if "-i" is used or there is a native Index column.
+        Row index 0 is always the header. While col index 0 is either the Index (if any) or the first column of data.
+        To force horizontal index to start at 1, use the "-i" flag to add an index column. When using "-i", the Index will
+        only be added if there is no Index column alread. If the table already had a native Index column, nothing will happen.
+        This ensures the horizontal index 0 will be the Index column, despite having a native column for index or not.
+
         If more than one of '-C', '-R', '-F' is selected, the order in which they are printed
         is always:   columns > rows > fields. (e.g. "csv file.csv -R -F -C" prints "{COLS} {ROWS} {FIELDS}")
 
@@ -239,14 +290,16 @@ const help = `
             csv file.tsv -s "\\t"
         > Print rows 0 to 10, 14, and 20 up to the end:
             csv file.csv -c 0-10,14,20-
-        > Prints the last rows, with the header:
-            csv file.csv -c 900- -e
         > Reads a CSV file and print the first 2 columns as a TSV:
-            csv file.csv -c 1,2 -L "\\t"`;
+            csv file.csv -c 1,2 -L "\\t"
+        > Reads a CSV, sort by descending index, filter by cells in col 2 ("Values") matching a regex:
+            // Matches cells containing only phone numbers: (NN) 9AAAAA-BBBB
+            csv file.csv -S 0,descending -F "Values,^\\([0-9]{2}\\) 9[0-9]{5}-[0-9]{4}$"`;
 
 (async function () {
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('help-all', { alias: 'H', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('separator', { alias: 's' });
     parser.option('rulers', { alias: 'l', allowValue: false });
@@ -260,7 +313,10 @@ const help = `
     parser.option('rows', { alias: 'r' });
     parser.option('list', { alias: 'L' });
     parser.option('index', { alias: 'i', allowValue: false });
-    parser.option('field', { alias: 'f', allowValue: true });
+    parser.option('field', { alias: 'f', allowMultiple: true });
+    parser.option('sort', { alias: 'S' });
+    parser.option('match', { alias: 'M' });
+    parser.option('insensitive', { alias: 'I', allowValue: false });
     parser.argument('file');
 
     const args = parser.parseArgv();
@@ -269,6 +325,7 @@ const help = `
     const stdinActive = isSTDINActive();
 
     if (args.help || (!stdinActive && !file)) return console.log(help);
+    if (args['help-all']) return console.log(fullHelp);
     if (args.version) return console.log(require('./package.json')?.version);
 
     if (!stdinActive && !fs.existsSync(file))
@@ -291,14 +348,27 @@ const help = `
     let csv = parseCSV(input, { separator, addIndex });
 
     if (args['field']) {
-        let [N, M] = args['field'].split(',');
-        N = parseInt(N);
-        M = parseInt(M);
-        if ((!N && N !== 0) || (!M && M !== 0))
-            return console.log(
-                'Error: field selector should include two valid numeric coordinates'
-            );
-        return console.log(csv[N][M]);
+        for (let xfield of args['field']) {
+            let [N, M] = xfield.split(',');
+            const xN = parseInt(N);
+            if (isNaN(xN)) {
+                N = csv[0].indexOf(N);
+                if (N < 0) {
+                    return console.log(
+                        'Error: field selector for column should be either a valid column name or index'
+                    );
+                }
+            } else {
+                N = xN;
+            }
+            M = parseInt(M);
+            if ((!N && N !== 0) || (!M && M !== 0))
+                return console.log(
+                    'Error: field selector should include two valid numeric coordinates'
+                );
+            console.log(csv[M][N] || '');
+        }
+        return;
     }
 
     if (args['rows']) {
@@ -343,19 +413,95 @@ const help = `
     }
 
     // If asking for column count
-    if (args['col-count']) process.stdout.write(csv[0].length + ' ');
+    if (args['col-count']) {
+        process.stdout.write(csv[0].length + ' ');
+    }
     // If asking for row count
-    if (args['row-count'])
+    if (args['row-count']) {
         if (args['header']) process.stdout.write(csv.length + ' ');
         else process.stdout.write(csv.length - 1 + ' ');
+    }
     // If asking for field count:
-    if (args['field-count'])
+    if (args['field-count']) {
         if (args['header'])
             process.stdout.write(csv[0].length * csv.length + ' ');
         else process.stdout.write(csv[0].length * (csv.length - 1) + ' ');
+    }
 
     // If any of the above was selected, return
-    if (args['field-count'] || args['col-count'] || args['row-count']) return;
+    if (args['field-count'] || args['col-count'] || args['row-count']) {
+        return;
+    }
+
+    // If asking for a sorted version of the table:
+    if (args['sort']) {
+        if (typeof args['sort'] !== 'string')
+            return console.log('Error: expected a value for sorting');
+        let [xcol, xmode] = args['sort'].split(',');
+        if (!'asc|ascending|des|descending'.split('|').includes(xmode))
+            return console.log(
+                'Error: expected a valid mode for sorting (asc|ascending|des|descending)'
+            );
+        if (!isNaN(parseInt(xcol))) {
+            xcol = parseInt(xcol);
+        } else {
+            xcol = csv[0].indexOf(xcol);
+        }
+        if ((!xcol && typeof xcol !== 'number') || xcol < 0)
+            return console.log(
+                'Error: expected a valid column name or index for sorting' +
+                    '\nDouble-check selected columns and selected column name (it is case-sensitive)'
+            );
+
+        csv = [
+            csv[0],
+            ...csv.slice(1).sort((a, b) => {
+                let [rA, rB] = [a[xcol], b[xcol]];
+                let [intA, intB] = [parseFloat(rA), parseFloat(rB)];
+                // If both are numbers:
+                if (
+                    !!intA &&
+                    !!intB &&
+                    rA === intA.toString() &&
+                    rB === intB.toString()
+                )
+                    (rA = intA), (rB = intB);
+                console.log(xmode, [rA, rB], [rA < rB, rA === rB, rA > rB]);
+                if (xmode === 'asc' || xmode === 'ascending')
+                    return rA < rB ? -1 : rA === rB ? 0 : 1;
+                if (xmode === 'des' || xmode === 'descending')
+                    return rA > rB ? -1 : rA === rB ? 0 : 1;
+            }),
+        ];
+    }
+
+    // If asking for a filtered version of the table:
+    if (args['match']) {
+        if (typeof args['match'] !== 'string')
+            return console.log('Error: expected a value for matching');
+        let [xcol, ...xregex] = args['match'].split(',');
+        // If the regex contains ',' join it back
+        try {
+            xregex = new RegExp(xregex.join(','), args.insensitive ? 'i' : '');
+        } catch {
+            return console.log(
+                'Error: expected a valid regular expression for matching'
+            );
+        }
+        const numxcol = parseFloat(xcol);
+        if (!isNaN(numxcol) && numxcol.toString() === xcol) {
+            xcol = numxcol;
+        } else {
+            xcol = csv[0].indexOf(xcol);
+        }
+        if ((!xcol && typeof xcol !== 'number') || xcol < 0)
+            return console.log(
+                'Error: expected a valid column name or index for matching' +
+                    '\nDouble-check selected columns and selected column name (it is case-sensitive)'
+            );
+
+        csv = [csv[0], ...csv.slice(1).filter(v => xregex.test(v[xcol]))];
+    }
 
     // If asking for header
     if (args['header'] && !args['cols'] && !args['rows']) {
