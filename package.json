@@ -7,7 +7,7 @@
     "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
     "license": "MIT",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": "node --test .test/*.test.js",
         "build-linux": "pkg -c package.json -t node18-linux mods.js",
         "build-win": "pkg -c package.json -t node18-win mods.js",
         "build-debug": "pkg --debug -c package.json -t node18-win mods.js > build.log && echo. && echo Run with \"set DEBUG_PKG=1 & mods.exe\"",
