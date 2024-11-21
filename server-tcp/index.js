@@ -1,53 +1,55 @@
+const { Logger } = require('../shared');
+const logger = new Logger({
+    format: msg => {
+        return (
+            `[${msg.timestamp}] ` +
+            `${msg.level.toUpperCase()} ` +
+            `${msg.event.toUpperCase()} ` +
+            `tcp://${msg.client}` +
+            (msg.message ? ' - ' + msg.message : '')
+        );
+    },
+});
+
 function startTcpServer(context) {
     const net = require('net');
     const { host, port, content } = context;
     return net
         .createServer(function (socket) {
-            let date = new Date();
-            let now =
-                date.toString().split(' ')[4] +
-                '.' +
-                date.getMilliseconds().toString().padStart(3, '0');
-            console.log(
-                `\n> ${now} > Connected: tcp@${host}:${port} <> tcp@${socket.remoteAddress}:${socket.remotePort}`
-            );
+            const { remoteAddress, remotePort } = socket;
+            const client = remoteAddress + ':' + remotePort;
+
+            logger.info({ event: 'connect', client });
+
             socket.on('data', function (data) {
-                let date = new Date();
-                let now =
-                    date.toString().split(' ')[4] +
-                    '.' +
-                    date.getMilliseconds().toString().padStart(3, '0');
-                console.log(
-                    `> ${now} > Received data (${data.length} bytes) \n  ${data}`
+                logger.info(
+                    { event: 'data', client },
+                    'Received ' + data.length + ' bytes'
                 );
                 socket.write(content);
             });
+
             socket.on('close', function () {
-                let date = new Date();
-                let now =
-                    date.toString().split(' ')[4] +
-                    '.' +
-                    date.getMilliseconds().toString().padStart(3, '0');
-                console.log(
-                    `> ${now} > Disconnected: tcp@${host}:${port} <> tcp@${socket.remoteAddress}:${socket.remotePort}`
-                );
+                logger.info({ event: 'disconnect', client });
             });
+
             socket.on('error', function (err) {
-                let date = new Date();
-                let now =
-                    date.toString().split(' ')[4] +
-                    '.' +
-                    date.getMilliseconds().toString().padStart(3, '0');
-                console.log(
-                    `> ${now} > Connection failed: tcp@${host}:${port} <> tcp@${socket.remoteAddress}:${socket.remotePort} -> ${err.message}`
-                );
+                logger.error({ event: 'reset', client }, err.message);
             });
         })
         .listen(port, host, () => {
-            console.log(
-                '>> Automatic config used. Use --help to access the help menu.'
-            );
-            console.log(`>> TCP server running on tcp://${host}:${port}/`);
+            logger.print(`[+] Exposed Interface: ${host}:${port}`, 'yellow');
+            if (host === '0.0.0.0') {
+                logger.print(
+                    `[+] Local Link: tcp://127.0.0.1:${port}/\n`,
+                    'yellow'
+                );
+            } else {
+                logger.print(
+                    `[+] Local Link: tcp://${host}:${port}/\n`,
+                    'yellow'
+                );
+            }
         });
 }
 
@@ -116,7 +118,7 @@ function startTcpServer(context) {
 
     try {
         if (!context.port) context.port = 8000;
-        if (!context.content) context.content = '<TCP/>';
+        if (!context.content) context.content = 'OK';
         startTcpServer(context);
     } catch (err) {
         console.log(err.message);
