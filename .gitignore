@@ -18,16 +18,15 @@ node_modules/
 .temp/
 # Optional cache directory
 .cache/
+# All extra hidden directories
+.**/
 
 
 # Publishing config
 .publish.json
 publish.json
 
-# PKG config
-.pkgconfig.json
-pkgconfig.json
 
 # Local custom
-movebin.cmd
 COMMITS.*
+TODO.*
