@@ -422,10 +422,160 @@ function readStdinAsync({ controlChars = false } = {}) {
 
 const isSTDINActive = () => !process.stdin.isTTY;
 
+class Logger {
+    #timestampGenerator() {
+        return new Date().toISOString();
+    }
+
+    constructor({ stdout, format, colors = true } = {}) {
+        this.stdout = stdout || process.stdout;
+        this.colors = colors;
+        if (format && typeof format === 'function') {
+            this.formatter = format;
+        } else {
+            this.formatter = param => {
+                return JSON.stringify(param);
+            };
+        }
+    }
+
+    #colorize(color = '', string) {
+        const colors = { red: 31, green: 32, blue: 34, yellow: 33 };
+        return `\x1b[0m\x1b[${colors[color] || ''}m${string}\x1b[0m`;
+    }
+
+    #log(level, props, message) {
+        let result = {
+            timestamp: this.#timestampGenerator(),
+            level,
+        };
+
+        if (typeof message !== 'string') {
+            message = JSON.stringify(message);
+        }
+
+        if (typeof props !== 'object') {
+            props = { info: props };
+        }
+
+        for (let prop in props) {
+            result[prop] = props[prop];
+        }
+
+        result.message = message || result.message;
+        result = this.formatter(result);
+        if (this.colors) {
+            result = this.#colorize(
+                level === 'info'
+                    ? 'blue'
+                    : level === 'warn'
+                    ? 'yellow'
+                    : level === 'error'
+                    ? 'red'
+                    : level === 'debug'
+                    ? 'green'
+                    : null,
+                result
+            );
+        }
+        return this.stdout.write(result + '\n');
+    }
+
+    info(props, message) {
+        return this.#log('info', props, message);
+    }
+
+    error(props, message) {
+        return this.#log('error', props, message);
+    }
+
+    warn(props, message) {
+        return this.#log('warn', props, message);
+    }
+
+    debug(props, message) {
+        return this.#log('debug', props, message);
+    }
+
+    /**
+     * Paints a text with specified foreground and background colors.
+     *
+     * Colors can be passed in either string mode, numerical mode, or hex mode.
+     *
+     * The colors available in string mode are the ones supported by 8/16 color terminals:
+     * black, red, green, yellow, blue, magenta, cyan, white, default
+     *
+     * The colors available in numerical mode are the supported by 8-bit color terminals:
+     * https://user-images.githubusercontent.com/995050/47952855-ecb12480-df75-11e8-89d4-ac26c50e80b9.png
+     *
+     * Hex mode can be the short (#RGB) or long (#RRGGBB) ones.
+     * The terminal must support TrueColor.
+     *
+     * @param {string|number} foreground
+     * @param {string|number} background
+     * @returns {string}
+     */
+    print(text, foreground = '', background = '') {
+        const CSI = '\x1b[';
+        const RESET = CSI + '0m';
+        const COLOR_TABLE_8BIT = {
+            black: 0,
+            red: 1,
+            green: 2,
+            yellow: 3,
+            blue: 4,
+            magenta: 5,
+            cyan: 6,
+            white: 7,
+            default: 9,
+        };
+        const fromColorCode = (color, type) => {
+            // For 8-bit colors
+            if (COLOR_TABLE_8BIT[color] !== undefined)
+                return `${CSI}${type === 'fg' ? '3' : '4'}${
+                    COLOR_TABLE_8BIT[color]
+                }m`;
+            // For complete colors
+            else if (typeof color === 'number')
+                return `${CSI}${type === 'fg' ? '3' : '4'}8;5;${color}m`;
+            // For TrueColor mode
+            else if (color.startsWith('#')) {
+                if (color.length === 4) {
+                    // Short codes: #RGB
+                    const c = [color[1], color[2], color[3]].map(v =>
+                        parseInt(v, 16)
+                    );
+                    return `${CSI}${type === 'fg' ? '3' : '4'}8;2;${c[0]};${
+                        c[1]
+                    };${c[2]}m`;
+                } else if (color.length === 7) {
+                    // Long codes: #RRGGBB
+                    const c = [
+                        color.slice(1, 3),
+                        color.slice(3, 5),
+                        color.slice(5, 7),
+                    ].map(v => parseInt(v, 16));
+                    return `${CSI}${type === 'fg' ? '3' : '4'}8;2;${c[0]};${
+                        c[1]
+                    };${c[2]}m`;
+                }
+            } else return '';
+        };
+        return console.log(
+            RESET +
+                fromColorCode(foreground, 'fg') +
+                fromColorCode(background, 'bg') +
+                text +
+                RESET
+        );
+    }
+}
+
 module.exports = {
     ArgvParser,
     parseArgv,
     isSTDINActive,
     readStdinAsync,
     parseControlChars,
+    Logger,
 };
