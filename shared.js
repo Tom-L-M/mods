@@ -382,14 +382,13 @@ class ArgvParser {
 
 function parseControlChars(string) {
     return string
-        .replaceAll('\\s', ' ')
         .replaceAll('\\t', '\t')
         .replaceAll('\\n', '\n')
         .replaceAll('\\b', '\b')
         .replaceAll('\\r', '\r')
         .replaceAll('\\f', '\f')
-        .replaceAll(/\\x([a-z0-9])/gi, (match, n1) =>
-            String.fromCharCode(parseInt(n1))
+        .replaceAll(/\\x([a-f0-9]{1,2})/gi, (match, n1) =>
+            String.fromCharCode(parseInt(n1, 16))
         );
 }
 
