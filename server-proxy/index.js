@@ -1,6 +1,26 @@
 const { createServer, createConnection } = require('net');
 const { createSocket } = require('dgram');
 
+const { Logger } = require('../shared');
+const logger = new Logger({
+    format: msg => {
+        return (
+            `[${msg.timestamp}] ` +
+            msg.level.toUpperCase() +
+            ' ' +
+            msg.event.toUpperCase() +
+            ' [(' +
+            msg.protocol +
+            ') ' +
+            msg.host +
+            '] ' +
+            msg.client +
+            (msg.size ? ' (' + msg.size + ' bytes)' : '') +
+            (msg.message ? ' - ' + msg.message : '')
+        );
+    },
+});
+
 const help = `
     [server-proxy-js]
         A tool for creating local static UDP/TCP proxy servers
@@ -32,57 +52,108 @@ function generateRange(start, end) {
     return new Array(end - start + 1).fill(start).map((x, i) => x + i);
 }
 
+function prettifyRawRequestData(buffer) {
+    const chunkify = (s, w) =>
+        s.match(new RegExp(`.{1,${w >= 1 ? w : 1}}`, 'gim')) ?? [];
+    const stringFromBuffer = [...buffer]
+        .map(v => '0x' + v.toString(16).padStart(2, '0').toUpperCase())
+        .join(' ');
+    const chunkedString = chunkify(buffer.toString(), 16);
+    const chunkedBuffer = chunkify(stringFromBuffer, 16 * 5);
+    return chunkedBuffer
+        .map(
+            (v, i) =>
+                '  ' +
+                v.padEnd(16 * 5, ' ') +
+                ' |' +
+                (chunkedString[i] || '').padEnd(16, ' ') +
+                '|'
+        )
+        .join('\n');
+}
+
 function createUdpProxy(host, port, destinationHost, destinationPort) {
     const server = createSocket('udp4');
-
-    const log = (rinfo, msg, pipe1, pipe2) => {
-        let date = new Date();
-        let now =
-            date.toString().split(' ')[4] +
-            '.' +
-            date.getMilliseconds().toString().padStart(3, '0');
-        let str = `${now} UDP ${rinfo.address}:${rinfo.port} ${pipe1} ${host}:${port} ${pipe2} ${destinationHost}:${destinationPort} - ${msg}`;
-        console.log(str);
-        return str;
-    };
+    let local; // This is defined later, because it must be called AFTER the socket is binded
 
     server.on('message', (msg, rinfo) => {
-        log(rinfo, 'DATA_FROM_CLIENT - ' + msg.length + 'b', '>>', '||');
-        server.send(msg, destinationPort, destinationHost, err => {
-            log(rinfo, 'DATA_TO_REMOTE - ' + msg.length + 'b', '||', '>>');
+        logger.info(
+            {
+                event: 'request',
+                client: rinfo.address + ':' + rinfo.port,
+                host: local,
+                size: msg.length,
+                protocol: 'udp',
+            },
+            `\n` + prettifyRawRequestData(msg)
+        );
+
+        const target = createSocket('udp4');
+        target.on('message', targetmsg => {
+            logger.info(
+                {
+                    event: 'response',
+                    client: rinfo.address + ':' + rinfo.port,
+                    host: local,
+                    size: targetmsg.length,
+                    protocol: 'udp',
+                },
+                `\n` + prettifyRawRequestData(targetmsg)
+            );
+            server.send(targetmsg, rinfo.port, rinfo.address);
+        });
+        target.send(msg, destinationPort, destinationHost, err => {
+            logger.info({
+                event: 'forward',
+                client: destinationHost + ':' + destinationPort,
+                host: local,
+                size: msg.length,
+                protocol: 'udp',
+            });
             if (err)
-                log(rinfo, '(ERR:ToRemoteNotFlushed) - ' + err, '||', '!!');
+                logger.error(
+                    {
+                        event: 'send-fail',
+                        client: destinationHost + ':' + destinationPort,
+                        host: local,
+                        protocol: 'udp',
+                    },
+                    err.message
+                );
         });
     });
 
     server.on('close', () => {
-        log('', 'SERVER_CLOSED', '||', '||');
+        logger.print('[-] Server Closed', 'yellow');
     });
 
     server.on('error', err => {
-        log('', 'ERROR_PROXY - ' + err, '!!', '!!');
+        logger.print('[x] Server Error - ' + err.message, 'red');
     });
 
     server.bind(port, host, () => {
-        console.log(
-            `Proxy server redirecting:   <UDP>   ${host}:${port} -> ${destinationHost}:${destinationPort}`
+        logger.print(`[+] Exposed Interface: (UDP) ${host}:${port}`, 'yellow');
+        logger.print(
+            `[+] Tunnel: (UDP) ${host}:${port} -> (UDP) ${destinationHost}:${destinationPort}`,
+            'yellow'
         );
+        logger.print(
+            `[+] Local Link: udp://` +
+                (this.host !== '0.0.0.0' ? host : '127.0.0.1') +
+                `:${port}/\n`,
+            'yellow'
+        );
+
+        local = server.address().address + ':' + server.address().port;
     });
 }
 
 function createTcpProxy(host, port, destinationHost, destinationPort) {
-    let pipes = { a1: '??', a2: '??' };
     const server = createServer(clientSocket => {
-        const log = msg => {
-            let date = new Date();
-            let now =
-                date.toString().split(' ')[4] +
-                '.' +
-                date.getMilliseconds().toString().padStart(3, '0');
-            let str = `${now} TCP ${clientSocket.remoteAddress}:${clientSocket.remotePort} ${pipes.a1} ${host}:${port} ${pipes.a2} ${destinationHost}:${destinationPort} - ${msg}`;
-            console.log(str);
-            return str;
-        };
+        const local = host + ':' + port;
+        const client =
+            clientSocket.address().address + ':' + clientSocket.address().port;
+        const target = destinationHost + ':' + destinationPort;
 
         const targetSocket = createConnection({
             host: destinationHost,
@@ -93,96 +164,110 @@ function createTcpProxy(host, port, destinationHost, destinationPort) {
 
         clientSocket.on('error', error => {
             // Errors in pipe1 (connection between client and proxy)
-            log(
-                'ERROR_CLIENT - ' + error,
-                (pipes.a1 = '!!'),
-                (pipes.a2 = '--')
+            logger.error(
+                { event: 'client-fail', client, host: local, protocol: 'tcp' },
+                error.message
             );
             targetSocket.destroy();
         });
         targetSocket.on('error', error => {
             // Errors in pipe2 (connection between proxy and remote server)
-            log(
-                'ERROR_REMOTE - ' + error,
-                (pipes.a1 = '--'),
-                (pipes.a2 = '!!')
+            logger.error(
+                {
+                    event: 'forward-fail',
+                    client: target,
+                    host: local,
+                    protocol: 'tcp',
+                },
+                error.message
             );
             clientSocket.destroy();
         });
 
         clientSocket.on('connect', function () {
             // Client and proxy are connected
-            log('CONNECT_CLIENT', (pipes.a1 = '<>'), (pipes.a2 = '--'));
+            // log('CONNECT_CLIENT', (pipes.a1 = '<>'), (pipes.a2 = '--'));
         });
         targetSocket.on('connect', function () {
             // Client and proxy are connected
-            log('CONNECT_REMOTE', (pipes.a1 = '--'), (pipes.a2 = '<>'));
+            // log('CONNECT_REMOTE', (pipes.a1 = '--'), (pipes.a2 = '<>'));
         });
 
         clientSocket.on('data', function (data) {
             // Proxy received data from client
-            log('DATA_FROM_CLIENT', (pipes.a1 = '>>'), (pipes.a2 = '--'));
-            let flushed = targetSocket.write(data);
-            if (!flushed) {
-                // Proxy fail to sent data to remote server
-                log(
-                    'PAUSE_FLUSH - (ERR:FromClientNotFlushed)',
-                    (pipes.a1 = '--'),
-                    (pipes.a2 = '>|')
-                );
-                clientSocket.pause();
-            }
-            log('DATA_TO_REMOTE', (pipes.a1 = '>>'), (pipes.a2 = '>>'));
+            logger.info(
+                {
+                    event: 'request',
+                    client,
+                    host: local,
+                    size: data.length,
+                    protocol: 'tcp',
+                },
+                `\n${prettifyRawRequestData(data)}`
+            );
+
+            // let flushed = targetSocket.write(data);
+            // if (!flushed) {
+            //     clientSocket.pause();
+            // }
         });
         targetSocket.on('data', function (data) {
-            log('DATA_FROM_REMOTE', (pipes.a1 = '--'), (pipes.a2 = '<<'));
-            let flushed = clientSocket.write(data);
-            if (!flushed) {
-                log(
-                    'PAUSE_FLUSH - (ERR:FromRemoteNotFlushed)',
-                    (pipes.a1 = '|<'),
-                    (pipes.a2 = '--')
-                );
-                targetSocket.pause();
-            }
-            log('DATA_TO_CLIENT', (pipes.a1 = '<<'), (pipes.a2 = '<<'));
+            logger.info(
+                {
+                    event: 'response',
+                    client: target,
+                    host: local,
+                    size: data.length,
+                    protocol: 'tcp',
+                },
+                `\n${prettifyRawRequestData(data)}`
+            );
+            // let flushed = clientSocket.write(data);
+            // if (!flushed) {
+            //     targetSocket.pause();
+            // }
         });
 
-        clientSocket.on('drain', function () {
-            log(
-                'RESUME_FLUSH - (INFO:FlushedFromClient)',
-                (pipes.a1 = '--'),
-                (pipes.a2 = '|>')
-            );
-            targetSocket.resume();
-        });
-        targetSocket.on('drain', function () {
-            log(
-                'RESUME_FLUSH - (INFO:FlushedFromRemote)',
-                (pipes.a1 = '<|'),
-                (pipes.a2 = '--')
-            );
-            log('RESUME_LOCAL', '|>', '|>');
-            clientSocket.resume();
-        });
+        // There is no point in controlling drain, if both sockets are piped to each other already
+
+        // clientSocket.on('drain', function () {
+        //     targetSocket.resume();
+        // });
+        // targetSocket.on('drain', function () {
+        //     clientSocket.resume();
+        // });
 
         clientSocket.on('close', function () {
-            log('CLOSE_CLIENT', (pipes.a1 = '><'), (pipes.a2 = '--'));
             targetSocket.end();
         });
         targetSocket.on('close', function () {
-            log('CLOSE_REMOTE', (pipes.a1 = '--'), (pipes.a2 = '><'));
             clientSocket.end();
-        });
-
-        server.on('error', error => {
-            log('ERROR_PROXY - ' + error, (pipes.a1 = '!!'), (pipes.a2 = '!!'));
         });
     });
 
+    server.on('error', error => {
+        logger.error(
+            {
+                event: 'fail',
+                client: '0.0.0.0',
+                host: '0.0.0.0',
+                protocol: 'tcp',
+            },
+            error.message
+        );
+    });
+
     server.listen(port, host, () => {
-        console.log(
-            `Proxy server redirecting:   <TCP>   ${host}:${port} -> ${destinationHost}:${destinationPort}`
+        logger.print(`[+] Exposed Interface: (TCP) ${host}:${port}`, 'yellow');
+        logger.print(
+            `[+] Tunnel: (TCP) ${host}:${port} -> (TCP) ${destinationHost}:${destinationPort}`,
+            'yellow'
+        );
+        logger.print(
+            `[+] Local Link: tcp://` +
+                (this.host !== '0.0.0.0' ? host : '127.0.0.1') +
+                `:${port}/\n`,
+            'yellow'
         );
     });
 }
@@ -314,13 +399,13 @@ function parseArgs() {
                 break;
 
             default:
-                console.log(`[ERROR] Invalid argument: ${args[i]}`);
+                logger.print(`[x] Error: Invalid argument [${args[i]}]`, 'red');
                 process.exit(1);
         }
     }
 
     if (routes.length === 0) {
-        console.error(`[ERROR] Missing required arguments`);
+        logger.print(`[x] Error: Missing required arguments`, 'red');
         return [];
     }
 
