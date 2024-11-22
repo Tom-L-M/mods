@@ -447,7 +447,7 @@ class GopherServer {
                         `:${this.port}/`,
                     'yellow'
                 );
-                logger.print(`[+] Served Directory: ${this.dir}\n`, 'yellow');
+                logger.print(`[+] Serving Directory: ${this.dir}\n`, 'yellow');
             }));
     }
 }

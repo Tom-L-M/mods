@@ -5,7 +5,7 @@ const logger = new Logger({
             `[${msg.timestamp}] ` +
             `${msg.level.toUpperCase()} ` +
             `${msg.event.toUpperCase()} ` +
-            `tcp://${msg.client}` +
+            msg.client +
             (msg.message ? ' - ' + msg.message : '')
         );
     },

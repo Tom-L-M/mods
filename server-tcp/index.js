@@ -5,7 +5,7 @@ const logger = new Logger({
             `[${msg.timestamp}] ` +
             `${msg.level.toUpperCase()} ` +
             `${msg.event.toUpperCase()} ` +
-            `tcp://${msg.client}` +
+            msg.client +
             (msg.message ? ' - ' + msg.message : '')
         );
     },
@@ -39,7 +39,8 @@ function startTcpServer(context) {
             const { remoteAddress, remotePort } = socket;
             const client = remoteAddress + ':' + remotePort;
 
-            logger.info({ event: 'connect', client });
+            // Avoid printing connection-related events, pollutes the terminal
+            // logger.info({ event: 'connect', client });
 
             socket.on('data', function (data) {
                 logger.info(
@@ -54,13 +55,15 @@ function startTcpServer(context) {
                 );
             });
 
-            socket.on('close', function () {
-                logger.info({ event: 'disconnect', client });
-            });
+            // Avoid printing connection-related events, pollutes the terminal
+            // socket.on('close', function () {
+            //     logger.info({ event: 'disconnect', client });
+            // });
 
-            socket.on('error', function (err) {
-                logger.error({ event: 'reset', client }, err.message);
-            });
+            // Avoid printing connection-related events, pollutes the terminal
+            // socket.on('error', function (err) {
+            //     logger.error({ event: 'reset', client }, err.message);
+            // });
         })
         .listen(port, host, () => {
             logger.print(

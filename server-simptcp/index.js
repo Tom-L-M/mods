@@ -7,7 +7,7 @@ const logger = new Logger({
             `[${msg.timestamp}] ` +
             `${msg.level.toUpperCase()} ` +
             `${msg.event.toUpperCase()} ` +
-            `tcp://${msg.client}` +
+            msg.client +
             (msg.message ? ' - ' + msg.message : '')
         );
     },
@@ -26,7 +26,10 @@ function startChargenServer(host, port) {
     return net
         .createServer(async function (socket) {
             const client = socket.remoteAddress + ':' + socket.remotePort;
-            logger.info({ event: 'connect', client });
+
+            // Avoid printing connection-related events, pollutes the terminal
+            // logger.info({ event: 'connect', client });
+
             let chunkCounter = 0;
             let geninterval;
             geninterval = setInterval(() => {
@@ -46,17 +49,20 @@ function startChargenServer(host, port) {
             });
 
             socket.on('end', function () {
-                logger.info({ event: 'disconnect', client });
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.info({ event: 'disconnect', client });
                 clearInterval(geninterval);
             });
 
             socket.on('timeout', function () {
-                logger.error({ event: 'timeout', client });
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.error({ event: 'timeout', client });
                 socket.end();
             });
 
-            socket.on('error', function (err) {
-                logger.error({ event: 'reset', client }, err.message);
+            socket.on('error', function () {
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.error({ event: 'reset', client }, err.message);
                 clearInterval(geninterval);
             });
         })
@@ -103,24 +109,29 @@ function startDaytimeServer(host, port) {
             });
 
             socket.on('end', function () {
-                logger.info({ event: 'disconnect', client });
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.info({ event: 'disconnect', client });
             });
 
             socket.on('timeout', function () {
-                logger.error({ event: 'timeout', client });
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.error({ event: 'timeout', client });
                 socket.end();
             });
 
-            socket.on('error', function (err) {
-                logger.error({ event: 'reset', client }, err.message);
+            socket.on('error', function () {
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.error({ event: 'reset', client }, err.message);
             });
 
-            logger.info({ event: 'connect', client });
+            // Avoid printing connection-related events, pollutes the terminal
+            // logger.info({ event: 'connect', client });
 
             const dataToSend = getDaytimeString();
             socket.write(dataToSend, err => {
                 if (err) {
-                    logger.error({ event: 'reset', client }, err.message);
+                    // Avoid printing connection-related events, pollutes the terminal
+                    // logger.error({ event: 'reset', client }, err.message);
                 } else {
                     logger.info(
                         { event: 'response', client },
@@ -150,7 +161,8 @@ function startDiscardServer(host, port) {
         .createServer(function (socket) {
             const client = socket.remoteAddress + ':' + socket.remotePort;
 
-            logger.info({ event: 'connect', client });
+            // Avoid printing connection-related events, pollutes the terminal
+            // logger.info({ event: 'connect', client });
 
             socket.on('data', function (data) {
                 logger.info(
@@ -160,16 +172,19 @@ function startDiscardServer(host, port) {
             });
 
             socket.on('end', function () {
-                logger.info({ event: 'disconnect', client });
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.info({ event: 'disconnect', client });
             });
 
             socket.on('timeout', function () {
-                logger.error({ event: 'timeout', client });
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.error({ event: 'timeout', client });
                 socket.end();
             });
 
-            socket.on('error', function (err) {
-                logger.error({ event: 'reset', client }, err.message);
+            socket.on('error', function () {
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.error({ event: 'reset', client }, err.message);
             });
         })
         .listen(port, host, () => {
@@ -192,7 +207,8 @@ function startEchoServer(host, port) {
         .createServer(function (socket) {
             const client = socket.remoteAddress + ':' + socket.remotePort;
 
-            logger.info({ event: 'connect', client });
+            // Avoid printing connection-related events, pollutes the terminal
+            // logger.info({ event: 'connect', client });
 
             socket.on('data', function (data) {
                 logger.info(
@@ -207,16 +223,19 @@ function startEchoServer(host, port) {
             });
 
             socket.on('end', function () {
-                logger.info({ event: 'disconnect', client });
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.info({ event: 'disconnect', client });
             });
 
             socket.on('timeout', function () {
-                logger.error({ event: 'timeout', client });
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.error({ event: 'timeout', client });
                 socket.end();
             });
 
-            socket.on('error', function (err) {
-                logger.info({ event: 'reset', client }, err.message);
+            socket.on('error', function () {
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.info({ event: 'reset', client }, err.message);
             });
         })
         .listen(port, host, () => {
