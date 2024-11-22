@@ -11,6 +11,26 @@ const logger = new Logger({
     },
 });
 
+function prettifyRawRequestData(buffer) {
+    const chunkify = (s, w) =>
+        s.match(new RegExp(`.{1,${w >= 1 ? w : 1}}`, 'gim')) ?? [];
+    const stringFromBuffer = [...buffer]
+        .map(v => '0x' + v.toString(16).padStart(2, '0').toUpperCase())
+        .join(' ');
+    const chunkedString = chunkify(buffer.toString(), 16);
+    const chunkedBuffer = chunkify(stringFromBuffer, 16 * 5);
+    return chunkedBuffer
+        .map(
+            (v, i) =>
+                '  ' +
+                v.padEnd(16 * 5, ' ') +
+                ' |' +
+                (chunkedString[i] || '').padEnd(16, ' ') +
+                '|'
+        )
+        .join('\n');
+}
+
 function startTcpServer(context) {
     const net = require('net');
     const { host, port, content } = context;
@@ -24,9 +44,14 @@ function startTcpServer(context) {
             socket.on('data', function (data) {
                 logger.info(
                     { event: 'data', client },
-                    'Received ' + data.length + ' bytes'
+                    `Received: ${data.length} bytes\n` +
+                        prettifyRawRequestData(data)
                 );
                 socket.write(content);
+                logger.info(
+                    { event: 'response', client },
+                    `Sent ${content.length} bytes`
+                );
             });
 
             socket.on('close', function () {
@@ -39,17 +64,12 @@ function startTcpServer(context) {
         })
         .listen(port, host, () => {
             logger.print(`[+] Exposed Interface: ${host}:${port}`, 'yellow');
-            if (host === '0.0.0.0') {
-                logger.print(
-                    `[+] Local Link: tcp://127.0.0.1:${port}/\n`,
-                    'yellow'
-                );
-            } else {
-                logger.print(
-                    `[+] Local Link: tcp://${host}:${port}/\n`,
-                    'yellow'
-                );
-            }
+            logger.print(
+                `[+] Local Link: tcp://` +
+                    (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                    `:${port}/\n`,
+                'yellow'
+            );
         });
 }
 
