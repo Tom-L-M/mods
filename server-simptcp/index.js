@@ -1,10 +1,17 @@
 const net = require('net');
 
-function log(protocol, host, port, rHost, rPort, event) {
-    return console.log(
-        `${new Date().toISOString()} tcp ${protocol} - ${host}:${port} <> ${rHost}:${rPort} - ${event}`
-    );
-}
+const { Logger, ArgvParser } = require('../shared');
+const logger = new Logger({
+    format: msg => {
+        return (
+            `[${msg.timestamp}] ` +
+            `${msg.level.toUpperCase()} ` +
+            `${msg.event.toUpperCase()} ` +
+            `tcp://${msg.client}` +
+            (msg.message ? ' - ' + msg.message : '')
+        );
+    },
+});
 
 function startChargenServer(host, port) {
     function getNextChunk(start) {
@@ -18,85 +25,53 @@ function startChargenServer(host, port) {
 
     return net
         .createServer(async function (socket) {
-            let socketOld = {
-                remoteAddress: socket.remoteAddress,
-                remotePort: socket.remotePort,
-            };
+            const client = socket.remoteAddress + ':' + socket.remotePort;
+            logger.info({ event: 'connect', client });
             let chunkCounter = 0;
             let geninterval;
             geninterval = setInterval(() => {
                 const dataToSend = getNextChunk(chunkCounter++);
                 socket.write(dataToSend);
-                log(
-                    'echo',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `DATA_OUT (${
-                        dataToSend.length
-                    } bytes) - ${dataToSend.trim()}`
+                logger.info(
+                    { event: 'response', client },
+                    `Sent ${dataToSend.length} bytes`
                 );
             }, 1);
 
-            log(
-                'chargen',
-                host,
-                port,
-                socket.remoteAddress,
-                socket.remotePort,
-                'CONNECT'
-            );
-
             socket.on('data', function (data) {
-                log(
-                    'chargen',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `DATA_IN (${data.length} bytes) - DISCARDED`
+                logger.info(
+                    { event: 'data', client },
+                    `Received ${data.length} bytes (discarded)`
                 );
             });
 
             socket.on('end', function () {
-                log(
-                    'chargen',
-                    host,
-                    port,
-                    socketOld.remoteAddress,
-                    socketOld.remotePort,
-                    `DISCONNECT`
-                );
+                logger.info({ event: 'disconnect', client });
                 clearInterval(geninterval);
             });
 
             socket.on('timeout', function () {
-                log(
-                    'chargen',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `TIMEOUT`
-                );
+                logger.error({ event: 'timeout', client });
                 socket.end();
             });
 
             socket.on('error', function (err) {
-                log(
-                    'chargen',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `RESET -> ERR:${err.message}`
-                );
+                logger.error({ event: 'reset', client }, err.message);
                 clearInterval(geninterval);
             });
         })
         .listen(port, host, () => {
-            console.log(`>> Chargen server running on tcp://${host}:${port}`);
+            logger.print('[+] Protocol: "chargen"', 'yellow');
+            logger.print(
+                `[+] Exposed Interface: (TCP) ${host}:${port}`,
+                'yellow'
+            );
+            logger.print(
+                `[+] Local Link: tcp://` +
+                    (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                    `:${port}/\n`,
+                'yellow'
+            );
         });
 }
 
@@ -119,239 +94,147 @@ function startDaytimeServer(host, port) {
 
     return net
         .createServer(function (socket) {
-            let socketOld = {
-                remoteAddress: socket.remoteAddress,
-                remotePort: socket.remotePort,
-            };
-
+            const client = socket.remoteAddress + ':' + socket.remotePort;
             socket.on('data', function (data) {
-                log(
-                    'daytime',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `DATA_IN (${data.length} bytes) - DISCARDED`
+                logger.info(
+                    { event: 'data', client },
+                    `Received ${data.length} bytes (discarded)`
                 );
             });
 
             socket.on('end', function () {
-                log(
-                    'daytime',
-                    host,
-                    port,
-                    socketOld.remoteAddress,
-                    socketOld.remotePort,
-                    `DISCONNECT`
-                );
+                logger.info({ event: 'disconnect', client });
             });
 
             socket.on('timeout', function () {
-                log(
-                    'daytime',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `TIMEOUT`
-                );
+                logger.error({ event: 'timeout', client });
                 socket.end();
             });
 
             socket.on('error', function (err) {
-                log(
-                    'daytime',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `RESET -> ERR:${err.message}`
-                );
+                logger.error({ event: 'reset', client }, err.message);
             });
 
-            log(
-                'daytime',
-                host,
-                port,
-                socket.remoteAddress,
-                socket.remotePort,
-                'CONNECT'
-            );
+            logger.info({ event: 'connect', client });
+
             const dataToSend = getDaytimeString();
             socket.write(dataToSend, err => {
                 if (err) {
-                    log(
-                        'daytime',
-                        host,
-                        port,
-                        socket.remoteAddress,
-                        socket.remotePort,
-                        `RESET -> ERR:${err.message}`
-                    );
+                    logger.error({ event: 'reset', client }, err.message);
                 } else {
-                    log(
-                        'daytime',
-                        host,
-                        port,
-                        socket.remoteAddress,
-                        socket.remotePort,
-                        `DATA_OUT (${dataToSend.length} bytes) - ${dataToSend}`
+                    logger.info(
+                        { event: 'response', client },
+                        `Sent ${dataToSend.length} bytes`
                     );
                     socket.end();
                 }
             });
         })
         .listen(port, host, () => {
-            console.log(`>> Daytime server running on tcp://${host}:${port}`);
+            logger.print('[+] Protocol: "daytime"', 'yellow');
+            logger.print(
+                `[+] Exposed Interface: (TCP) ${host}:${port}`,
+                'yellow'
+            );
+            logger.print(
+                `[+] Local Link: tcp://` +
+                    (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                    `:${port}/\n`,
+                'yellow'
+            );
         });
 }
 
 function startDiscardServer(host, port) {
     return net
         .createServer(function (socket) {
-            let socketOld = {
-                remoteAddress: socket.remoteAddress,
-                remotePort: socket.remotePort,
-            };
+            const client = socket.remoteAddress + ':' + socket.remotePort;
 
-            log(
-                'discard',
-                host,
-                port,
-                socket.remoteAddress,
-                socket.remotePort,
-                'CONNECT'
-            );
+            logger.info({ event: 'connect', client });
 
             socket.on('data', function (data) {
-                log(
-                    'discard',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `DATA_IN (${data.length} bytes) - DISCARDED`
+                logger.info(
+                    { event: 'data', client },
+                    `Received ${data.length} bytes (discarded)`
                 );
             });
 
             socket.on('end', function () {
-                log(
-                    'discard',
-                    host,
-                    port,
-                    socketOld.remoteAddress,
-                    socketOld.remotePort,
-                    `DISCONNECT`
-                );
+                logger.info({ event: 'disconnect', client });
             });
 
             socket.on('timeout', function () {
-                log(
-                    'discard',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `TIMEOUT`
-                );
+                logger.error({ event: 'timeout', client });
                 socket.end();
             });
 
             socket.on('error', function (err) {
-                log(
-                    'discard',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `RESET -> ERR:${err.message}`
-                );
+                logger.error({ event: 'reset', client }, err.message);
             });
         })
         .listen(port, host, () => {
-            console.log(`>> Discard server running on tcp://${host}:${port}`);
+            logger.print('[+] Protocol: "discard"', 'yellow');
+            logger.print(
+                `[+] Exposed Interface: (TCP) ${host}:${port}`,
+                'yellow'
+            );
+            logger.print(
+                `[+] Local Link: tcp://` +
+                    (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                    `:${port}/\n`,
+                'yellow'
+            );
         });
 }
 
 function startEchoServer(host, port) {
     return net
         .createServer(function (socket) {
-            let socketOld = {
-                remoteAddress: socket.remoteAddress,
-                remotePort: socket.remotePort,
-            };
+            const client = socket.remoteAddress + ':' + socket.remotePort;
 
-            log(
-                'echo',
-                host,
-                port,
-                socket.remoteAddress,
-                socket.remotePort,
-                'CONNECT'
-            );
+            logger.info({ event: 'connect', client });
 
             socket.on('data', function (data) {
-                log(
-                    'echo',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `DATA_IN (${data.length} bytes) - ${data.toString().trim()}`
+                logger.info(
+                    { event: 'data', client },
+                    `Received ${data.length} bytes (echoed)`
                 );
                 socket.write(data);
-                log(
-                    'echo',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `DATA_OUT (${data.length} bytes) - ECHOED`
+                logger.info(
+                    { event: 'response', client },
+                    `Sent ${data.length} bytes (echoed)`
                 );
             });
 
             socket.on('end', function () {
-                log(
-                    'echo',
-                    host,
-                    port,
-                    socketOld.remoteAddress,
-                    socketOld.remotePort,
-                    `DISCONNECT`
-                );
+                logger.info({ event: 'disconnect', client });
             });
 
             socket.on('timeout', function () {
-                log(
-                    'echo',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `TIMEOUT`
-                );
+                logger.error({ event: 'timeout', client });
                 socket.end();
             });
 
             socket.on('error', function (err) {
-                log(
-                    'echo',
-                    host,
-                    port,
-                    socket.remoteAddress,
-                    socket.remotePort,
-                    `RESET -> ERR:${err.message}`
-                );
+                logger.info({ event: 'reset', client }, err.message);
             });
         })
         .listen(port, host, () => {
-            console.log(`>> Echo server running on tcp://${host}:${port}`);
+            logger.print('[+] Protocol: "echo"', 'yellow');
+            logger.print(
+                `[+] Exposed Interface: (TCP) ${host}:${port}`,
+                'yellow'
+            );
+            logger.print(
+                `[+] Local Link: tcp://` +
+                    (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                    `:${port}/\n`,
+                'yellow'
+            );
         });
 }
 
 (function wrapper() {
-    const args = process.argv.slice(2);
-
     const help = `
     [server-simptcp-js]
         A tool for creating and running the Simple-TCP/IP services (chargen/daytime/discard/echo)
@@ -364,6 +247,7 @@ function startEchoServer(host, port) {
         --version | -v  : Shows version information
         --port    | -p  : Selects a port to use (defaults vary)
         --host    | -o  : Selects an interface to use (default is '0.0.0.0')
+        --no-color      : Disable the colorful output
 
     Services and Default Ports:
     ┌──────────────────────────────────────────────────────────────────────┐
@@ -383,53 +267,43 @@ function startEchoServer(host, port) {
     };
 
     const context = {
-        args: args,
-        help: help,
         host: '0.0.0.0',
-        protocol: (args[0] || '').toLowerCase(),
+        protocol: '',
         port: null,
     };
 
-    for (let i = 0; i < args.length; i++) {
-        let arg = args[i];
-        let next = args[i + 1];
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('port', { alias: 'p', allowCasting: true });
+    parser.option('host', { alias: 'o' });
+    parser.option('no-color', { allowValue: false });
+    parser.argument('protocol');
+    const args = parser.parseArgv();
 
-        switch (arg) {
-            case '-h':
-            case '--help':
-                return console.log(help);
-            case '-v':
-            case '--version':
-                return console.log(require('./package.json')?.version);
-            case '-o':
-            case '--host':
-                context.host = next;
-                i++;
-                break;
-            case '-p':
-            case '--port':
-                context.port = next;
-                i++;
-                break;
-            default:
-        }
-    }
+    if (args.help || !args.protocol) return console.log(help);
+    if (args.version) return console.log(require('./package.json')?.version);
+
+    if (args.port) context.port = args.port;
+    if (args.host) context.host = args.host;
+    if (args['no-color']) logger.disableColors();
 
     try {
-        if (!context.protocol) {
-            return console.log(help);
-        } else if (!Object.keys(SERVICES).includes(context.protocol)) {
-            throw new Error(
+        if (!Object.keys(SERVICES).includes(args.protocol)) {
+            logger.print(
                 'Invalid service [' +
-                    context.protocol +
-                    ']. Use --help or -h for the help page.'
+                    args.protocol +
+                    ']. Use --help or -h for the help page.',
+                'red'
             );
+            process.exit();
         }
 
-        if (!context.port) context.port = SERVICES[context.protocol].port;
+        if (!context.port) context.port = SERVICES[args.protocol].port;
 
-        SERVICES[context.protocol].create(context.host, context.port);
+        SERVICES[args.protocol].create(context.host, context.port);
     } catch (err) {
-        console.log('<> Error: ' + err.message);
+        logger.print('Server Fatal Error: ' + err.message, 'red');
+        process.exit(1);
     }
 })();
