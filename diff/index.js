@@ -77,9 +77,15 @@ function diff(source, destination) {
     throw new Error('Could not find edit script');
 }
 
+function splitInLines(data, { replaceCRLF = false } = {}) {
+    if (replaceCRLF) data = data.replaceAll('\r\n', '\n');
+    return data.split('\n');
+}
+
 function patch(data1, data2, { quiet, nocolor } = {}) {
-    const dataSource1 = data1.trim().split('\n');
-    const dataSource2 = data2.trim().split('\n');
+    const dataSource1 = splitInLines(data1, { replaceCRLF: true }); //data1.trim().split('\n');
+    const dataSource2 = splitInLines(data2, { replaceCRLF: true }); //data2.trim().split('\n');
+    console.log(11, [dataSource1], [dataSource2]);
     const difflist = diff(dataSource1, dataSource2);
 
     if (quiet) {
