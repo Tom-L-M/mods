@@ -44,7 +44,7 @@ function startTcpServer(context) {
             socket.on('data', function (data) {
                 logger.info(
                     { event: 'data', client },
-                    `Received: ${data.length} bytes\n` +
+                    `Received ${data.length} bytes\n` +
                         prettifyRawRequestData(data)
                 );
                 socket.write(content);
@@ -144,6 +144,7 @@ function startTcpServer(context) {
         if (!context.content) context.content = 'OK';
         startTcpServer(context);
     } catch (err) {
-        console.log(err.message);
+        logger.print('Server Fatal Error: ' + err.message, 'red');
+        process.exit(1);
     }
 })();

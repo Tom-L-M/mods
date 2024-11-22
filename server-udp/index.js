@@ -141,6 +141,7 @@ function startUdpServer(context) {
         if (!context.content) context.content = '<UDP/>';
         startUdpServer(context);
     } catch (err) {
-        console.log(err.message);
+        logger.print('Server Fatal Error: ' + err.message, 'red');
+        process.exit(1);
     }
 })();
