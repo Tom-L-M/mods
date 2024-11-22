@@ -2,6 +2,19 @@ const dgram = require('dgram');
 const path = require('path');
 const fs = require('fs');
 
+const { Logger } = require('../shared');
+const logger = new Logger({
+    format: msg => {
+        return (
+            `[${msg.timestamp}] ` +
+            `${msg.level.toUpperCase()} ` +
+            `${msg.event.toUpperCase()} ` +
+            `tcp://${msg.client}` +
+            (msg.message ? ' - ' + msg.message : '')
+        );
+    },
+});
+
 const TOKEN_FOR_LISTING = 'list';
 
 function getFileListing(directory) {
@@ -29,20 +42,18 @@ function startTftpServer(context) {
     const app = {};
     app.udpserver = dgram.createSocket('udp4', function (data, rinfo) {
         const uniq_id = 'TFTP:' + rinfo.address;
-        const logevent = msg =>
-            console.log(
-                `${new Date().toISOString()} - udp@${rinfo.address}:${
-                    rinfo.port
-                } - ${msg}`
-            );
+        const client = rinfo.address + ':' + rinfo.port;
 
         const sendack = blocknum => {
             let buf = Buffer.from([0, 4, 0, 0]);
             buf.writeUInt16BE(blocknum, 2);
             app.udpserver.send(buf, rinfo.port, rinfo.address, err => {
-                if (err) return logevent(`Error sending ACK packet: ${err}`);
+                if (err)
+                    logger.error(
+                        { event: 'fail', client },
+                        `Error sending ACK packet: ${err}`
+                    );
             });
-            // logevent(`ACK BLOCK ${blocknum}`);
         };
 
         const senderr = errcode => {
@@ -84,9 +95,16 @@ function startTftpServer(context) {
             ]);
             buf.writeUInt16BE(errcode, 2);
             app.udpserver.send(buf, rinfo.port, rinfo.address, err => {
-                if (err) return logevent(`Error sending ACK packet: ${err}`);
+                if (err)
+                    logger.error(
+                        { event: 'fail', client },
+                        `Error sending ACK packet: ${err}`
+                    );
             });
-            logevent(`TFTP_ERROR (${errcode}): ${msg}`);
+            logger.error(
+                { event: 'fail', client },
+                `TFTP_ERROR (${errcode}): ${msg}`
+            );
         };
 
         let msg = data;
@@ -110,12 +128,16 @@ function startTftpServer(context) {
                     datastream = Buffer.from(datastream.join('\n'));
                     size = datastream.length;
                     filename = 'Content-List';
-                    logevent(
+                    logger.info(
+                        { event: 'request', client },
                         `REQUESTED [Content-List] IN MODE [${mode}] - [${size} bytes] IN [${Math.ceil(
                             size / 516
                         )} packets]`
                     );
-                    logevent(`<READ> TRANSFERENCE STARTED [Content-List]`);
+                    logger.info(
+                        { event: 'read', client },
+                        'TRANSFERENCE STARTED [Content-List]'
+                    );
                 } else {
                     const ffpath = path.resolve(basedir, filename);
                     if (!ffpath.includes(path.resolve(basedir))) {
@@ -124,12 +146,16 @@ function startTftpServer(context) {
                     }
                     datastream = fs.readFileSync(ffpath);
                     size = datastream.length;
-                    logevent(
+                    logger.info(
+                        { event: 'request', client },
                         `<REQUEST> GET [${filename}] IN MODE [${mode}] - [${size} bytes] IN [${Math.ceil(
                             size / 516
                         )} packets]`
                     );
-                    logevent(`<READ> TRANSFERENCE STARTED [${filename}]`);
+                    logger.info(
+                        { event: 'read', client },
+                        `TRANSFERENCE STARTED [${filename}]`
+                    );
                 }
 
                 blockcount = 0;
@@ -145,27 +171,30 @@ function startTftpServer(context) {
                         rinfo.port,
                         rinfo.address,
                         err => {
-                            // logevent(packet.length);
                             if (err)
-                                return logevent(
+                                return logger.error(
+                                    { event: 'fail', client },
                                     `Error sending data packet: ${err}`
                                 );
                             if (packet.length >= 512) {
                                 // Send next packet
                                 setTimeout(() => sendpacket(offset + 512), 100); // Delay for 100ms to avoid packet loss
                             } else {
-                                logevent(
-                                    `<READ> TRANSFERENCE ENDED [${filename}] - [${size} bytes]`
+                                logger.info(
+                                    { event: 'read-end', client },
+                                    `TRANSFERENCE ENDED [${filename}] - [${size} bytes]`
                                 );
                             }
                         }
                     );
-                    // logevent(`ACK BLOCK ${blockcount}`);
                 };
                 sendpacket(0);
             } catch (err) {
                 senderr(1);
-                return logevent(`Error reading file ${filename}: ${err}`);
+                return logger.error(
+                    { event: 'fail', client },
+                    `Error reading file ${filename}: ${err}`
+                );
             }
         } else if (opcode === 2) {
             // WRQ requests (write to server)
@@ -176,21 +205,26 @@ function startTftpServer(context) {
                     msg.indexOf(0, msg.indexOf(0, 2) + 1)
                 )
                 .toString();
-            logevent(`<SUBMIT> PUT [${filename}] IN MODE [${mode}]`);
+            logger.info(
+                { event: 'submit', client },
+                `PUT [${filename}] IN MODE [${mode}]`
+            );
             context.EXTERNAL[uniq_id] = {
                 _filename: filename,
                 _mode: mode,
                 _data: [],
                 _lastblock: 0,
             };
-            logevent(`<WRITE> TRANSFERENCE STARTED [${filename}]`);
+            logger.info(
+                { event: 'write', client },
+                `TRANSFERENCE STARTED [${filename}]`
+            );
             sendack(0);
         } else if (opcode === 3) {
             // DATA packets
             const blocknum = [...msg.subarray(2, 4)].reduce((z, x) => (z += x));
             const fdata = msg.subarray(4);
             const opts = context.EXTERNAL[uniq_id];
-            // logevent('Received '+(data.length)+' bytes ('+fdata.length+' data bytes)');
             opts._lastblock += 1;
 
             //TODO fix this access permission thing
@@ -211,8 +245,9 @@ function startTftpServer(context) {
                     Buffer.concat(opts._data)
                 );
                 sendack(blocknum);
-                logevent(
-                    `<WRITE> TRANSFERENCE ENDED [${opts._filename}] - [${opts._data.length} bytes]`
+                logger.info(
+                    { event: 'write', client },
+                    `TRANSFERENCE ENDED [${opts._filename}] - [${opts._data.length} bytes]`
                 );
             };
 
@@ -243,25 +278,26 @@ function startTftpServer(context) {
                 .reduce((z, x) => (z += x))
                 .toString();
             const errmsg = msg.subarray(4).toString();
-            logevent(`ERROR (${errcode}): ${errmsg}`);
+            logger.error({ event: 'fail', client }, `(${errcode}): ${errmsg}`);
             sendack(0);
         } else {
             //senderr(5); // send an UNKNOWN ERROR ID error
         }
     });
-    console.log(
-        '>> Automatic config used. Use --help to access the help menu.'
+    logger.print(
+        `[+] Exposed Interface: UDP ${context.host}:${context.port}`,
+        'yellow'
     );
-    console.log(
-        '>> TFTP server running on udp://' +
-            context.host +
-            ':' +
-            context.port +
-            ', serving: ' +
-            context.content
+    logger.print(
+        `[+] Local Link: tftp://` +
+            (context.host !== '0.0.0.0' ? context.host : '127.0.0.1') +
+            `:${context.port}/`,
+        'yellow'
     );
-    console.log(
-        `>> Request the file "${TOKEN_FOR_LISTING}" to receive a listing of all available files`
+    logger.print(`[+] Serving directory: ${context.content}`, 'yellow');
+    logger.print(
+        `[+] Request the file "${TOKEN_FOR_LISTING}" to receive a listing of all available files\n`,
+        'yellow'
     );
     app.udpserver.bind(context.port, context.host);
 }
@@ -331,6 +367,7 @@ function startTftpServer(context) {
         if (!context.content) context.content = process.cwd();
         startTftpServer(context);
     } catch (err) {
-        console.log(err.message);
+        logger.print('Server Fatal Error: ' + err.message, 'red');
+        process.exit(1);
     }
 })();
