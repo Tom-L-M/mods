@@ -73,6 +73,20 @@ const fs = require('fs');
         return;
     }
 
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false,
+    });
+
+    rl.on('line', line => {
+        if (line.trim() == 'exit') return socket.end();
+        if (pipeto) {
+            fs.appendFileSync(pipeto, line + '\n');
+        }
+        socket.write(line + '\n');
+    });
+
     socket.on('data', data => {
         if (pipeto) {
             fs.appendFileSync(pipeto, data + '\n');
@@ -83,25 +97,13 @@ const fs = require('fs');
         if (pipeto) {
             fs.appendFileSync(pipeto, err + '\n');
         }
-        if (!isSilent) console.log(err);
         socket.destroy();
+        rl.close();
     });
     socket.on('end', () => {
         let str = `<> Disconnected from ${targetAddress}:${targetPort}`;
         if (!isSilent) console.log(str);
-        process.exit(0);
-    });
-
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false,
-    });
-    rl.on('line', line => {
-        if (line.trim() == 'exit') return socket.end();
-        if (pipeto) {
-            fs.appendFileSync(pipeto, line + '\n');
-        }
-        socket.write(line + '\n');
+        // process.exit(0);
+        rl.close();
     });
 })();
