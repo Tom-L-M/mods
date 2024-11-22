@@ -3,6 +3,19 @@ const path = require('node:path');
 const net = require('node:net');
 const fs = require('node:fs');
 
+const { Logger, ArgvParser } = require('../shared');
+const logger = new Logger({
+    format: msg => {
+        return (
+            `[${msg.timestamp}] ` +
+            `${msg.level.toUpperCase()} ` +
+            `${msg.event.toUpperCase()} ` +
+            msg.client +
+            (msg.message ? ' - ' + msg.message : '')
+        );
+    },
+});
+
 const utils = {
     localIP: function () {
         return Object.values(require('node:os').networkInterfaces())
@@ -27,11 +40,15 @@ const utils = {
                         )
                 );
             } catch (err) {
-                console.log(err);
-                console.log('Error: Operation not permitted - SCANDIR::' + dir);
-                console.log(
-                    'Warn: Select a directory with proper enumeration/scan/traversal permissions'
+                logger.print(
+                    '[x] Error: Operation not permitted - SCANDIR::' + dir,
+                    'red'
                 );
+                logger.print(
+                    '[x] Select a directory with proper enumeration/scan/traversal permissions',
+                    'red'
+                );
+                logger.print('[x] ' + err.message);
                 process.exit();
             }
         };
@@ -53,8 +70,8 @@ async function build() {
         return new Promise(resolve => rl.question(q, resolve));
     };
 
-    const baseline_prompt = '\n ┌─ ';
-    const nextline_prompt = '\n └─> ';
+    const baseline_prompt = '\n [?] ';
+    const nextline_prompt = '\n   > ';
     let host = utils.localIP();
     let port = 70;
     const entries = [''];
@@ -110,13 +127,13 @@ async function build() {
             )) || port;
         let collection = `${itemtype}${itemdesc}\t${itempath}\t${itemaddr}\t${itemport}`;
         entries.push(collection);
-        console.log(`\n<> Added [${collection}] to the entry collection\n`);
+        logger.print(`\n[+] Added item to the entry collection`, 'green');
+        logger.print(`  > ${collection}`, 'green');
     };
 
     console.log('[gophermap-builder-js]');
     await question(
-        `<> Welcome to the interactive gophermap builder. \n ┌─ Press 'ENTER' to start. \n ├─ Use 'CTRL+C' to quit at any time.` +
-            nextline_prompt
+        `[+] Welcome to the interactive gophermap builder. \n > Press 'ENTER' to start. \n > Use 'CTRL+C' to quit at any time.\n`
     );
     console.clear();
     host =
@@ -150,16 +167,16 @@ async function build() {
         let content = entries.join('\r\n');
         try {
             fs.writeFileSync(fullpath, content);
-            console.log(
-                `\n<> Success, gophermap file saved to [${fullpath}] - Saved ${content.length} bytes on disk.`
+            logger.print(
+                `\n[+] Gophermap file saved to [${fullpath}]. Size: ${content.length} bytes.\n`,
+                'green'
             );
             rl.close();
             return;
         } catch {
-            console.log(
-                '\n<> Error, could not save gophermap file to [' +
-                    fullpath +
-                    ']'
+            logger.print(
+                `\n[x] Error: could not save gophermap file to [${fullpath}]\n`,
+                'red'
             );
             let shouldAskMore = '';
             while (shouldAskMore !== 'y' && shouldAskMore !== 'n') {
@@ -381,45 +398,56 @@ class GopherServer {
         }
     }
 
-    #log(socket, msg) {
-        console.log(
-            `${new Date().toISOString()} - tcp@${socket.remoteAddress}:${
-                socket.remotePort
-            } <-> tcp@${this.host}:${this.port} - ${msg}`
-        );
-    }
-
     start() {
         return (this.server = net
             .createServer(socket => {
-                this.#log(socket, 'Client_Connected');
-                socket.on('close', () =>
-                    this.#log(socket, 'Client_Disconnected')
+                const client = socket.remoteAddress + ':' + socket.remotePort;
+
+                // Suppress connection messages
+                // it leaves the console too polluted
+                // logger.info({ event: 'connect', client });
+
+                socket.on('close', () => {
+                    // Suppress disconnection messages
+                    // it leaves the console too polluted
+                    // logger.info({ event: 'disconnect', client })
+                });
+                socket.on('error', err =>
+                    logger.error({ event: 'fail', client }, err.message)
                 );
-                socket.on('error', () => this.#log(socket, 'Connection_Error'));
                 socket.on('data', data => {
                     let parsed = data.toString().trim(); // remove trailing stuff
-                    this.#log(
-                        socket,
-                        `Data_Received (${data.length} bytes): ${parsed}`
-                    );
+                    if (parsed === '')
+                        logger.info({ event: 'query', client }, `File: *`);
+                    else
+                        logger.info(
+                            { event: 'query', client },
+                            `File: ${parsed}`
+                        );
 
                     let response = this.#gopherProtoHandler(parsed);
                     socket.write(response + '\r\n.\r\n');
                     // adds the final '\r\n' and the fullstop '.\r\n' for protocol compliance
 
-                    this.#log(
-                        socket,
-                        'Data_Sent (' + response.length + ' bytes)'
+                    logger.info(
+                        { event: 'response', client },
+                        `Sent ${response.length} bytes`
                     );
                     socket.end();
                 });
             })
             .listen(this.port, this.host, () => {
-                console.log('Tip: use --help to access the help menu.');
-                console.log(
-                    `TCP Gopher server running on [gopher://${this.host}:${this.port}/], serving [${this.dir}]`
+                logger.print(
+                    `[+] Exposed Interface: (TCP) ${this.host}:${this.port}`,
+                    'yellow'
                 );
+                logger.print(
+                    `[+] Local Link: gopher://` +
+                        (this.host !== '0.0.0.0' ? this.host : '127.0.0.1') +
+                        `:${this.port}/`,
+                    'yellow'
+                );
+                logger.print(`[+] Served Directory: ${this.dir}\n`, 'yellow');
             }));
     }
 }
@@ -429,12 +457,6 @@ class GopherServer {
     // it is this way, to avoid redirection problems when writing the gophermap file,
     // Do not use 0.0.0.0 as interface, unless the gophermap is totally configured
     // You can use '{{HOST}}' and '{{PORT}}' in the gophermap, in order to auto-replace addresses
-
-    let port;
-    let host;
-    let dir;
-
-    const args = process.argv.slice(2);
 
     const help = `
         [server-gopher-js]
@@ -463,38 +485,21 @@ class GopherServer {
               one will be created at runtime, with the filename as description
               and the current host and port of the server included.
             > All gophermaps, phisical or virtual, will be cached in-memory 
-              at server boot, for faster resource listing. So, highly deep 
-              directories may slow down server boot.`;
+              at server boot, for faster resource listing. So, deep directories
+              may slow down server boot to prevent slowness during operation.`;
 
-    for (let i = 0; i < args.length; i++) {
-        let arg = args[i];
-        let next = args[i + 1];
-        switch (arg) {
-            case '--help':
-            case '-h':
-                console.log(help);
-                return;
-            case '--version':
-            case '-v':
-                return console.log(require('./package.json')?.version);
-            case '--port':
-            case '-p':
-                port = next;
-                break;
-            case '--host':
-            case '-o':
-                host = next;
-                break;
-            case '--dir':
-            case '-d':
-                dir = next;
-                break;
-            case '--build':
-            case '-b':
-                await build();
-                break;
-        }
-    }
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('port', { alias: 'p', allowCasting: true });
+    parser.option('host', { alias: 'o' });
+    parser.option('dir', { alias: 'd' });
+    parser.option('build', { alias: 'b', allowValue: false });
+    const args = parser.parseArgv();
 
-    new GopherServer(dir, host, port).start();
+    if (args.help) return console.log(help);
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.build) return await build();
+
+    new GopherServer(args.dir, args.host, args.port).start();
 })();
