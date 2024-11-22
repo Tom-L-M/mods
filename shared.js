@@ -423,10 +423,6 @@ function readStdinAsync({ controlChars = false } = {}) {
 const isSTDINActive = () => !process.stdin.isTTY;
 
 class Logger {
-    #timestampGenerator() {
-        return new Date().toISOString();
-    }
-
     constructor({ stdout, format, colors = true } = {}) {
         this.stdout = stdout || process.stdout;
         this.colors = colors;
@@ -439,7 +435,12 @@ class Logger {
         }
     }
 
+    #timestampGenerator() {
+        return new Date().toISOString();
+    }
+
     #colorize(color = '', string) {
+        if (!this.colors) return string;
         const colors = { red: 31, green: 32, blue: 34, yellow: 33 };
         return `\x1b[0m\x1b[${colors[color] || ''}m${string}\x1b[0m`;
     }
@@ -481,6 +482,16 @@ class Logger {
         return this.stdout.write(result + '\n');
     }
 
+    disableColors() {
+        this.colors = false;
+        return this;
+    }
+
+    enableColors() {
+        this.colors = true;
+        return this;
+    }
+
     info(props, message) {
         return this.#log('info', props, message);
     }
@@ -516,6 +527,7 @@ class Logger {
      * @returns {string}
      */
     print(text, foreground = '', background = '') {
+        if (!this.colors) return console.log(text);
         const CSI = '\x1b[';
         const RESET = CSI + '0m';
         const COLOR_TABLE_8BIT = {
@@ -571,6 +583,52 @@ class Logger {
     }
 }
 
+function prettifyRawRequestData(buffer) {
+    const chunk = (array = [], chunkSize = 2, filler = undefined) => {
+        let arr = [...array];
+        if (filler !== undefined)
+            arr.push(
+                ...new Array(
+                    array.length < chunkSize
+                        ? chunkSize - array.length
+                        : array.length % chunkSize
+                ).fill(filler)
+            ); // If a filler is set, fills a next part of chunk
+        let acc = [];
+        let tmp = [];
+        for (let i = 0; i < arr.length; i++) {
+            if (tmp.length < chunkSize) {
+                tmp.push(arr[i]);
+            }
+            if (tmp.length === chunkSize || i === arr.length - 1) {
+                acc.push(tmp);
+                tmp = [];
+            }
+        }
+        return acc;
+    };
+    const chunkedBuffer = chunk(buffer, 16);
+    const chunkedString = chunk([...buffer.toString()], 16);
+    return chunkedBuffer
+        .map(
+            (v, i) =>
+                '  ' +
+                v
+                    .map(x =>
+                        x
+                            ? '0x' +
+                              x.toString(16).padStart(2, '0').toUpperCase()
+                            : '    '
+                    )
+                    .join(' ')
+                    .padEnd(16 * 5, ' ') +
+                ' |' +
+                chunkedString[i].join('').padEnd(16, ' ') +
+                '|'
+        )
+        .join('\n');
+}
+
 module.exports = {
     ArgvParser,
     parseArgv,
@@ -578,4 +636,5 @@ module.exports = {
     readStdinAsync,
     parseControlChars,
     Logger,
+    prettifyRawRequestData,
 };
