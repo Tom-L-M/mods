@@ -40,15 +40,12 @@ const utils = {
                         )
                 );
             } catch (err) {
-                logger.print(
-                    '[x] Error: Operation not permitted - SCANDIR::' + dir,
-                    'red'
-                );
+                logger.print('[x] Error: SCANDIR::' + dir, 'red');
                 logger.print(
                     '[x] Select a directory with proper enumeration/scan/traversal permissions',
                     'red'
                 );
-                logger.print('[x] ' + err.message);
+                logger.print('[x] ' + err.message, 'red');
                 process.exit();
             }
         };
