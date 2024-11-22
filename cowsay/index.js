@@ -265,6 +265,11 @@ const help = `
         return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
+    if (args._invalid.length > 0)
+        return console.log(
+            `[x] Error: invalid parameters [ ${args._invalid.join(', ')} ]`
+        );
+
     const input = fromSTDIN
         ? (await readStdinAsync()).toString('utf8').trimEnd()
         : args.string || '';

@@ -60,6 +60,11 @@ function slice(data, { lines, bytes, reverse } = {}) {
     if (args.help || (!fromSTDIN && !args._.length)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
+    if (args._invalid.length > 0)
+        return console.log(
+            `[x] Error: invalid parameters [ ${args._invalid.join(', ')} ]`
+        );
+
     let input,
         reverse = args.bytes?.startsWith('+') || args.lines?.startsWith('+');
     let lines = parseInt(args.lines) || 10;

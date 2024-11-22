@@ -303,6 +303,11 @@ function startEchoServer(host, port) {
     if (args.help || !args.protocol) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
+    if (args._invalid.length > 0)
+        return console.log(
+            `[x] Error: invalid parameters [ ${args._invalid.join(', ')} ]`
+        );
+
     if (args.port) context.port = args.port;
     if (args.host) context.host = args.host;
     if (args['no-color']) logger.disableColors();

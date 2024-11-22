@@ -498,5 +498,10 @@ class GopherServer {
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.build) return await build();
 
+    if (args._invalid.length > 0)
+        return console.log(
+            `[x] Error: invalid parameters [ ${args._invalid.join(', ')} ]`
+        );
+
     new GopherServer(args.dir, args.host, args.port).start();
 })();

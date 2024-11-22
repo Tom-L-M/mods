@@ -73,6 +73,11 @@ const help = `
     if (args.help || (!fromSTDIN && !args.file)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
+    if (args._invalid.length > 0)
+        return console.log(
+            `[x] Error: invalid parameters [ ${args._invalid.join(', ')} ]`
+        );
+
     let input;
 
     // If it is called like:    node script.js [somefile] [flags]

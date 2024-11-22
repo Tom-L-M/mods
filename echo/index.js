@@ -48,6 +48,11 @@ const help = `
     if (args.help || (!texts.length && !stdinActive)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
+    if (args._invalid.length > 0)
+        return console.log(
+            `[x] Error: invalid parameters [ ${args._invalid.join(', ')} ]`
+        );
+
     // If no STDIN output token is used, append to the start
     if (stdinActive && !texts.includes('-')) texts.unshift('-');
 

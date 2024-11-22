@@ -328,6 +328,11 @@ const fullHelp = `
     if (args['help-all']) return console.log(fullHelp);
     if (args.version) return console.log(require('./package.json')?.version);
 
+    if (args._invalid.length > 0)
+        return console.log(
+            `[x] Error: invalid parameters [ ${args._invalid.join(', ')} ]`
+        );
+
     if (!stdinActive && !fs.existsSync(file))
         return console.log(`Error: Invalid file path provided [${file}]`);
 
