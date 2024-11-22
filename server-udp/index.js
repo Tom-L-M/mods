@@ -57,15 +57,10 @@ function startUdpServer(context) {
         );
     });
     server.on('error', function (err) {
-        let date = new Date();
-        let now =
-            date.toString().split(' ')[4] +
-            '.' +
-            date.getMilliseconds().toString().padStart(3, '0');
-        console.log(`\n> ${now} > Server Error -> ${err}`);
+        logger.error({ event: 'fail', client: 'Server Error: ' + err.message });
     });
     server.bind(port, host, () => {
-        logger.print(`[+] Exposed Interface: ${host}:${port}`, 'yellow');
+        logger.print(`[+] Exposed Interface: (UDP) ${host}:${port}`, 'yellow');
         logger.print(
             `[+] Local Link: udp://` +
                 (host !== '0.0.0.0' ? host : '127.0.0.1') +
