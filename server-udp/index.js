@@ -1,31 +1,60 @@
+const { Logger } = require('../shared');
+const logger = new Logger({
+    format: msg => {
+        return (
+            `[${msg.timestamp}] ` +
+            `${msg.level.toUpperCase()} ` +
+            `${msg.event.toUpperCase()} ` +
+            `tcp://${msg.client}` +
+            (msg.message ? ' - ' + msg.message : '')
+        );
+    },
+});
+
+function prettifyRawRequestData(buffer) {
+    const chunkify = (s, w) =>
+        s.match(new RegExp(`.{1,${w >= 1 ? w : 1}}`, 'gim')) ?? [];
+    const stringFromBuffer = [...buffer]
+        .map(v => '0x' + v.toString(16).padStart(2, '0').toUpperCase())
+        .join(' ');
+    const chunkedString = chunkify(buffer.toString(), 16);
+    const chunkedBuffer = chunkify(stringFromBuffer, 16 * 5);
+    return chunkedBuffer
+        .map(
+            (v, i) =>
+                '  ' +
+                v.padEnd(16 * 5, ' ') +
+                ' |' +
+                (chunkedString[i] || '').padEnd(16, ' ') +
+                '|'
+        )
+        .join('\n');
+}
+
 function startUdpServer(context) {
     const dgram = require('dgram');
     const { host, port, content } = context;
     const server = dgram.createSocket('udp4');
     server.on('message', function (message, remote) {
-        let date = new Date();
-        let now =
-            date.toString().split(' ')[4] +
-            '.' +
-            date.getMilliseconds().toString().padStart(3, '0');
-        console.log(
-            `\n> ${now} > Connection Request: udp@${host}:${port} <> udp@${remote.address}:${remote.port}`
+        const client = remote.address + ':' + remote.port;
+
+        logger.info(
+            { event: 'data', client },
+            `Received ${message.length} bytes\n` +
+                prettifyRawRequestData(message)
         );
-        console.log(
-            `> ${now} > Received data (${
-                message.length
-            } bytes): \n  ${message} \n  [${[...Buffer.from(message)]
-                .map(x => x.toString(16).padStart(2, '0'))
-                .join(' ')
-                .toUpperCase()}]`
-        );
+
         server.send(content, remote.port, remote.address, err => {
             if (err)
-                console.log(
-                    `\n> ${now} > Packet Sending Failed: udp@${host}:${port} <> udp@${remote.address}:${remote.port} -> ${err}`
+                logger.error(
+                    { event: 'fail', client },
+                    'Packet Sending Failed: ' + err
                 );
         });
-        console.log(`> ${now} > Sent data (${content.length} bytes)`);
+        logger.info(
+            { event: 'response', client },
+            `Sent ${content.length} bytes`
+        );
     });
     server.on('error', function (err) {
         let date = new Date();
@@ -36,10 +65,13 @@ function startUdpServer(context) {
         console.log(`\n> ${now} > Server Error -> ${err}`);
     });
     server.bind(port, host, () => {
-        console.log(
-            '>> Automatic config used. Use --help to access the help menu.'
+        logger.print(`[+] Exposed Interface: ${host}:${port}`, 'yellow');
+        logger.print(
+            `[+] Local Link: udp://` +
+                (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                `:${port}/\n`,
+            'yellow'
         );
-        console.log(`>> UDP server running on udp://${host}:${port}/`);
     });
     return server;
 }
