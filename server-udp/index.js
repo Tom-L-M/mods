@@ -39,7 +39,7 @@ function startUdpServer(context) {
         const client = remote.address + ':' + remote.port;
 
         logger.info(
-            { event: 'data', client },
+            { event: 'request', client },
             `Received ${message.length} bytes\n` +
                 prettifyRawRequestData(message)
         );

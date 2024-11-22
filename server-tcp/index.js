@@ -44,7 +44,7 @@ function startTcpServer(context) {
 
             socket.on('data', function (data) {
                 logger.info(
-                    { event: 'data', client },
+                    { event: 'request', client },
                     `Received ${data.length} bytes\n` +
                         prettifyRawRequestData(data)
                 );
