@@ -63,7 +63,10 @@ function startTcpServer(context) {
             });
         })
         .listen(port, host, () => {
-            logger.print(`[+] Exposed Interface: ${host}:${port}`, 'yellow');
+            logger.print(
+                `[+] Exposed Interface: (TCP) ${host}:${port}`,
+                'yellow'
+            );
             logger.print(
                 `[+] Local Link: tcp://` +
                     (host !== '0.0.0.0' ? host : '127.0.0.1') +
