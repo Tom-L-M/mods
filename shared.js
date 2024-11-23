@@ -274,8 +274,12 @@ class ArgvParser {
                         continue;
                     }
 
-                    if (opt?.allowValue && !isOption(next)) {
-                        value = next ? (i++, next) : true;
+                    if (opt?.allowValue) {
+                        if (!isOption(next)) {
+                            value = next ? (i++, next) : '';
+                        } else {
+                            value = '';
+                        }
                     } else {
                         value = true;
                     }
@@ -327,8 +331,12 @@ class ArgvParser {
                 // For no value flags:  -p
                 // And for postvalue flags:  -p 80
                 if (arg.length === 1) {
-                    if (opt?.allowValue && !isOption(next)) {
-                        value = next ? (i++, next) : true;
+                    if (opt?.allowValue) {
+                        if (!isOption(next)) {
+                            value = next ? (i++, next) : '';
+                        } else {
+                            value = '';
+                        }
                     } else {
                         value = true;
                     }
