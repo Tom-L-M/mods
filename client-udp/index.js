@@ -15,9 +15,9 @@ const sendUdpPacket = context => {
             .toUpperCase();
         if (!silent)
             console.log(
-                `> Data received (${msg.length} bytes) \n  ${msg.toString(
+                `> Data received (${msg.length} bytes) \n${msg.toString(
                     'utf-8'
-                )} \n  [${buf}] `
+                )} \n[${buf}] `
             );
     });
 

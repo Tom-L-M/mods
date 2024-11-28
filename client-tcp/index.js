@@ -17,7 +17,7 @@ const sendTcpPacket = context => {
 
     socket.on('data', function (data) {
         if (!silent)
-            console.log(`> Data received (${data.length} bytes) \n  ` + data);
+            console.log(`> Data received (${data.length} bytes) \n` + data);
         if (killconnection)
             socket.destroy(); // kills socket after server's response
         else if (keepalive /* hangs and waits for the user to close it */);
@@ -25,7 +25,7 @@ const sendTcpPacket = context => {
     });
 
     socket.on('error', function (data) {
-        console.log(`> Error triggered \n  ` + data);
+        console.log(`> Error triggered \n` + data);
         // if (killconnection) socket.destroy(); // kills socket after server's response
         // else if (keepalive) ;/* hangs and waits for the user to close it */
         // else socket.end(); // closes socket gracefully after server's response

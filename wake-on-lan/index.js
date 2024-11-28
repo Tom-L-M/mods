@@ -8,7 +8,7 @@ const sendBroadcastUdpPacket = context => {
 
     client.on('message', function (msg) {
         console.log(
-            `> Data received (${msg.length} bytes) \n  ` + msg.toString()
+            `> Data received (${msg.length} bytes) \n` + msg.toString()
         );
     });
 
