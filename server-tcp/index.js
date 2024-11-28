@@ -1,4 +1,4 @@
-const { Logger } = require('../shared');
+const { Logger, ArgvParser } = require('../shared');
 const logger = new Logger({
     format: msg => {
         return (
@@ -31,9 +31,8 @@ function prettifyRawRequestData(buffer) {
         .join('\n');
 }
 
-function startTcpServer(context) {
+function startTcpServer(host, port, content, { dump } = {}) {
     const net = require('net');
-    const { host, port, content } = context;
     return net
         .createServer(function (socket) {
             const { remoteAddress, remotePort } = socket;
@@ -45,8 +44,8 @@ function startTcpServer(context) {
             socket.on('data', function (data) {
                 logger.info(
                     { event: 'request', client },
-                    `Received ${data.length} bytes\n` +
-                        prettifyRawRequestData(data)
+                    `Received ${data.length} bytes` +
+                        (dump ? '\n' + prettifyRawRequestData(data) : '')
                 );
                 socket.write(content);
                 logger.info(
@@ -73,7 +72,11 @@ function startTcpServer(context) {
             logger.print(
                 `[+] Local Link: tcp://` +
                     (host !== '0.0.0.0' ? host : '127.0.0.1') +
-                    `:${port}/\n`,
+                    `:${port}/`,
+                'yellow'
+            );
+            logger.print(
+                `[+] Responding with ${content.length} bytes\n`,
                 'yellow'
             );
         });
@@ -81,71 +84,68 @@ function startTcpServer(context) {
 
 (function wrapper() {
     const fs = require('fs');
-    const args = process.argv.slice(2);
     const help = `
     [server-tcp-js]
         A tool for creating and running raw TCP servers
 
     Usage:
-        server-tcp [--help] [--port PORT] [--host HOST] [--file/--text CONTENT]
+        server-tcp [options]
 
     Universal Options:
-        --help    | -h  : Shows this help menu
-        --version | -v  : Shows version information
-        --port    | -p  : Selects a port to use (default is 8000)
-        --host    | -o  : Selects an interface to use (default is '0.0.0.0')
-        --file    | -f  : Responds requests with a file data
-        --text    | -t  : Responds requests with a string`;
+        -h | --help         Shows this help menu
+        -v | --version      Shows version information
+        -p | --port PORT    Selects a port to use (default is 8000)
+        -o | --host HOST    Selects an interface to use (default is '0.0.0.0')
+        -f | --file FILE    Responds requests with a file data
+        -t | --text TEXT    Responds requests with a string
+        -C | --no-color     Prevents printing with color codes
+        -D | --no-dump      Prevents printing hexdumps from requests
+        `;
+
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('no-color', { alias: 'C', allowValue: false });
+    parser.option('no-dump', { alias: 'D', allowValue: false });
+    parser.option('port', { alias: 'p' });
+    parser.option('host', { alias: 'h' });
+    parser.option('file', { alias: 'f' });
+    parser.option('text', { alias: 't' });
+    const args = parser.parseArgv();
 
     const context = {
         args: args,
         help: help,
         host: '0.0.0.0',
-        port: null,
-        content: null,
+        port: 8000,
+        content: 'OK',
+        dump: true,
     };
 
-    for (let i = 0; i < args.length; i++) {
-        let arg = args[i];
-        let next = args[++i];
+    if (args.help) return console.log(help);
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.host) context.host = args.host;
+    if (args.port) context.port = args.port;
+    if (args.text) context.content = args.text;
 
-        switch (arg) {
-            case '-h':
-            case '--help':
-                return console.log(help);
+    if (args['no-color']) logger.disableColors();
+    if (args['no-dump']) context.dump = false;
 
-            case '-v':
-            case '--version':
-                return console.log(require('./package.json')?.version);
-
-            case '-o':
-            case '--host':
-                context.host = next;
-                break;
-
-            case '-p':
-            case '--port':
-                context.port = next;
-                break;
-
-            case '-f':
-            case '--file':
-                context.content = fs.readFileSync(next);
-                break;
-
-            case '-t':
-            case '--text':
-                context.content = next;
-                break;
-
-            default:
+    if (args.file) {
+        try {
+            context.content = fs.readFileSync(args.file);
+        } catch {
+            return logger.print(
+                'Fatal Error: Could not read file "' + args.file + '"',
+                'red'
+            );
         }
     }
 
     try {
-        if (!context.port) context.port = 8000;
-        if (!context.content) context.content = 'OK';
-        startTcpServer(context);
+        startTcpServer(context.host, context.port, context.content, {
+            dump: context.dump,
+        });
     } catch (err) {
         logger.print('Server Fatal Error: ' + err.message, 'red');
         process.exit(1);
