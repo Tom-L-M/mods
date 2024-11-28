@@ -1,4 +1,4 @@
-const { parseArgv } = require('../shared');
+const { ArgvParser } = require('../shared');
 
 const help = `
     [printenv-js]
@@ -13,26 +13,32 @@ const help = `
         -0 | --null             Terminates each ENV variable with a NULL byte.`;
 
 (async function () {
-    const opts = {
-        h: 'help',
-        v: 'version',
-        0: 'null',
-    };
-
-    const args = parseArgv(opts, { allowWithNoDash: false });
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('null', { alias: '0', allowValue: false });
+    const args = parser.parseArgv();
 
     if (args.help) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
-    const env = process.env;
-    const nvar = (process.argv[2] || '').toUpperCase();
-    const terminator = args.null ? '\0' : '\n';
+    const lineend = args.null ? '\0' : '\n';
 
-    if (!nvar || nvar.startsWith('-')) {
-        for (let key in env) {
-            process.stdout.write(key + '=' + env[key] + terminator);
+    if (args._invalid.length > 0) {
+        return console.log(`Invalid flag "${args._invalid[0]}"`);
+    }
+
+    if (args._.length === 0) {
+        for (let key in process.env) {
+            process.stdout.write(key + '=' + process.env[key] + lineend);
         }
         return;
     }
-    return process.stdout.write((env[nvar] || '') + terminator);
+
+    for (let nvar of args._) {
+        if (process.env[nvar]) {
+            process.stdout.write(process.env[nvar] + lineend);
+        }
+    }
+    return;
 })();
