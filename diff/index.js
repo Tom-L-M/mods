@@ -1,20 +1,20 @@
 const fs = require('fs');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
 
 const help = `
     [diff-js]
         A "diff" command line utility in NodeJS.
 
     Usage:
-        node diff [file-A] [file-B] [options]
+        node diff [options] [file-A] [file-B] 
       OR
-        <stdin> | node diff [file-B] [options]
+        <stdin> | node diff [options] [file-B] 
         
     Options:
         -h | --help             Prints the help message and quits.
         -v | --version          Prints the version info and quits.
         -q | --quiet            Shows only if the files are different or not.
-        -c | --no-color         Prints result without color ANSI tokens.`;
+        -C | --no-color         Prints result without color ANSI tokens.`;
 
 const green = string => `\x1b[32m${string}\x1b[0m`;
 const red = string => `\x1b[31m${string}\x1b[0m`;
@@ -85,7 +85,6 @@ function splitInLines(data, { replaceCRLF = false } = {}) {
 function patch(data1, data2, { quiet, nocolor } = {}) {
     const dataSource1 = splitInLines(data1, { replaceCRLF: true }); //data1.trim().split('\n');
     const dataSource2 = splitInLines(data2, { replaceCRLF: true }); //data2.trim().split('\n');
-    console.log(11, [dataSource1], [dataSource2]);
     const difflist = diff(dataSource1, dataSource2);
 
     if (quiet) {
@@ -104,17 +103,16 @@ function patch(data1, data2, { quiet, nocolor } = {}) {
 }
 
 (async function () {
-    const fromSTDIN = isSTDINActive();
-    const file = process.argv[2];
-    const fileB = process.argv[3];
-    const opts = {
-        h: 'help',
-        v: 'version',
-        q: 'quiet',
-        c: 'no-color',
-    };
-    const args = parseArgv(opts);
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('quiet', { alias: 'q', allowValue: false });
+    parser.option('no-color', { alias: 'C', allowValue: false });
+    const args = parser.parseArgv();
+    const file = args._[0];
+    const fileB = args._[1];
 
+    const fromSTDIN = isSTDINActive();
     if (args.help || (!fromSTDIN && !file)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
