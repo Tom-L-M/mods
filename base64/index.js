@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
 
 function tryToReadFile(fname) {
     try {
@@ -15,51 +15,58 @@ function tryToReadFile(fname) {
         A tool for encoding and decoding text in multiple encodings.
 
     Usage: 
-        base64 [data] [options]
+        base64 [options] [data] 
+        <stdin> | base64 [options] [data] 
     
     Options:
         -h | --help         Prints the help message and quits.
         -v | --version      Prints the version info and quits.
         -d | --decode       Decodes data instead of encoding.
-        -f | --file         Treats "[data]" as a filename instead of data string.
+        -f | --file         Treats [data] or <stdin> as a filename instead of a string.
         -u | --b64uri       Encodes in Base64-URI mode ('+' -> '_' and '/' -> '-').`;
 
-    const argv = process.argv.slice(2);
-    const args = parseArgv({
-        h: 'help',
-        v: 'version',
-        d: 'decode',
-        f: 'file',
-        u: 'b64uri',
-    });
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('decode', { alias: 'd', allowValue: false });
+    parser.option('file', { alias: 'f', allowValue: false });
+    parser.option('b64uri', { alias: 'u', allowValue: false });
+    parser.argument('data');
+    const args = parser.parseArgv();
 
-    if (args.help || process.argv.slice(2).length < 1) return console.log(help);
-
+    if (args.help || (!isSTDINActive() && !args.data)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
-    let decode = Boolean(args.decode);
-    let file = Boolean(args.file);
-    let uri = Boolean(args.b64uri);
     let input;
 
-    if (isSTDINActive()) input = await readStdinAsync();
-    else if (!file) input = argv[0];
-    else {
-        input = tryToReadFile(argv[0]);
-        if (!input)
-            return console.log('Error: Invalid file path provided:', argv[0]);
+    if (isSTDINActive()) {
+        input = await readStdinAsync();
     }
 
-    if (!decode && !uri)
+    if (args.file) {
+        if (isSTDINActive()) {
+            input = tryToReadFile(input.toString().trim());
+            if (!input) return console.log('Error: Invalid file path on STDIN');
+        } else {
+            input = tryToReadFile(args.data);
+            if (!input)
+                return console.log('Error: Invalid file path -', args.data);
+        }
+    } else {
+        input = input || args.data;
+        if (!input) return console.log('Error: No data provided');
+    }
+
+    if (!args.decode && !args.b64uri)
         return console.log(Buffer.from(input).toString('base64'));
-    if (!decode && uri)
+    if (!args.decode && args.b64uri)
         return console.log(Buffer.from(input).toString('base64url'));
 
-    if (decode && !uri)
+    if (args.decode && !args.b64uri)
         return console.log(
             Buffer.from(input.toString(), 'base64').toString('utf-8')
         );
-    if (decode && uri)
+    if (args.decode && args.b64uri)
         return console.log(
             Buffer.from(input.toString(), 'base64url').toString('utf-8')
         );
