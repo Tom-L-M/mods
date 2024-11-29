@@ -1,6 +1,6 @@
 {
     "name": "cat",
-    "version": "1.4.2",
+    "version": "1.4.3",
     "description": "A tool for reading and outputting file data. (Port of UNIX's 'grep' tool).",
     "main": "index.js",
     "scripts": {

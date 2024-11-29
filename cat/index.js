@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
 
 function streamToSTDOUT(fname) {
     return new Promise((resolve, reject) => {
@@ -18,8 +18,8 @@ const help = `
         A "cat" command line utility in NodeJS.
 
     Usage:
-        node cat [options] <file> [...files]
-        <stdin> | node cat [options] [-] <file>
+        node cat [options] [...files]
+        <stdin> | node cat [options] [-] [...files]
 
     Options:        
         -h | --help             Prints the help message and quits.
@@ -42,11 +42,13 @@ const help = `
         dir /B /A-D | cat -f -              # Concats all files from current cwd`;
 
 (async function () {
-    const opts = { h: 'help', v: 'version', f: 'file-list', s: 'separator' };
-    const args = parseArgv(opts);
-
-    const files = process.argv.slice(2);
-    //.slice(Object.values(args).filter(v => typeof v !== 'boolean'));
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('file-list', { alias: 'f', allowValue: false });
+    parser.option('separator', { alias: 's' });
+    const args = parser.parseArgv();
+    const files = args._;
 
     const stdinActive = isSTDINActive();
 
@@ -86,8 +88,6 @@ const help = `
                     if (i > 0) process.stdout.write(separator);
                     process.stdout.write(stdindata);
                 }
-            } else if (file.startsWith('-')) {
-                continue;
             } else {
                 if (i > 0) process.stdout.write(separator);
                 await streamToSTDOUT(file);
