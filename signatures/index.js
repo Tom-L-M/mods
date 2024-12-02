@@ -1,24 +1,4 @@
-const help = `
-    [signatures-js]
-        A tool for extracting file signatures (magic numbers)
-
-    Usage:
-        signatures <file> [-a|--all] [-v|--version] [-h|--help]
-
-    Info:
-        > Setting -a or --all, forces the program to output all magic numbers found, 
-          including the ambiguous ones in the middle of bytecode.`;
-
-const fs = require('fs');
-const args = process.argv.slice(2).map(x => x.toLowerCase());
-
-const file = (args[0] || '').toLowerCase();
-const dumpall = args.includes('--all') || args.includes('-a');
-const signatures = require('./signatures.json');
-// const signatures = JSON.parse(fs.readFileSync('./signatures/signatures.json', 'utf-8'));
-// Remember: When using it as a compiled package, the execution 'chdir' is one level upper
-
-function getSignature(stream) {
+function getSignature(stream, signatures, dumpall) {
     let bytes = stream.toString('hex').toUpperCase();
     let results = [];
     for (let sign in signatures) {
@@ -67,23 +47,57 @@ function getSignature(stream) {
     return results;
 }
 
-(function () {
-    if (args.includes('-v') || args.includes('--version')) {
-        return console.log(require('./package.json')?.version);
-    }
+const fs = require('fs');
+const signatures = require('./signatures.json');
+const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
 
-    if (args.includes('-h') || args.includes('--help')) {
-        return console.log(help);
-    }
+const help = `
+    [signatures-js]
+        A tool for extracting file signatures (magic numbers)
 
-    if (file === '--help' || !file) return console.log(help);
+    Usage:
+        node signatures [options] <file>
+      OR
+        <stdin> | node signatures [options] 
+
+    Options:
+        -h | --help             Prints the help message and quits.
+        -v | --version          Prints the version info and quits.
+        -a | --all              Prints all signature markers, instead
+                                of just the first one.`;
+
+(async function () {
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('all', { alias: 'a', allowValue: false });
+    parser.argument('file');
+    const args = parser.parseArgv();
+
+    const fromSTDIN = isSTDINActive();
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!fromSTDIN && !args.file)) return console.log(help);
+
     try {
-        let stream = fs.readFileSync(file);
-        let dump = getSignature(stream);
+        let data;
+        if (fromSTDIN) {
+            data = await readStdinAsync();
+        } else {
+            // If not trying to get all extensions,
+            // then read only the first 150 bytes instead of entire file
+            if (!args.all) {
+                const buff = Buffer.alloc(150);
+                const fd = fs.openSync(args.file);
+                fs.readSync(fd, buff, 0, buff.length, 0);
+                data = buff;
+            } else {
+                data = fs.readFileSync(args.file);
+            }
+        }
+        const dump = getSignature(data, signatures, args.all);
         console.log(dump);
     } catch (err) {
-        console.log('ERROR: File Not Found | Impossible to complete dump');
-        console.log(err.message);
+        console.log('ERROR: File Not Found - Impossible to complete dump');
+        console.log('Message:', err.message);
     }
-    return;
 })();
