@@ -1,6 +1,6 @@
-const crypto = require('crypto');
 const fs = require('fs');
-const { parseArgv } = require('../shared');
+const crypto = require('crypto');
+const { ArgvParser } = require('../shared');
 
 const help = `
     [shred-js]
@@ -26,14 +26,18 @@ function refill(buffer) {
 const WRITE_CHUNK_SIZE = 4 * 1024; // 4 Kb
 
 (async function () {
-    const file = process.argv[2];
-    const opts = { h: 'help', v: 'version', z: 'zerofill', r: 'remove' };
-    const args = parseArgv(opts);
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('zerofill', { alias: 'z', allowValue: false });
+    parser.option('remove', { alias: 'r', allowValue: false });
+    parser.argument('file');
+    const args = parser.parseArgv();
 
-    if (args.help || !file) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || !args.file) return console.log(help);
 
-    let remove = args['remove'];
+    let remove = args.remove;
     let zerofill = args.zerofill;
 
     let stream,
@@ -41,11 +45,11 @@ const WRITE_CHUNK_SIZE = 4 * 1024; // 4 Kb
         fsize,
         written = 0;
     try {
-        stats = fs.statSync(file);
-        stream = fs.createWriteStream(file);
+        stats = fs.statSync(args.file);
+        stream = fs.createWriteStream(args.file);
         fsize = stats.size;
     } catch {
-        return console.log(`Error: could not find file - ${file}`);
+        return console.log(`Error: could not find file - ${args.file}`);
     }
 
     // To optimize memory usage, when there is a zerofill operation,
@@ -67,5 +71,5 @@ const WRITE_CHUNK_SIZE = 4 * 1024; // 4 Kb
 
     await new Promise(resolve => stream.close(resolve));
 
-    if (remove) fs.rmSync(file);
+    if (remove) fs.rmSync(args.file);
 })();
