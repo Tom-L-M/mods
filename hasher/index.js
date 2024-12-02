@@ -1,4 +1,4 @@
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
 
 function compare(a, b) {
     return a?.toLowerCase() === b?.toLowerCase();
@@ -8,13 +8,12 @@ const fs = require('fs');
 
 (async function wrapper() {
     const crypto = require('crypto');
-    const args = process.argv.slice(2);
     const help = `
     [hasher-js]
         A tool for calculating hash values of files and text.
 
     Usage:
-        node hasher <file|data> [options]
+        node hasher [options] <file|data> 
        OR
         <input> | node hasher [options]
 
@@ -22,9 +21,9 @@ const fs = require('fs');
         -h | --help         Prints this help message and quit.
         -v | --version      Prints version information and quit.
         -t | --text         Inform that the provided string is data, and not a filename.
-        -x | --hash         Define the hash type to be used.
-        -c | --compare S    Compare the generated hash with the provided hash S.
-        -d | --digest S     Digest the generated hash with one of the digest types.
+        -x | --hash TYPE    Define the hash type to be used.
+        -c | --compare HASH Compare the generated hash with the provided hash S.
+        -d | --digest TYPE  Digest the generated hash with one of the digest types.
         
     Hash Types:
         sha256 (default), md5, sha1, sha224, sha384, sha512
@@ -32,32 +31,28 @@ const fs = require('fs');
     Digest Types:
         hex (default), utf8, base64, ascii`;
 
-    const argv = parseArgv({
-        h: 'help',
-        v: 'version',
-        t: 'text',
-        c: 'compare',
-        d: 'digest',
-        x: 'hash',
-    });
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('text', { alias: 't', allowValue: false });
+    parser.option('hash', { alias: 'x' });
+    parser.option('compare', { alias: 'c' });
+    parser.option('digest', { alias: 'd' });
+    parser.argument('data');
+    const args = parser.parseArgv();
 
     const fromSTDIN = isSTDINActive();
 
-    if (argv.help || (args.length < 1 && !fromSTDIN)) return console.log(help);
+    if (args.help || (!args.data && !fromSTDIN)) return console.log(help);
+    if (args.version) return console.log(require('./package.json')?.version);
 
-    if (argv.version) return console.log(require('./package.json')?.version);
+    const file = args.data;
+    const hashType = args.hash || 'sha256';
+    const digest = args.digest || 'hex';
+    const isText = args.text;
+    const comparison = args.compare;
 
-    const file = args[0];
-    const hashType = argv.hash || 'sha256';
-    const comparison = argv.compare;
-    const digest = argv.digest || 'hex';
-    const isText = argv.text;
-
-    let input = file;
-
-    // If it is called like:   cat somefile | node script.js [flags]
-    // E.g. there is input via pipes
-    if (fromSTDIN) input = await readStdinAsync();
+    let input = fromSTDIN ? await readStdinAsync() : file;
 
     if (
         !['md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'].includes(
