@@ -57,8 +57,8 @@ function slice(data, { lines, bytes, reverse } = {}) {
 
     const args = parser.parseArgv();
 
-    if (args.help || (!fromSTDIN && !args._.length)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!fromSTDIN && !args._.length)) return console.log(help);
 
     if (args._invalid.length > 0)
         return console.log(

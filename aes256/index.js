@@ -82,10 +82,10 @@ async function decryptFile(_origin, _target, _password, _ivkeyword) {
               the IV and key will be different internally.`;
 
     // Getting CLI arguments
-    if (args.length < 2 || args.includes('--help') || args.includes('-h'))
-        return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
         return console.log(require('./package.json')?.version);
+    if (args.length < 2 || args.includes('--help') || args.includes('-h'))
+        return console.log(help);
     else {
         mode = (() => {
             if (['-d', '--decrypt'].includes(format(args[0], true))) {

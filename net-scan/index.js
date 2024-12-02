@@ -156,10 +156,10 @@ const generateRange = (a = 0, b = 0, step = 1) => {
     //      => If no flags are provided, this is activated by default.
 
     const args = process.argv.slice(2);
-    if (args.length < 1 || args.includes('--help') || args.includes('-h'))
-        return console.log(glob.help);
     if (args.includes('--version') || args.includes('-v'))
         return console.log(require('./package.json')?.version);
+    if (args.length < 1 || args.includes('--help') || args.includes('-h'))
+        return console.log(glob.help);
 
     glob.host = glob.args[0];
 

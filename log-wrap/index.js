@@ -35,9 +35,9 @@ function buildOutputFileName(appname) {
 
 (async function main() {
     const argv = process.argv.slice(2);
-    if (argv.length < 2) return console.log(help);
     if (argv.includes('-v') || argv.includes('--version'))
         return console.log(require('./package.json')?.version);
+    if (argv.length < 2) return console.log(help);
 
     const appname = argv[1];
     const outputdir = path.resolve(argv[0]);

@@ -17,10 +17,10 @@ const https = require('https');
         -f | --filetype     Default: txt - Files to search for.`;
     const args = process.argv.slice(2);
 
-    if (args.includes('--help') || args.includes('-h') || !args[0])
-        return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
         return console.log(require('./package.json')?.version);
+    if (args.includes('--help') || args.includes('-h') || !args[0])
+        return console.log(help);
 
     const domain = args[0];
     let filetypes = [];

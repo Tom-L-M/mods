@@ -256,8 +256,8 @@ const help = `
     const bBinary = Boolean(args['b-binary']);
     const noPaint0 = Boolean(args['no-paint-0']);
 
-    if (args.help || (!fromStdin && !file)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!fromStdin && !file)) return console.log(help);
 
     let input;
     // If it is called like:    node script.js [somefile] [flags]

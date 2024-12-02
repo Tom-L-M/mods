@@ -34,8 +34,8 @@ function tryToReadFile(fname) {
     parser.argument('data');
     const args = parser.parseArgv();
 
-    if (args.help || (!isSTDINActive() && !args.data)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!isSTDINActive() && !args.data)) return console.log(help);
 
     let input;
 

@@ -45,8 +45,8 @@ const help = `
     const texts = args._.map(parseControlChars);
     const stdinActive = isSTDINActive();
 
-    if (args.help || (!texts.length && !stdinActive)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!texts.length && !stdinActive)) return console.log(help);
 
     if (args._invalid.length > 0)
         return console.log(

@@ -62,8 +62,8 @@ const help = `
     const DEFAULT_SIZE = 1024 * 1024;
     let file = argv[0];
 
-    if (args.help || (!isSTDINActive() && !file)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!isSTDINActive() && !file)) return console.log(help);
 
     if (args.size) args.size = parseUnit(args.size);
     else args.size = DEFAULT_SIZE;

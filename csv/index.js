@@ -324,9 +324,9 @@ const fullHelp = `
 
     const stdinActive = isSTDINActive();
 
+    if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || (!stdinActive && !file)) return console.log(help);
     if (args['help-all']) return console.log(fullHelp);
-    if (args.version) return console.log(require('./package.json')?.version);
 
     if (args._invalid.length > 0)
         return console.log(

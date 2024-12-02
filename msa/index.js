@@ -75,8 +75,8 @@ const help = `
     const archive = process.argv[3];
     const source = process.argv[4];
 
-    if (args.help || !command) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || !command) return console.log(help);
 
     if (!fs.existsSync(archive))
         return console.log('Error: invalid archive path provided');

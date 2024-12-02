@@ -244,10 +244,10 @@ CYPHERS.ATBASH.handler = args => {
         > low-cypher nato e -d "hello"      // -> "hotel echo lima lima oscar"`;
     const args = process.argv.slice(2);
     const cyphername = args.shift();
-    if (!cyphername || args.includes('-h') || args.includes('--help'))
-        return console.log(help);
     if (args.includes('-v') || args.includes('--version'))
         return console.log(require('./package.json')?.version);
+    if (!cyphername || args.includes('-h') || args.includes('--help'))
+        return console.log(help);
     if (!CYPHERS[cyphername.toUpperCase()])
         return console.log('Error: Invalid cypher type [' + cyphername + ']');
     return console.log(CYPHERS[cyphername.toUpperCase()].handler(args));

@@ -65,6 +65,12 @@ const generate = (mod = 4096, pass = undefined) => {
     let save = false;
     let out = false;
 
+    if (args.includes('-v') || args.includes('--version'))
+        return console.log(require('./package.json')?.version);
+
+    if (args.includes('-h') || args.includes('--help'))
+        return console.log(help);
+
     // Check if there is a 'save' switch:
     if (args.includes('-s') || args.includes('--save')) {
         save = true;
@@ -74,12 +80,6 @@ const generate = (mod = 4096, pass = undefined) => {
     if (args.includes('-o') || args.includes('--out')) {
         out = true;
     }
-
-    if (args.includes('-h') || args.includes('--help'))
-        return console.log(help);
-
-    if (args.includes('-v') || args.includes('--version'))
-        return console.log(require('./package.json')?.version);
 
     if (!save && !out) return console.log(help);
 

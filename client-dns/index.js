@@ -108,11 +108,11 @@ const resolveDNSQuery = async context => {
 
     const args = process.argv.slice(2);
 
-    if (args.length < 1 || args.includes('--help') || args.includes('-h'))
-        return console.log(help);
-
     if (args.includes('-v') || args.includes('--version'))
         return console.log(require('./package.json')?.version);
+
+    if (args.length < 1 || args.includes('--help') || args.includes('-h'))
+        return console.log(help);
 
     const options = {
         target: args[0],

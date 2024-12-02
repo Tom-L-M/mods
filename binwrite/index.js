@@ -62,11 +62,10 @@ const helpmsg = `
     // binwrite <mode> <datatype> <file> <content>
     let args = process.argv.slice(2);
     let mode = args[0];
-    if (mode == '-h' || mode == '--help' || !mode || args.length < 4)
-        return console.log(helpmsg);
-
     if (mode == '-v' || mode == '--version')
         return console.log(require('./package.json')?.version);
+    if (mode == '-h' || mode == '--help' || !mode || args.length < 4)
+        return console.log(helpmsg);
 
     let datatype = args[1];
     let file = args[2];

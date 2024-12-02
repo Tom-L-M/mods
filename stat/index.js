@@ -316,8 +316,8 @@ const path = require('node:path');
     });
     let filepath = process.argv.slice(2)[0];
 
-    if (argv.help || !filepath) return console.log(help);
     if (argv.version) return console.log(require('./package.json')?.version);
+    if (argv.help || !filepath) return console.log(help);
 
     if (argv.longhelp) return console.log(longhelp);
 

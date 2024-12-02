@@ -494,8 +494,8 @@ class GopherServer {
     parser.option('build', { alias: 'b', allowValue: false });
     const args = parser.parseArgv();
 
-    if (args.help) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help) return console.log(help);
     if (args.build) return await build();
 
     if (args._invalid.length > 0)

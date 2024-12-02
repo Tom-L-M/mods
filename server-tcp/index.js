@@ -122,8 +122,8 @@ function startTcpServer(host, port, content, { dump } = {}) {
         dump: true,
     };
 
-    if (args.help) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help) return console.log(help);
     if (args.host) context.host = args.host;
     if (args.port) context.port = args.port;
     if (args.text) context.content = args.text;

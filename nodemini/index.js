@@ -22,17 +22,17 @@ const help = `
     const argv = parseArgv({
         e: 'eval',
     });
-
-    if (
-        process.argv.slice(2)[0] === '-h' ||
-        process.argv.slice(2)[0] === '--help'
-    )
-        return console.log(help);
     if (
         process.argv.slice(2)[0] === '-v' ||
         process.argv.slice(2)[0] === '--version'
     )
         return console.log(require('./package.json')?.version);
+    if (
+        process.argv.slice(2)[0] === '-h' ||
+        process.argv.slice(2)[0] === '--help'
+    )
+        return console.log(help);
+
     if (
         process.argv.slice(2)[0] === '-V' ||
         process.argv.slice(2)[0] === '--node-version'

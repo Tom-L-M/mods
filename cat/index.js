@@ -52,8 +52,8 @@ const help = `
 
     const stdinActive = isSTDINActive();
 
-    if (args.help || (!files.length && !stdinActive)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!files.length && !stdinActive)) return console.log(help);
 
     // If no STDIN output token is used, append to the end
     if (stdinActive && !files.includes('-')) files.unshift('-');

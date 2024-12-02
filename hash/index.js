@@ -43,8 +43,8 @@ const fs = require('fs');
 
     const fromSTDIN = isSTDINActive();
 
-    if (args.help || (!args.data && !fromSTDIN)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!args.data && !fromSTDIN)) return console.log(help);
 
     const file = args.data;
     const hashType = args.hash || 'sha256';

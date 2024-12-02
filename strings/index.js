@@ -33,10 +33,10 @@ const fs = require('fs');
     }
 
     const args = process.argv.slice(2);
-    if (args.length < 1 || args.includes('--help') || args.includes('-h'))
-        return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
         return console.log(require('./package.json')?.version);
+    if (args.length < 1 || args.includes('--help') || args.includes('-h'))
+        return console.log(help);
 
     let strings = '';
     const file = args[0];

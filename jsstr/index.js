@@ -47,8 +47,8 @@ function customeval(string, buffer) {
     const opts = { h: 'help', v: 'version' };
     const args = parseArgv(opts);
 
-    if (args.help || (!fromSTDIN && !data)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!fromSTDIN && !data)) return console.log(help);
 
     let input;
 

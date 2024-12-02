@@ -69,8 +69,8 @@ function unsafeReachObject(string, context) {
     parser.argument('file');
     const args = parser.parseArgv();
 
-    if ((!args.file && !isSTDINActive()) || args.help) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if ((!args.file && !isSTDINActive()) || args.help) return console.log(help);
 
     let file = args.file;
     let val = args.value;

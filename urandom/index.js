@@ -249,10 +249,10 @@ const help = `
         i8: 'int64',
     });
 
+    if (args.version) return console.log(require('./package.json')?.version);
+
     if (args.help || !args.count || process.argv.length < 3)
         return console.log(help);
-
-    if (args.version) return console.log(require('./package.json')?.version);
 
     const count = parseInt(args.count);
     if (!count || isNaN(count) || count > 65535 || count < 1)

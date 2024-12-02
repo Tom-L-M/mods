@@ -23,10 +23,10 @@ const fs = require('fs');
                             the user input on the screen, only the terminal output`;
     let pipeto = false;
     let isSilent = false;
-    if (args.includes('--help') || args.includes('-h') || args.length < 2)
-        return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
         return console.log(require('./package.json')?.version);
+    if (args.includes('--help') || args.includes('-h') || args.length < 2)
+        return console.log(help);
 
     if (args.includes('--silent')) isSilent = true;
     if (args.includes('--pipe')) {

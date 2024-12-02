@@ -141,9 +141,9 @@ function parseRegexString(
     const rxstring = process.argv[2];
     const file = process.argv[3];
 
+    if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || (!fromSTDIN && !rxstring) || (!fromSTDIN && !file))
         return console.log(help);
-    if (args.version) return console.log(require('./package.json')?.version);
 
     let input;
 

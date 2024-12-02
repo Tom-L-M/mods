@@ -1079,11 +1079,11 @@ const help = `
 
     const args = process.argv.slice(2);
 
-    if (args.includes('-h') || args.includes('--help'))
-        return console.log(help);
-
     if (args.includes('-v') || args.includes('--version'))
         return console.log(require('./package.json')?.version);
+
+    if (args.includes('-h') || args.includes('--help'))
+        return console.log(help);
 
     const verb = args[0];
     const tarfile = args[1] || '';

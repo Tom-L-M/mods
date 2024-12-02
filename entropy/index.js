@@ -47,10 +47,10 @@ async function walk(dirpath) {
         > If a directory path is passed as <path> instead of a file path, 
           the entropy of all files in folders and subfolders will be calculated.`;
     const args = process.argv.slice(2);
-    if (args.includes('--help') || args.includes('-h') || !args[0])
-        return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
         return console.log(require('./package.json')?.version);
+    if (args.includes('--help') || args.includes('-h') || !args[0])
+        return console.log(help);
     if (args.length < 1)
         return console.log(
             '<> Error: Not enought arguments passed. Use --help to see the help menu.'

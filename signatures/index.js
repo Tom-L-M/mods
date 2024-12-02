@@ -12,14 +12,6 @@ const help = `
 const fs = require('fs');
 const args = process.argv.slice(2).map(x => x.toLowerCase());
 
-if (args.includes('-h') || args.includes('--help')) {
-    return console.log(help);
-}
-
-if (args.includes('-v') || args.includes('--version')) {
-    return console.log(require('./package.json')?.version);
-}
-
 const file = (args[0] || '').toLowerCase();
 const dumpall = args.includes('--all') || args.includes('-a');
 const signatures = require('./signatures.json');
@@ -76,6 +68,14 @@ function getSignature(stream) {
 }
 
 (function () {
+    if (args.includes('-v') || args.includes('--version')) {
+        return console.log(require('./package.json')?.version);
+    }
+
+    if (args.includes('-h') || args.includes('--help')) {
+        return console.log(help);
+    }
+
     if (file === '--help' || !file) return console.log(help);
     try {
         let stream = fs.readFileSync(file);

@@ -76,8 +76,8 @@ const samples = ([...arr], sampleSize = 1) => {
 
     // PARSE ARGUMENTS
 
-    if (args.help) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help) return console.log(help);
 
     // For number of passphrases to generate:
     let numberToGenerate = args.count;

@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
 
 const help = `
     [tee-js]
@@ -16,12 +16,16 @@ const help = `
 
 (async function () {
     const fromSTDIN = isSTDINActive();
-    const file = process.argv[2];
-    const opts = { v: 'version', h: 'help', a: 'append' };
-    const args = parseArgv(opts);
 
-    if (args.help || !file) return console.log(help);
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('append', { alias: 'a', allowValue: false });
+    parser.argument('file');
+    const args = parser.parseArgv();
+
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || !args.file) return console.log(help);
 
     let input;
     let append = args.append;
@@ -34,9 +38,9 @@ const help = `
     else input = await readStdinAsync();
 
     if (append) {
-        fs.appendFileSync(file, input);
+        fs.appendFileSync(args.file, input);
     } else {
-        fs.writeFileSync(file, input);
+        fs.writeFileSync(args.file, input);
     }
 
     process.stdout.write(input);

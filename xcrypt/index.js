@@ -72,12 +72,12 @@ function xorFiles(file1, file2, outputFile) {
     const arg_skey = args[1];
     const arg_wout = args[2] || arg_file + '.lock';
 
+    if (args.includes('-v') || args.includes('--version'))
+        return console.log(require('./package.json')?.version);
     if (['-h', '--help', '', undefined].includes(arg_file))
         return console.log(help);
     if (args.includes('-h') || args.includes('--help'))
         return console.log(help);
-    if (args.includes('-v') || args.includes('--version'))
-        return console.log(require('./package.json')?.version);
 
     if (args.length < 2 || args.length > 3)
         return console.log(

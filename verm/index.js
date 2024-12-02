@@ -120,12 +120,12 @@ function JSONSafeParse(data) {
     const force = args.includes('--force') || args.includes('-f');
 
     // Check if there are no arguments
-    if (args.length == 0 || args.includes('-h') || args.includes('--help'))
-        return console.log(help);
-
-    // Check if there are no arguments
     if (args.includes('-v') || args.includes('--version'))
         return console.log(require('./package.json')?.version);
+
+    // Check if there are no arguments
+    if (args.length == 0 || args.includes('-h') || args.includes('--help'))
+        return console.log(help);
 
     // Special case:        'node verm <file>' (forgot operation)
     if (

@@ -261,9 +261,10 @@ const help = `
 
     const args = parser.parseArgv();
 
+    if (args.version) return console.log(require('./package.json')?.version);
+
     if (args.help || (!fromSTDIN && !args.string && !args.list))
         return console.log(help);
-    if (args.version) return console.log(require('./package.json')?.version);
 
     if (args._invalid.length > 0)
         return console.log(

@@ -79,12 +79,12 @@ const buildMessage = MACaddr => {
     const macaddr = args[1];
     let port = 7;
 
-    if (args.includes('-h') || args.includes('--help') || !args[0]) {
-        return console.log(help);
-    }
-
     if (args.includes('-v') || args.includes('--version')) {
         return console.log(require('./package.json')?.version);
+    }
+
+    if (args.includes('-h') || args.includes('--help') || !args[0]) {
+        return console.log(help);
     }
 
     if (!network || !isValidIP(network)) {

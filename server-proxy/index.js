@@ -414,10 +414,10 @@ function parseArgs() {
 
 (function () {
     const args = process.argv.slice(2);
-    if (args.includes('--help') || args.includes('-h') || args.length === 0)
-        return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
         return console.log(require('./package.json')?.version);
+    if (args.includes('--help') || args.includes('-h') || args.length === 0)
+        return console.log(help);
 
     const routes = parseArgs();
     for (const route of routes) {

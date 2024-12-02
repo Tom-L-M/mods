@@ -300,8 +300,8 @@ function startEchoServer(host, port) {
     parser.argument('protocol');
     const args = parser.parseArgv();
 
-    if (args.help || !args.protocol) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || !args.protocol) return console.log(help);
 
     if (args._invalid.length > 0)
         return console.log(

@@ -96,10 +96,11 @@ function fetchARPTable() {
           targets in the network block ping probes. In that case, a UDP or TCP scan will 
           be best suited.`;
     const args = process.argv.slice(2);
-    if (args.includes('--help') || args.includes('-h') || !args[0])
-        return console.log(help);
     if (args.includes('--version') || args.includes('-v'))
         return console.log(require('./package.json')?.version);
+    if (args.includes('--help') || args.includes('-h') || !args[0])
+        return console.log(help);
+
     if (args.length < 1)
         return console.log(
             '<> Error: Not enought arguments passed. Use --help to access the help menu'

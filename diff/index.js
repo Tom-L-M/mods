@@ -113,8 +113,8 @@ function patch(data1, data2, { quiet, nocolor } = {}) {
     const fileB = args._[1];
 
     const fromSTDIN = isSTDINActive();
-    if (args.help || (!fromSTDIN && !file)) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!fromSTDIN && !file)) return console.log(help);
 
     let input, inputB;
     const quiet = args.quiet || null;
