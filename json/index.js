@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
 
 function safeParseJSON(string) {
     try {
@@ -41,15 +41,15 @@ function unsafeReachObject(string, context) {
             A tool for editing json fields in files from command line.
 
         Usage:
-            json <file> <-k key> [-n value]
+            json <file> [-k KEY] [-n VALUE]
            OR
-            <stdin> | json [-] <-k key> [-n value]
+            <stdin> | json [-] [-k KEY] [-n VALUE]
             
         Options:
             -h | --help         Prints the help message and quits.
             -v | --version      Prints the version info and quits.
-            -k | --key X
-            -n | --value X
+            -k | --key KEY        
+            -n | --value VALUE
 
         Info:
             > Passing a JSON object without selecting a key '-k' will result in it being formatted.
@@ -61,15 +61,18 @@ function unsafeReachObject(string, context) {
             > If value is not provided, the current key value is printed.
             > To remove a key from the object, set it to undefined.`;
 
-    const opts = { h: 'help', v: 'version', k: 'key', n: 'value' };
-    const args = parseArgv(opts);
-    const argv = process.argv.slice(2);
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('value', { alias: 'v', allowValue: false });
+    parser.option('key', { alias: 'k' });
+    parser.option('value', { alias: 'n' });
+    parser.argument('file');
+    const args = parser.parseArgv();
 
-    if ((argv.length === 0 && !isSTDINActive()) || args.help)
-        return console.log(help);
+    if ((!args.file && !isSTDINActive()) || args.help) return console.log(help);
     if (args.version) return console.log(require('./package.json')?.version);
 
-    let file = argv[0];
+    let file = args.file;
     let val = args.value;
     let key = args.key;
     let context;
