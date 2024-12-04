@@ -1,4 +1,4 @@
-const { parseArgv } = require('../shared');
+const { ArgvParser } = require('../shared');
 
 const getEntityType = IStat => {
     return IStat.isDirectory()
@@ -306,30 +306,32 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 (function () {
-    const argv = parseArgv({
-        h: 'help',
-        v: 'version',
-        H: 'longhelp',
-        f: 'format',
-        t: 'terse',
-        j: 'json',
-    });
-    let filepath = process.argv.slice(2)[0];
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('longhelp', { alias: 'H', allowValue: false });
+    parser.option('json', { alias: 'j', allowValue: false });
+    parser.option('terse', { alias: 't', allowValue: false });
+    parser.option('format', { alias: 'f' });
+    parser.argument('path');
+    const args = parser.parseArgv();
 
-    if (argv.version) return console.log(require('./package.json')?.version);
-    if (argv.help || !filepath) return console.log(help);
+    let filepath = args['path'];
 
-    if (argv.longhelp) return console.log(longhelp);
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || !filepath) return console.log(help);
+
+    if (args.longhelp) return console.log(longhelp);
 
     filepath = path.resolve(filepath);
 
     if (!fs.existsSync(filepath))
         return console.log('Error: invalid file path provided:', filepath);
 
-    if (argv.format && typeof argv.format !== 'string')
+    if (args.format && typeof args.format !== 'string')
         return console.log(
             'Error: invalid format parameter provided. Received:',
-            typeof argv.format
+            typeof args.format
         );
 
     let stats;
@@ -344,13 +346,13 @@ const path = require('node:path');
     // So, we replace them with unix forward slashes, for safety
     filepath = filepath.replaceAll(/\\/gi, '/');
 
-    if (argv.terse)
+    if (args.terse)
         return console.log(render(DEFAULT_TERSE_LAYOUT, stats, filepath));
 
-    if (argv.json)
+    if (args.json)
         return console.log(render(DEFAULT_JSON_LAYOUT, stats, filepath));
 
-    if (argv.format) return console.log(render(argv.format, stats, filepath));
+    if (args.format) return console.log(render(args.format, stats, filepath));
 
     return console.log(render(DEFAULT_TEXT_LAYOUT, stats, filepath));
 })();
