@@ -1,31 +1,14 @@
-const { parseArgv } = require('../shared');
-
-const help = `
-    [uuid-js]
-        A tool for generating virtual UUIDs (Version 4 - Random)
-
-    Usage:
-        uuid [-v|--version] [-h|--help] <-c|--count AMOUNT> [-t|--type 4|7] [-u|--upper] 
-        
-    Info:
-        - Default for "--count" is 1
-        - Default for "--type" is 4
-        - Default for "--upper" is false
-        - "amount" is used for bulk generation and must be an integer between 1 and 99
-        - "type" is the UUID version. Supported versions are: 4 and 7
-        - "upper" defines if UUIDs will be generated in upper-case or not`;
+const { ArgvParser } = require('../shared');
 
 const randomItem = array => array[Math.floor(Math.random() * array.length)];
 const addVariantBit = uuidString =>
     uuidString.replace('X', randomItem(['8', '9', 'a', 'b']));
 const randomDigit = () => Math.random().toString(16)[6];
-const isValidInt = int =>
-    !(int === true || int === false || isNaN(Number(int)));
 
 const unixTime = {};
 unixTime.raw = () => Math.floor(Date.now() / 1000).toString();
-unixTime.low = () => unixTime.raw().slice(8);
-unixTime.high = () => unixTime.raw().slice(0, 8);
+unixTime.low = () => unixTime.raw().slice(8).padStart(4, '0');
+unixTime.high = () => unixTime.raw().slice(0, 8).padStart(8, '0');
 
 const uuid = {
     // Random
@@ -46,29 +29,42 @@ const uuid = {
         ),
 };
 
-(function () {
-    // uuid -h/--help
-    // uuid -c/--count <INT> -u/--uuidv <4|7|nil|max>
-    const argv = parseArgv({
-        h: 'help',
-        v: 'version',
-        c: 'count',
-        t: 'type',
-        u: 'upper',
-    });
+const help = `
+    [uuid-js]
+        A tool for generating virtual UUIDs (Version 4 - Random)
 
-    if (argv.version) return console.log(require('./package.json')?.version);
-    if (argv.help || !isValidInt(argv.count)) return console.log(help);
+    Usage:
+        uuid [options]
+        
+    Options:
+        -h | --help         Prints the help message and quits.
+        -v | --version      Prints the version info and quits.
+        -c | --count INT    Prints the complete help message and quits. Default: 1.
+        -u | --upper        Prints the UUID in upper-case mode. Default: false.
+        -t | --type TYPE    Selects the UUID type (4 or 7). Default: 4.`;
+
+(function () {
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('count', { alias: 'c', allowCasting: true });
+    parser.option('upper', { alias: 'u', allowValue: false });
+    parser.option('type', { alias: 't' });
+    parser.argument('path');
+    const args = parser.parseArgv();
+
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help) return console.log(help);
 
     const options = {
-        uuid_version: argv.type || '4',
-        count: parseInt(argv.count || 1),
-        upperCase: !!argv.upper,
+        uuid_version: args.type || '4',
+        count: parseInt(args.count || 1),
+        upperCase: !!args.upper,
     };
 
-    if (options.count > 99 || options.count < 1)
+    if (options.count < 1)
         return console.log(
-            `\n Error: Invalid UUID bulk count provided [${options.count}] - Expected between 1 and 99`
+            `\n Error: Invalid UUID bulk count provided [${options.count}] - Expected a positive integer.`
         );
 
     let generate = () => {};
@@ -82,7 +78,7 @@ const uuid = {
             break;
         default:
             return console.log(
-                `\n Error: Invalid UUID version provided [${options.uuid_version}] - Expected one of: [4|7|NIL|MAX]`
+                `\n Error: Invalid UUID version provided [${options.uuid_version}] - Expected types 4 or 7`
             );
     }
 
