@@ -5,6 +5,104 @@ const https = require('https');
 const types = require('./mime.json');
 // Remember: When using it as a compiled package, the execution 'chdir' is one level upper
 
+function startHttpCommandServer(context) {
+    const { execSync } = require('child_process');
+    let { host, port, dump, content, ssl, sslkey, sslcert, auth } = context;
+    let contentType = 'command: ';
+    let fname = content;
+
+    function reqhandle(req, res) {
+        let date = new Date();
+        let now =
+            date.toString().split(' ')[4] +
+            '.' +
+            date.getMilliseconds().toString().padStart(3, '0');
+        let [remoteip, remoteport] = [
+            (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '')
+                .split(',')
+                .join('>'),
+            req.socket.remotePort,
+        ];
+
+        if (auth.use) {
+            let r_header = req.headers.authorization || ''; // get the auth header
+            let r_token = r_header.split(/\s+/).pop() || ''; // and the encoded auth token
+            let r_auth = Buffer.from(r_token, 'base64').toString(); // convert from base64
+            let r_parts = r_auth.split(/:/); // split on colon
+            let r_username = r_parts.shift(); // username is first
+            let r_password = r_parts.join(':'); // everything else is the password
+            if (r_username !== auth.user || r_password !== auth.pass) {
+                console.log(
+                    `${now} - http-comm@${remoteip}:${remoteport} >> [${
+                        req.method
+                    }] : ${
+                        req.url == '/undefined' ? '/' : req.url
+                    } - Auth:Rejected`
+                );
+                res.writeHead(401, {
+                    'Content-Type': 'text/html',
+                    'WWW-Authenticate':
+                        'Basic realm="Access to the staging site"',
+                });
+                res.end('401: Forbidden :: Authorization Failed');
+                return;
+            }
+            console.log(
+                `${now} - http-comm@${remoteip}:${remoteport} >> [${
+                    req.method
+                }] : ${req.url == '/undefined' ? '/' : req.url} - Auth:Accepted`
+            );
+        } else {
+            console.log(
+                `${now} - http@${remoteip}:${remoteport} >> [${req.method}] : ${
+                    req.url == '/undefined' ? '/' : req.url
+                }`
+            );
+        }
+        if (dump)
+            console.log(
+                '  & ' +
+                    Object.entries(req.headers)
+                        .map(x => x.join(': '))
+                        .join('\n  & ')
+            );
+
+        let ls;
+        try {
+            res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+            ls = execSync(content);
+            res.write(ls);
+            res.end();
+        } catch (err) {
+            ls = err;
+            res.write(JSON.stringify(ls, null, '\t'));
+            res.end();
+        }
+    }
+
+    function listenhandle() {
+        console.log(`HTTP-COMM server running on http://${host}:${port}/`);
+        console.log(
+            `Auto response configured to serve [${contentType}${fname}] on base path`
+        );
+        if (ssl)
+            console.log(
+                `SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`
+            );
+        if (auth.use)
+            console.log(
+                `Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`
+            );
+    }
+
+    if (!ssl)
+        return http.createServer(reqhandle).listen(port, host, listenhandle);
+    else
+        return https
+            .createServer({ key: sslkey, cert: sslcert }, reqhandle)
+            .listen(port, host, listenhandle);
+}
+
 function startHttpExecServer(context) {
     // An exec server is an HTTP server, that executes commands locally based on a passed URL
     const { execSync } = require('child_process');
@@ -794,6 +892,7 @@ function generateAuthStringPair() {
     │  move          80         Redirection server      Text            │
     │  base          80         Raw HTTP server         File | Text     │
     │  exec          8080       C2 local HTTP server    File | Text     │
+    │  comm          8000       Simple command server   Text            │
     └───────────────────────────────────────────────────────────────────┘
 
     Info:
@@ -931,6 +1030,13 @@ function generateAuthStringPair() {
                 if (!context.content)
                     context.content = `https://www.google.com/`;
                 startHttpRedirectionServer(context);
+                break;
+
+            case 'comm':
+                if (!context.port) context.port = 8000;
+                if (!context.content)
+                    context.content = `echo Hello From Server!`;
+                startHttpCommandServer(context);
                 break;
 
             default:
