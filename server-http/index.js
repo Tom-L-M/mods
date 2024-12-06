@@ -6,6 +6,8 @@ const types = require('./mime.json');
 // Remember: When using it as a compiled package, the execution 'chdir' is one level upper
 
 function startHttpCommandServer(context) {
+    // A server to run a command and return the result for every request instead of retunrning a static string or file
+
     const { execSync } = require('child_process');
     let { host, port, dump, content, ssl, sslkey, sslcert, auth } = context;
     let contentType = 'command: ';
@@ -899,6 +901,10 @@ function generateAuthStringPair() {
         > When using 'move' protocol (redirection server), you must provide an url for redirection.
           EX:   server-http move -r "www.bing.com"
           (The default for the resource URL is "www.google.com")
+
+        > When using 'comm' protocol (command server), you must provide aa valid shell command.
+          That command will be executed for every request, and will return its output as response.
+          This is useful for reading a file that grows (logs for example) using a command like: "tail some.log".
 
         > When using '--auth' option, the server provides an http-auth header, forcing 
           the user to input login and password, or an 'Authorization' header must be sent.
