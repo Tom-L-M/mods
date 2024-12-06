@@ -194,7 +194,6 @@ const formatVerticalList = arr => {
 */
 
     const help = `
-
     [mods-js]                                                   ╔═════════════════════╗
     A executable wrapper for many modules.                    ╔═╣  mmmmm       mmmmm  ║
                                                             ╔═╣ ║   mmmmm     mmmmm   ║
