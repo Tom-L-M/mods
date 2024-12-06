@@ -9,7 +9,8 @@ function startHttpCommandServer(context) {
     // A server to run a command and return the result for every request instead of retunrning a static string or file
 
     const { execSync } = require('child_process');
-    let { host, port, dump, content, ssl, sslkey, sslcert, auth } = context;
+    let { host, port, dump, content, ssl, sslkey, sslcert, auth, mime } =
+        context;
     let contentType = 'command: ';
     let fname = content;
 
@@ -71,7 +72,9 @@ function startHttpCommandServer(context) {
 
         let ls;
         try {
-            res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.writeHead(200, {
+                'Content-Type': mime || 'text/plain; charset=utf-8',
+            });
             ls = execSync(content);
             res.write(ls);
             res.end();
@@ -112,7 +115,8 @@ function startHttpCommandServer(context) {
 function startHttpExecServer(context) {
     // An exec server is an HTTP server, that executes commands locally based on a passed URL
     const { execSync } = require('child_process');
-    let { host, port, dump, content, ssl, sslkey, sslcert, auth } = context;
+    let { host, port, dump, content, ssl, sslkey, sslcert, auth, mime } =
+        context;
     let extension = null;
     let contentType = 'text://';
     let fname = content;
@@ -183,7 +187,7 @@ function startHttpExecServer(context) {
 
         // Prevents logging of empty commands
         if (req.url == '/' || req.url == '/favicon.ico') {
-            res.writeHead(200, { 'Content-Type': extension });
+            res.writeHead(200, { 'Content-Type': mime || extension });
             res.write(content);
             res.end();
             return;
@@ -193,7 +197,9 @@ function startHttpExecServer(context) {
         comm = comm.split('/').join(' ');
         let ls;
         try {
-            res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.writeHead(200, {
+                'Content-Type': mime || 'text/plain; charset=utf-8',
+            });
             ls = execSync(comm);
             res.write(ls);
             res.end();
@@ -360,7 +366,8 @@ function startHttpSiteServer(context) {
 }
 
 function startHttpServer(context) {
-    let { host, port, dump, content, ssl, sslkey, sslcert, auth } = context;
+    let { host, port, dump, content, ssl, sslkey, sslcert, auth, mime } =
+        context;
     let extension = null;
     let fname = content;
     let contentType = 'text://';
@@ -457,12 +464,12 @@ function startHttpServer(context) {
                         req.url == '/undefined' ? '/' : req.url
                     } - ${chunkdata}`
                 );
-                res.writeHead(200, { 'Content-Type': extension });
+                res.writeHead(200, { 'Content-Type': mime || extension });
                 res.write(content);
                 res.end();
             });
         } else {
-            res.writeHead(200, { 'Content-Type': extension });
+            res.writeHead(200, { 'Content-Type': mime || extension });
             res.write(content);
             res.end();
         }
@@ -887,6 +894,7 @@ function generateAuthStringPair() {
         --resp    | -r  : Uses a specific resource as response (see table below)
         --auth    | -a  : Enables default HTTP-Auth headers
         --https   | -s  : Uses HTTPS instead of HTTP - require key and certificate
+        --mime    | -m  : Uses a specific MIME type for the responses
 
     ┌───────────────────────────────────────────────────────────────────┐
     │         Default ports and possible options by protocol            │
@@ -902,6 +910,8 @@ function generateAuthStringPair() {
     └───────────────────────────────────────────────────────────────────┘
 
     Info:
+        > The '--mime' option does not affect 'site', 'file' or 'move' servers.
+
         > When using 'move' protocol (redirection server), you must provide an url for redirection.
           EX:   server-http move -r "www.bing.com"
           (The default for the resource URL is "www.google.com")
@@ -937,6 +947,7 @@ function generateAuthStringPair() {
         sslcert: null,
         sslkeypath: null,
         sslcertpath: null,
+        mime: null,
     };
 
     if (!args[0]) return console.log(help);
@@ -983,6 +994,11 @@ function generateAuthStringPair() {
             case '-r':
             case '--resp':
                 context.content = next;
+                break;
+
+            case '-m':
+            case '--mime':
+                context.mime = next;
                 break;
 
             case '-s':
