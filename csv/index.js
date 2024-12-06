@@ -56,7 +56,7 @@ function listify(rawtable, separator) {
  */
 function tableify(
     rawtable,
-    { rulers = true, maxCellSize, noHeader = false } = {}
+    { padStart = false, rulers = true, maxCellSize, noHeader = false } = {}
 ) {
     const V = '│';
     const H = '─';
@@ -111,8 +111,11 @@ function tableify(
 
         let body = [];
         for (let line of table) {
-            for (let i = 0; i < line.length; i++)
-                line[i] = line[i].padEnd(longestOfColumn[i], ' ');
+            for (let i = 0; i < line.length; i++) {
+                if (padStart)
+                    line[i] = line[i].padStart(longestOfColumn[i], ' ');
+                else line[i] = line[i].padEnd(longestOfColumn[i], ' ');
+            }
             body.push(`${V} ${line.join(` ${V} `)} ${V}`);
         }
 
@@ -250,6 +253,7 @@ const fullHelp = `
         -v | --version          Prints the version info and quits.
         -s | --separator N      The cell separator. Defaults to a comma: ','.
         -l | --rulers           Add horizontal rulers between lines.
+        -p | --pad-start        Pads the cells aligning the content right instead of left.
         -m | --max-cell-size N  The max number of chars allowed per cell (the rest is truncated).
         -i | --index            Adds an "index" column in index 0 (only if first column is NOT already called 'Index').
         -f | --field N,M        Prints the content of the cell at COL N x ROW M ("N" may be a name or index).
@@ -303,6 +307,7 @@ const fullHelp = `
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('separator', { alias: 's' });
     parser.option('rulers', { alias: 'l', allowValue: false });
+    parser.option('pad-start', { alias: 'p', allowValue: false });
     parser.option('max-cell-size', { alias: 'm', allowCasting: true });
     parser.option('header', { alias: 'e', allowValue: false });
     parser.option('no-header', { alias: 'E', allowValue: false });
@@ -349,6 +354,7 @@ const fullHelp = `
     );
 
     const addIndex = Boolean(args.index);
+    const padStart = Boolean(args['pad-start']);
 
     let csv = parseCSV(input, { separator, addIndex });
     const originalHeader = csv[0];
@@ -520,7 +526,7 @@ const fullHelp = `
     // If asking for header
     if (args['header'] && !args['cols'] && !args['rows']) {
         if (args['list']) console.log(listify(originalHeader, args['list']));
-        else console.log(tableify(originalHeader));
+        else console.log(tableify(originalHeader, { padStart }));
         return;
     }
     // If asking without header -> pretty print without header
@@ -529,6 +535,7 @@ const fullHelp = `
         else
             console.log(
                 tableify(csv.slice(1), {
+                    padStart,
                     rulers,
                     maxCellSize,
                     noHeader: true,
@@ -539,7 +546,7 @@ const fullHelp = `
     // If not asking for something specific -> pretty print with header
     else if (!args['header'] && !args['cols'] && !args['rows']) {
         if (args['list']) console.log(listify(csv, args['list']));
-        else console.log(tableify(csv, { rulers, maxCellSize }));
+        else console.log(tableify(csv, { padStart, rulers, maxCellSize }));
         return;
     }
 
@@ -548,6 +555,7 @@ const fullHelp = `
     else
         console.log(
             tableify(csv, {
+                padStart,
                 rulers,
                 maxCellSize,
                 noHeader: args['header']
