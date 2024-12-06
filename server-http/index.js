@@ -76,8 +76,12 @@ function startHttpCommandServer(context) {
             res.write(ls);
             res.end();
         } catch (err) {
-            ls = err;
-            res.write(JSON.stringify(ls, null, '\t'));
+            res.write(
+                'Failure on: ' +
+                    process.argv.join(' ') +
+                    '\n' +
+                    err.stderr.toString()
+            );
             res.end();
         }
     }

@@ -123,7 +123,7 @@ const formatVerticalList = arr => {
 (function () {
     const fs = require('fs');
     const argv = process.argv;
-    const args = argv.slice(1);
+    const args = [...argv.slice(0, 1), ...argv.slice(2)];
     const tool = args[1];
     const rpath = `${__dirname}/${tool}/index.js`;
 
@@ -209,9 +209,14 @@ const formatVerticalList = arr => {
 
     if (!tool || ['--help', '-h'].includes(tool)) {
         if (args[2]) {
-            process.argv = process.argv.slice(1);
             process.argv.push('--help');
-            return require(rpath);
+            try {
+                return require(rpath);
+            } catch (err) {
+                return console.log(
+                    `Error: Could not locate module [${rpath} - ${err.message}]`
+                );
+            }
         } else {
             console.log(help);
         }
@@ -266,7 +271,13 @@ const formatVerticalList = arr => {
             console.log(pkg.version + '.' + compileContentVersionHash());
         }
     } else if (fs.existsSync(rpath)) {
-        return require(rpath);
+        try {
+            return require(rpath);
+        } catch (err) {
+            console.log(
+                `Error: Could not locate module [${rpath} - ${err.message}]`
+            );
+        }
     } else {
         let partials = partialMatches(tool);
         if (partials.length == 0) {
