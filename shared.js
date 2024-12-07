@@ -395,6 +395,7 @@ function parseControlChars(string) {
         .replaceAll('\\b', '\b')
         .replaceAll('\\r', '\r')
         .replaceAll('\\f', '\f')
+        .replaceAll('\\0', '\0') // Parse literal NULL bytes (useful with C strings)
         .replaceAll(/\\x([a-f0-9]{1,2})/gi, (match, n1) =>
             String.fromCharCode(parseInt(n1, 16))
         );
