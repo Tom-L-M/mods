@@ -56,19 +56,44 @@ function listify(rawtable, separator) {
  */
 function tableify(
     rawtable,
-    { padStart = false, rulers = true, maxCellSize, noHeader = false } = {}
+    {
+        padStart = false,
+        rulers = true,
+        maxCellSize,
+        noHeader = false,
+        useAscii = false,
+    } = {}
 ) {
-    const V = '│';
-    const H = '─';
-    const C = '┼';
-    const Q1 = '┌';
-    const Q2 = '┐';
-    const Q3 = '└';
-    const Q4 = '┘';
-    const T1 = '┬';
-    const T2 = '┴';
-    const T3 = '├';
-    const T4 = '┤';
+    const asciibox = {
+        V: '|',
+        H: '-',
+        C: '+',
+        Q1: '+',
+        Q2: '+',
+        Q3: '+',
+        Q4: '+',
+        T1: '+',
+        T2: '+',
+        T3: '+',
+        T4: '+',
+    };
+
+    const betterbox = {
+        V: '│',
+        H: '─',
+        C: '┼',
+        Q1: '┌',
+        Q2: '┐',
+        Q3: '└',
+        Q4: '┘',
+        T1: '┬',
+        T2: '┴',
+        T3: '├',
+        T4: '┤',
+    };
+
+    const boxset = useAscii ? asciibox : betterbox;
+    const { V, H, C, Q1, Q2, Q3, Q4, T1, T2, T3, T4 } = boxset;
 
     if (rawtable.length === 1) rawtable = rawtable[0];
 
@@ -208,36 +233,38 @@ function range(start, end, step = 1) {
 
 const help = `
     [csv-js]
-            A csv viewer command line utility in NodeJS.
+        A csv viewer command line utility in NodeJS.
 
-        Usage:
-            node csv <file> [options]
-            <stdin> | node csv [options]
-
-        Options:        
-            -h | --help             Prints the help message and quits.
-            -H | --help-all         Prints the entire help menu and quits.
-            -v | --version          Prints the version info and quits.
-            -s | --separator N      The cell separator. Defaults to a comma: ','.
-            -l | --rulers           Add horizontal rulers between lines.
-            -m | --max-cell-size N  The max number of chars allowed per cell (the rest is truncated).
-            -i | --index            Adds an "index" column in index 0.
-            -f | --field N,M        Prints the content of the cell at COL N x ROW M ("N" may be a name or index).
-            -c | --cols N,M,X-Y     Prints the selected columns.
-            -r | --rows N,M,X-Y     Prints the selected rows.
-            -e | --header           Prints the table header and/or include in computations.
-            -E | --no-header        Do NOT print the table header nor include in computations.
-            -C | --col-count        Prints the number of columns.
-            -R | --row-count        Prints the number of rows.
-            -F | --field-count      Prints the number of fields.
-            -L | --list N           Prints the selected information as a list with separator N.
-            -I | --insensitive      If used with '-M', makes the regexp case insensitive.
-            -S | --sort N,M         Sorts a table using column N as reference.
-                                    "N" must be either a column name, or its index.
-                                    "M" must be one of: "asc", "ascending", "des" or "descending".
-            -M | --match N,M        Filters a table with RegExp using column N as reference.
-                                    "N" must be either a column name, or its index.
-                                    "M" must be a regular expression string.`;
+    Usage:
+        node csv <file> [options]
+        <stdin> | node csv [options]
+    
+    Options:        
+        -h | --help             Prints the help message and quits.
+        -H | --help-all         Prints the entire help menu and quits.
+        -v | --version          Prints the version info and quits.
+        -s | --separator N      The cell separator. Defaults to a comma: ','.
+        -l | --rulers           Add horizontal rulers between lines.
+        -a | --ascii            Replaces the box-drawing special chars for the classic ASCII chars.
+        -p | --pad-start        Pads the cells aligning the content right instead of left.
+        -m | --max-cell-size N  The max number of chars allowed per cell (the rest is truncated).
+        -i | --index            Adds an "index" column (only if first column is NOT already 'Index').
+        -f | --field N,M        Prints the cell at col N and row M ("N"/"M" may be names or indexes).
+        -c | --cols N,M,X-Y     Prints the selected columns.
+        -r | --rows N,M,X-Y     Prints the selected rows.
+        -e | --header           Prints the table header and/or include in computations.
+        -E | --no-header        Do NOT print the table header nor include in computations.
+        -C | --col-count        Prints the number of columns.
+        -R | --row-count        Prints the number of rows.
+        -F | --field-count      Prints the number of fields.
+        -L | --list N           Prints the selected information as a list with separator N.
+        -I | --insensitive      If used with '-M', makes the regexp case insensitive.
+        -S | --sort N,M         Sorts a table using column N as reference.
+                                "N" must be either a column name, or its index.
+                                "M" must be one of: "asc", "ascending", "des" or "descending".
+        -M | --match N,M        Filters a table with RegExp using column N as reference.
+                                "N" must be either a column name, or its index.
+                                "M" must be a regular expression string.`;
 
 const fullHelp = `
     [csv-js]
@@ -253,10 +280,11 @@ const fullHelp = `
         -v | --version          Prints the version info and quits.
         -s | --separator N      The cell separator. Defaults to a comma: ','.
         -l | --rulers           Add horizontal rulers between lines.
+        -a | --ascii            Replaces the box-drawing special chars for the classic ASCII chars.
         -p | --pad-start        Pads the cells aligning the content right instead of left.
         -m | --max-cell-size N  The max number of chars allowed per cell (the rest is truncated).
-        -i | --index            Adds an "index" column in index 0 (only if first column is NOT already called 'Index').
-        -f | --field N,M        Prints the content of the cell at COL N x ROW M ("N" may be a name or index).
+        -i | --index            Adds an "index" column (only if first column is NOT already 'Index').
+        -f | --field N,M        Prints the cell at col N and row M ("N"/"M" may be names or indexes).
         -c | --cols N,M,X-Y     Prints the selected columns.
         -r | --rows N,M,X-Y     Prints the selected rows.
         -e | --header           Prints the table header and/or include in computations.
@@ -307,6 +335,7 @@ const fullHelp = `
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('separator', { alias: 's' });
     parser.option('rulers', { alias: 'l', allowValue: false });
+    parser.option('ascii', { alias: 'a', allowValue: false });
     parser.option('pad-start', { alias: 'p', allowValue: false });
     parser.option('max-cell-size', { alias: 'm', allowCasting: true });
     parser.option('header', { alias: 'e', allowValue: false });
@@ -347,11 +376,19 @@ const fullHelp = `
 
     const maxCellSize = parseInt(args['max-cell-size']) || null;
     const rulers = Boolean(args.rulers);
+    const useAscii = Boolean(args.ascii);
     const separator = parseControlChars(
         args.separator && typeof args.separator === 'string'
             ? args.separator
             : ','
     );
+
+    // TODO -> Temporary check, remove later
+    if (separator.length > 1) {
+        return console.log(
+            'Error: "separator" parameter accepts only 1 character'
+        );
+    }
 
     const addIndex = Boolean(args.index);
     const padStart = Boolean(args['pad-start']);
@@ -435,21 +472,19 @@ const fullHelp = `
     // If asking for column count
     if (args['col-count']) {
         process.stdout.write(csv[0].length + ' ');
+        return;
     }
     // If asking for row count
     if (args['row-count']) {
         if (args['header']) process.stdout.write(csv.length + ' ');
         else process.stdout.write(csv.length - 1 + ' ');
+        return;
     }
     // If asking for field count:
     if (args['field-count']) {
         if (args['header'])
             process.stdout.write(csv[0].length * csv.length + ' ');
         else process.stdout.write(csv[0].length * (csv.length - 1) + ' ');
-    }
-
-    // If any of the above was selected, return
-    if (args['field-count'] || args['col-count'] || args['row-count']) {
         return;
     }
 
@@ -526,7 +561,7 @@ const fullHelp = `
     // If asking for header
     if (args['header'] && !args['cols'] && !args['rows']) {
         if (args['list']) console.log(listify(originalHeader, args['list']));
-        else console.log(tableify(originalHeader, { padStart }));
+        else console.log(tableify(originalHeader, { padStart, useAscii }));
         return;
     }
     // If asking without header -> pretty print without header
@@ -539,6 +574,7 @@ const fullHelp = `
                     rulers,
                     maxCellSize,
                     noHeader: true,
+                    useAscii,
                 })
             );
         return;
@@ -546,7 +582,10 @@ const fullHelp = `
     // If not asking for something specific -> pretty print with header
     else if (!args['header'] && !args['cols'] && !args['rows']) {
         if (args['list']) console.log(listify(csv, args['list']));
-        else console.log(tableify(csv, { padStart, rulers, maxCellSize }));
+        else
+            console.log(
+                tableify(csv, { padStart, rulers, maxCellSize, useAscii })
+            );
         return;
     }
 
@@ -558,6 +597,7 @@ const fullHelp = `
                 padStart,
                 rulers,
                 maxCellSize,
+                useAscii,
                 noHeader: args['header']
                     ? false
                     : args['no-header']
