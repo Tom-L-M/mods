@@ -7,11 +7,52 @@ const {
 } = require('../shared');
 
 /**
+ * This function is guaranteed to work, but only if separators are single chars.
+ *
+ * The second function was not battle-tested yet, and may fail.
+ * So, keep the old version here in case we need to downgrade or revert.
+ */
+/**
  * Parses a CSV string and returns an Array representation as a table.
  * @param {string} data
  * @param {string} separator The cell separator used. Default for CSV is ','.
  * @param {boolean} addIndex If set to true, adds a 'Index' column to the right, indexing starts at 1.
  * @returns {string[]} A 2D-Array representing the CSV table
+ */
+// function parseCSV_OLD(data, { separator = ',', addIndex = false } = {}) {
+//     let rows = data.trim().split('\n');
+//     if (addIndex && !rows[0].startsWith('Index' + separator)) {
+//         rows = [
+//             'Index' + separator + rows[0],
+//             ...rows.slice(1).map((v, i) => i + 1 + separator + v),
+//         ];
+//     }
+
+//     let cols = rows.map(row => {
+//         // Add a separator in the end of the line, so that
+//         // the last field is parsed as a regular one
+//         // avoids the need of a special-case handler
+//         row = row.trim() + separator;
+//         let insideQuotes = false;
+//         let cell = '';
+//         const cells = [];
+//         for (let char of row) {
+//             if (char === '"') insideQuotes = !insideQuotes;
+//             if (char === separator && !insideQuotes)
+//                 cells.push(cell), (cell = '');
+//             else cell += char;
+//         }
+//         return cells;
+//     });
+//     return cols;
+// }
+
+/**
+ * Parses a CSV string and returns an Array representation as a table.
+ * @param {string} data
+ * @param {string} separator The cell separator used. Default for CSV is ','.
+ * @param {boolean} addIndex If set to true, adds a 'Index' column to the right, indexing starts at 1.
+ * @returns {string[][]} A 2D-Array representing the CSV table
  */
 function parseCSV(data, { separator = ',', addIndex = false } = {}) {
     let rows = data.trim().split('\n');
@@ -22,18 +63,30 @@ function parseCSV(data, { separator = ',', addIndex = false } = {}) {
         ];
     }
     let cols = rows.map(row => {
-        // Add a separator in the end of the line, so that
-        // the last field is parsed as a regular one
-        // avoids the need of a special-case handler
-        row = row.trim() + separator;
+        row = row.trim() + separator; // Add separator at the end
         let insideQuotes = false;
         let cell = '';
         const cells = [];
-        for (let char of row) {
-            if (char === '"') insideQuotes = !insideQuotes;
-            if (char === separator && !insideQuotes)
-                cells.push(cell), (cell = '');
-            else cell += char;
+        const sepLength = separator.length;
+        let i = 0;
+
+        while (i < row.length) {
+            if (row[i] === '"') {
+                insideQuotes = !insideQuotes;
+                cell += row[i];
+                i++;
+                continue;
+            }
+
+            if (!insideQuotes && row.startsWith(separator, i)) {
+                cells.push(cell);
+                cell = '';
+                i += sepLength;
+                continue;
+            }
+
+            cell += row[i];
+            i++;
         }
         return cells;
     });
@@ -243,7 +296,7 @@ const help = `
         -h | --help             Prints the help message and quits.
         -H | --help-all         Prints the entire help menu and quits.
         -v | --version          Prints the version info and quits.
-        -s | --separator N      The cell separator. Defaults to a comma: ','.
+        -s | --separator N      The cell separator string. Defaults to a comma: ','.
         -l | --rulers           Add horizontal rulers between lines.
         -a | --ascii            Replaces the box-drawing special chars for the classic ASCII chars.
         -p | --pad-start        Pads the cells aligning the content right instead of left.
@@ -278,7 +331,7 @@ const fullHelp = `
         -h | --help             Prints the help message and quits.
         -H | --help-all         Prints the entire help menu and quits.
         -v | --version          Prints the version info and quits.
-        -s | --separator N      The cell separator. Defaults to a comma: ','.
+        -s | --separator N      The cell separator string. Defaults to a comma: ','.
         -l | --rulers           Add horizontal rulers between lines.
         -a | --ascii            Replaces the box-drawing special chars for the classic ASCII chars.
         -p | --pad-start        Pads the cells aligning the content right instead of left.
@@ -382,13 +435,6 @@ const fullHelp = `
             ? args.separator
             : ','
     );
-
-    // TODO -> Temporary check, remove later
-    if (separator.length > 1) {
-        return console.log(
-            'Error: "separator" parameter accepts only 1 character'
-        );
-    }
 
     const addIndex = Boolean(args.index);
     const padStart = Boolean(args['pad-start']);
