@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const readline = require('node:readline');
 const { ArgvParser } = require('../shared');
 const WRITE_CHUNK_SIZE = 4 * 1024; // 4 Kb
 
@@ -21,6 +22,7 @@ const help = `
                             This makes the process faster, but less secure.
         -a | --fail-abort   Abort the ret of the operation if it fails to
                             open, read, find, shred, or remove a file.
+        -y | --confirm      Skips the confirmation step before shredding.
     
     Info:
         To batch shred items, pass in a directory path instead of a file path
@@ -30,6 +32,19 @@ const help = `
 function refill(buffer) {
     crypto.randomFillSync(buffer);
     return buffer;
+}
+
+function confirmAction() {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+    return new Promise(resolve =>
+        rl.question(
+            '\nThis action is irreversible, are you sure? (y/n) ',
+            data => (rl.close(), resolve(data.toLowerCase() === 'y'))
+        )
+    );
 }
 
 async function readdirSyncRecursive(dirpath) {
@@ -55,6 +70,7 @@ async function readdirSyncRecursive(dirpath) {
     parser.option('zerofill', { alias: 'z', allowValue: false });
     parser.option('remove', { alias: 'r', allowValue: false });
     parser.option('fail-abort', { alias: 'a', allowValue: false });
+    parser.option('confirm', { alias: 'y', allowValue: false });
     const args = parser.parseArgv();
 
     if (args.version) return console.log(require('./package.json')?.version);
@@ -63,6 +79,7 @@ async function readdirSyncRecursive(dirpath) {
     const remove = Boolean(args.remove);
     const zerofill = Boolean(args.zerofill);
     const abortOnFail = Boolean(args['fail-abort']);
+    const autoConfirm = Boolean(args['confirm']);
 
     const filelist = []; // list of file paths to shred
     const dirlist = []; // list of dir paths to remove
@@ -84,6 +101,23 @@ async function readdirSyncRecursive(dirpath) {
         } else {
             filelist.push(argfile);
         }
+    }
+
+    if (filelist.length === 0) {
+        return console.log('No valid targets selected. Quitting.');
+    }
+
+    if (!autoConfirm) {
+        if (dirlist.length > 0) {
+            console.log('\nThe following directories will be affected:');
+            console.log(' + ' + dirlist.join('\n + '));
+        }
+        if (filelist.length > 0) {
+            console.log('\nThe following files will be affected:');
+            console.log(' + ' + filelist.join('\n + '));
+        }
+        const confirmed = await confirmAction();
+        if (!confirmed) return;
     }
 
     for (let ifile of filelist) {

@@ -1,6 +1,6 @@
 {
     "name": "shred",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "description": "A tool for overriding data of files and removing, for a permanent deletion. (Port of UNIX's 'shred' tool).",
     "main": "index.js",
     "scripts": {
