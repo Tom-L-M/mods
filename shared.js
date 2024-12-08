@@ -346,8 +346,17 @@ class ArgvParser {
                     value = arg.slice(2);
                 }
                 // For concatenated flag+value: -p80
+                // And for concatenated value-less flags: -abc instead of -a -b -c
+                // Their mix DOES NOT work:  -abcp=80 FAILS
                 else {
-                    value = arg.slice(1);
+                    if (opt?.allowValue) {
+                        value = arg.slice(1);
+                    } else {
+                        value = true;
+                        // If it is a multiple flag sequence: -abc
+                        // append the rest (bc) into process argv
+                        argv.splice(i + 1, 0, '-' + arg.slice(1));
+                    }
                 }
 
                 // Cast as number
