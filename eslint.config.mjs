@@ -65,7 +65,6 @@ export default [
             'no-unused-private-class-members': ['error'],
             'no-unused-vars': ['error'],
             'no-useless-backreference': ['error'],
-            'no-useless-escape': ['error'],
             'no-with': ['error'],
             'use-isnan': ['error'],
             'valid-typeof': ['error'],
