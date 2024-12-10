@@ -142,36 +142,21 @@ function parseRegexString(
     const file = process.argv[3];
 
     if (args.version) return console.log(require('./package.json')?.version);
-    if (args.help || (!fromSTDIN && !rxstring) || (!fromSTDIN && !file))
+    if (args.help || !rxstring || (!fromSTDIN && !file))
         return console.log(help);
 
     let input;
+    try {
+        input = fromSTDIN ? await readStdinAsync() : fs.readFileSync(file);
+    } catch {
+        return console.log(`Error: Could not read input "${file}"`);
+    }
 
     let before = parseInt(args.before);
     if (isNaN(before) || !before) before = 0;
 
     let after = parseInt(args.after);
     if (isNaN(after) || !after) after = 0;
-
-    // If it is called like:    node script.js [somefile] [flags]
-    // E.g. there is no input via pipes
-    if (!fromSTDIN) {
-        try {
-            if (!rxstring)
-                return console.log(`Error: Invalid test string provided`);
-            input = fs.readFileSync(file);
-        } catch {
-            return console.log(`Error: Could not read file ${file}`);
-        }
-    }
-
-    // If it is called like:   cat somefile | node script.js [flags]
-    // E.g. there is input via pipes
-    else {
-        if (!rxstring)
-            return console.log(`Error: Invalid test string provided`);
-        input = await readStdinAsync();
-    }
 
     process.stdout.write(
         parseRegexString(input.toString('utf-8'), rxstring, {
