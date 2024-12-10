@@ -4,9 +4,26 @@ const { isSTDINActive, readStdinAsync } = require('../shared');
 
 const vID = () =>
     '################'.replace(/[#]/gm, () => Math.random().toString(16)[6]);
-const urlFname = url => {
+
+const secureFileName = str => {
+    let uri;
+    try {
+        uri = decodeURIComponent(str);
+    } catch {
+        // catch any error raised by a malformed URI, and instead of parsing the HTTP tokens, strip them
+        uri = str;
+    }
+    return uri
+        .replaceAll('?', '_')
+        .replaceAll(/[^a-z0-9\.\-_= \[\]\(\)]/gi, '');
+};
+
+const fileNameFromURI = url => {
     let u = new URL(url);
-    return u.pathname === '/' ? vID() : u.pathname.split('/').pop();
+    if (u.pathname === '/') return vID();
+    let lastpart = u.pathname.split('/').pop();
+    if (u.search) lastpart += u.search;
+    return secureFileName(lastpart);
 };
 
 const sendPacket = async context => {
@@ -77,7 +94,7 @@ const sendPacket = async context => {
         res.on('end', () => {
             // Download only final '2XX' occurences (not the 3XX redirection sets)
             if (download && res.statusCode.toString().startsWith('2')) {
-                let fname = path.resolve(downloadfname || urlFname(url));
+                let fname = path.resolve(downloadfname || fileNameFromURI(url));
                 if (!append) fs.writeFileSync(fname, output);
                 else
                     fs.appendFileSync(
