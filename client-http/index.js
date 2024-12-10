@@ -27,159 +27,187 @@ const fileNameFromURI = url => {
 };
 
 const sendPacket = async context => {
-    const tryCatch = (func, onerr) => {
-        try {
-            return func();
-        } catch (err) {
-            return onerr(err);
-        }
-    };
-    const {
-        url: rawurl,
-        trace,
-        message,
-        http,
-        download,
-        downloadfname,
-        printRedirection,
-        next,
-        nextSeparator,
-        append,
-    } = context;
-
-    const url =
-        !rawurl.startsWith('http://') && !rawurl.startsWith('https://')
-            ? 'http://' + rawurl
-            : rawurl;
-
-    const _options = tryCatch(
-        () => new URL(url),
-        err => console.log('<> Error: ' + err.message + ' - Aborted')
-    );
-    if (!_options) return;
-
-    const _proto = _options.protocol === 'https:' ? 'https' : 'http';
-    const _scheme = require(_proto);
-
-    const options = {
-        method: http.method,
-        hostname: _options.hostname,
-        port: _options.port || undefined,
-        path: _options.href.replace(_options.origin, ''),
-        headers: { 'User-Agent': http.useragent },
-    };
-
-    for (let header of http.headers) {
-        let [name, ...body] = header.split(':');
-        options.headers['' + name] = body[0].trim();
-    }
-
-    if (message.data) {
-        options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-        options.headers['Content-Length'] = message.size;
-        ('');
-    }
-
-    let output = Buffer.from('');
-
-    const req = _scheme.request(options, res => {
-        if (trace)
-            console.log(
-                `> Client reached >> [${options.method}@${url}] >> StatusCode: [${res.statusCode}]`
-            );
-        // res.setEncoding('utf8');
-        res.on('data', chunk => {
-            output = Buffer.concat([output, chunk]);
-        });
-        res.on('end', () => {
-            // Download only final '2XX' occurences (not the 3XX redirection sets)
-            if (download && res.statusCode.toString().startsWith('2')) {
-                let fname = path.resolve(downloadfname || fileNameFromURI(url));
-                if (!append) fs.writeFileSync(fname, output);
-                else
-                    fs.appendFileSync(
-                        fname,
-                        Buffer.concat([Buffer.from(nextSeparator), output])
-                    );
-                if (trace)
-                    console.log(
-                        `> Data received (${output.length} bytes) >> StatusCode: [${res.statusCode}] - Saved as [${fname}]`
-                    );
+    let tm = Date.now();
+    return new Promise(r => {
+        const resolve = (...v) => {
+            console.error('Duration:', Date.now() - tm + 'ms');
+            console.error('V:', v);
+            r(...v);
+        };
+        const tryCatch = (func, onerr) => {
+            try {
+                return func();
+            } catch (err) {
+                return onerr(err);
             }
-            // Download only final 200 occurences (not the 3XX redirection sets)
-            else {
-                if (
-                    res.statusCode.toString().startsWith('3') &&
-                    !printRedirection
-                ) {
-                    if (trace)
-                        console.log(
-                            `> Data received (${output.length} bytes) >> StatusCode: [${res.statusCode}]`
-                        );
-                } else {
-                    if (trace)
-                        console.log(
-                            `> Data received (${
-                                output.length
-                            } bytes) >> StatusCode: [${
-                                res.statusCode
-                            }] \n${output.toString('utf-8')}`
-                        );
-                    else {
-                        if (nextSeparator) output = nextSeparator + output;
-                        process.stdout.write(output.toString('utf-8'));
-                    }
+        };
+        const {
+            url: rawurl,
+            trace,
+            message,
+            http,
+            download,
+            downloadfname,
+            printRedirection,
+            next,
+            nextSeparator,
+            append,
+        } = context;
+
+        const url =
+            !rawurl.startsWith('http://') && !rawurl.startsWith('https://')
+                ? 'http://' + rawurl
+                : rawurl;
+
+        const _options = tryCatch(
+            () => new URL(url),
+            err => console.log('<> Error: ' + err.message + ' - Aborted')
+        );
+        if (!_options) resolve('NO_OPTIONS');
+
+        const _proto = _options.protocol === 'https:' ? 'https' : 'http';
+        const _scheme = require(_proto);
+
+        const options = {
+            method: http.method,
+            hostname: _options.hostname,
+            port: _options.port || undefined,
+            path: _options.href.replace(_options.origin, ''),
+            headers: { 'User-Agent': http.useragent },
+        };
+
+        for (let header of http.headers) {
+            let [name, ...body] = header.split(':');
+            options.headers['' + name] = body[0].trim();
+        }
+
+        if (message.data) {
+            options.headers['Content-Type'] =
+                'application/x-www-form-urlencoded';
+            options.headers['Content-Length'] = message.size;
+            ('');
+        }
+
+        let output = 0;
+
+        const req = _scheme.request(options, async res => {
+            if (trace)
+                console.log(
+                    `> Client reached >> [${options.method}@${url}] >> StatusCode: [${res.statusCode}]`
+                );
+
+            const fname = path.resolve(downloadfname || fileNameFromURI(url));
+
+            if (download) {
+                if (!fs.existsSync(fname) || (fs.existsSync() && !append)) {
+                    fs.writeFileSync(fname, Buffer.alloc(0));
+                }
+                if (append) {
+                    fs.appendFileSync(fname, Buffer.from(nextSeparator));
                 }
             }
-            const nexturl = next[0];
-            const nextcontext = JSON.parse(JSON.stringify(context));
-            if (nexturl) {
-                nextcontext.url = nexturl;
-                nextcontext.next = next.slice(1) || [];
-                nextcontext.append = true;
-                sendPacket(nextcontext);
-            }
+
+            // res.setEncoding('utf8');
+            res.on('data', chunk => {
+                output += chunk.length;
+                if (download && res.statusCode.toString().startsWith('2')) {
+                    fs.appendFileSync(fname, chunk);
+                    if (trace)
+                        console.log(
+                            `> Data received (${output} bytes) >> StatusCode: [${res.statusCode}] - Saved in [${fname}]`
+                        );
+                } else if (
+                    !printRedirection &&
+                    res.statusCode.toString().startsWith('3')
+                ) {
+                    // placeholder
+                } else {
+                    process.stdout.write(chunk.toString('utf-8'));
+                }
+            });
+            res.on('end', async () => {
+                // Download only final '2XX' occurences (not the 3XX redirection sets)
+                if (download && res.statusCode.toString().startsWith('2')) {
+                    //
+                }
+                // Download only final 200 occurences (not the 3XX redirection sets)
+                else {
+                    if (
+                        res.statusCode.toString().startsWith('3') &&
+                        !printRedirection
+                    ) {
+                        if (trace)
+                            console.log(
+                                `> Data received (${output} bytes) >> StatusCode: [${res.statusCode}]`
+                            );
+                    } else {
+                        if (trace)
+                            console.log(
+                                `> Data received (${output} bytes) >> StatusCode: [${res.statusCode}]`
+                            );
+                        else {
+                            if (nextSeparator)
+                                process.stdout.write(nextSeparator);
+                        }
+                    }
+                }
+
+                // Handle HTTP response code 3XX (redirections)
+                if (!context.http.nofollow) {
+                    if (
+                        res.statusCode.toString().startsWith('3') &&
+                        res.headers.location
+                    ) {
+                        let c = JSON.parse(JSON.stringify(context));
+                        c.url = url;
+
+                        if (trace)
+                            console.log(
+                                '> Client informed redirection >> Redirecting to ' +
+                                    res.headers.location
+                            );
+
+                        // provided a relative url for redirection: e.g. /something
+                        if (!res.headers.location.startsWith('http'))
+                            c.url =
+                                new URL(c.url).origin + res.headers.location;
+                        // provided an absolute url for redirection: e.g. https://newplace.com/something
+                        else c.url = res.headers.location;
+
+                        await sendPacket(c); // Send a new request to the proper place now
+                        resolve('300nf');
+                    }
+                }
+
+                if (next.length > 0) {
+                    const nexturl = next[0];
+                    const nextcontext = JSON.parse(JSON.stringify(context));
+                    if (nexturl) {
+                        nextcontext.url = nexturl;
+                        nextcontext.next = next.slice(1) || [];
+                        nextcontext.append = true;
+                        await sendPacket(nextcontext);
+                        resolve(next);
+                    }
+                }
+            });
         });
 
-        // Handle HTTP response code 3XX (redirections)
-        if (!context.http.nofollow) {
-            if (
-                res.statusCode.toString().startsWith('3') &&
-                res.headers.location
-            ) {
-                let c = JSON.parse(JSON.stringify(context));
-                c.url = url;
+        req.on('error', err => {
+            if (trace)
+                console.log(
+                    `> Could not connect >> [${options.method}@${url} - ${err.message}]`
+                );
+            resolve(err.message);
+        });
 
-                if (trace)
-                    console.log(
-                        '> Client informed redirection >> Redirecting to ' +
-                            res.headers.location
-                    );
-
-                // provided a relative url for redirection: e.g. /something
-                if (!res.headers.location.startsWith('http'))
-                    c.url = new URL(c.url).origin + res.headers.location;
-                // provided an absolute url for redirection: e.g. https://newplace.com/something
-                else c.url = res.headers.location;
-
-                sendPacket(c); // Send a new request to the proper place now
-            }
+        if (message.data) {
+            req.write(message.data);
+            if (trace) console.log(`> Data sent (${message.size} bytes)`);
         }
+
+        req.end();
     });
-
-    req.on('error', err => {
-        if (trace)
-            console.log(
-                `> Could not connect >> [${options.method}@${url} - ${err.message}]`
-            );
-    });
-
-    if (message.data) {
-        req.write(message.data);
-        if (trace) console.log(`> Data sent (${message.size} bytes)`);
-    }
-
-    req.end();
 };
 
 (async () => {
@@ -358,5 +386,5 @@ const sendPacket = async context => {
                 break;
         }
     }
-    sendPacket(context);
+    await sendPacket(context);
 })();

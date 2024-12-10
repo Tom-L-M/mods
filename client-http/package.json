@@ -1,6 +1,6 @@
 {
     "name": "client-http",
-    "version": "1.8.2",
+    "version": "1.8.3",
     "description": "A tool for sending custom HTTP requests.",
     "main": "index.js",
     "scripts": {
