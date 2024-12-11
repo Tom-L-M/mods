@@ -1,5 +1,9 @@
 const fs = require('node:fs');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
+
+function escapeRegExp(string) {
+    return string.replaceAll(/[^a-z0-9]/gi, '\\$&');
+}
 
 const help = `
     [grep-js]
@@ -13,6 +17,7 @@ const help = `
     Options:
         -h | --help             Prints the help message and quits.
         -v | --version          Prints the version info and quits.
+        -r | --regex            Treat the string as a regexp.
         -i | --insensitive      Ignores case sensitivity.
         -C | --no-color         Removes colorization of matches.
         -w | --word             Searches for an exact word.
@@ -39,11 +44,16 @@ function parseRegexString(
         invert = false,
         numbers = false,
         count = false,
+        regex = false,
     }
 ) {
     const rxmain = word ? `\\b${rxstring}\\b` : rxstring;
     const rxflags = insensitive ? 'i' : '';
-    const regex = new RegExp(rxmain, rxflags);
+
+    const regexp = regex
+        ? new RegExp(rxmain, rxflags)
+        : new RegExp(escapeRegExp(rxstring), rxflags);
+
     const lines = input.split('\n');
 
     let acc = [];
@@ -52,14 +62,14 @@ function parseRegexString(
         let line = lines[i];
         let subacc = [];
 
-        if (regex.test(line)) {
+        if (regexp.test(line)) {
             // if inverted selection, ignore matched lines
             if (invert) continue;
             else addedlines.push(i);
 
             if (!nocolor)
                 line = line.replaceAll(
-                    new RegExp(regex, 'g' + regex.flags.replace('g', '')),
+                    new RegExp(regexp, 'g' + regexp.flags.replace('g', '')),
                     '\x1b[31m$&\x1b[0m'
                 );
 
@@ -124,32 +134,33 @@ function parseRegexString(
 }
 
 (async function () {
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('regex', { alias: 'r', allowValue: false });
+    parser.option('insensitive', { alias: 'i', allowValue: false });
+    parser.option('no-color', { alias: 'C', allowValue: false });
+    parser.option('word', { alias: 'w', allowValue: false });
+    parser.option('before', { alias: 'B' });
+    parser.option('after', { alias: 'A' });
+    parser.option('invert', { alias: 'V', allowValue: false });
+    parser.option('numbers', { alias: 'n', allowValue: false });
+    parser.option('count', { alias: 'c', allowValue: false });
+    parser.argument('string');
+    parser.argument('file');
+    const args = parser.parseArgv();
     const fromSTDIN = isSTDINActive();
-    const opts = {
-        h: 'help',
-        v: 'version',
-        i: 'insensitive',
-        C: 'no-color',
-        w: 'word',
-        B: 'before',
-        A: 'after',
-        V: 'invert',
-        n: 'numbers',
-        c: 'count',
-    };
-    const args = parseArgv(opts, { allowWithNoDash: false });
-    const rxstring = process.argv[2];
-    const file = process.argv[3];
 
     if (args.version) return console.log(require('./package.json')?.version);
-    if (args.help || !rxstring || (!fromSTDIN && !file))
+    if (args.help || !args.string || (!fromSTDIN && !args.file))
         return console.log(help);
 
     let input;
     try {
-        input = fromSTDIN ? await readStdinAsync() : fs.readFileSync(file);
+        input = fromSTDIN ? await readStdinAsync() : fs.readFileSync(args.file);
+        input = input.toString('utf-8');
     } catch {
-        return console.log(`Error: Could not read input "${file}"`);
+        return console.log(`Error: Could not read input "${args.file}"`);
     }
 
     let before = parseInt(args.before);
@@ -159,7 +170,8 @@ function parseRegexString(
     if (isNaN(after) || !after) after = 0;
 
     process.stdout.write(
-        parseRegexString(input.toString('utf-8'), rxstring, {
+        parseRegexString(input, args.string, {
+            regex: Boolean(args.regex),
             insensitive: Boolean(args.insensitive),
             nocolor: Boolean(args['no-color']),
             word: Boolean(args.word),
