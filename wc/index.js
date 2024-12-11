@@ -3,6 +3,7 @@ const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
 
 /**
  * @param {buffer} input
+ * @returns {number} The number of bytes in input
  */
 function countBytes(input) {
     return input.length.toString();
@@ -10,6 +11,7 @@ function countBytes(input) {
 
 /**
  * @param {buffer} input
+ * @returns {number} The number of chars in input
  */
 function countChars(input) {
     return (input.toString('ascii').match(/.|\s|\r|\n/g) || []).length;
@@ -17,6 +19,7 @@ function countChars(input) {
 
 /**
  * @param {buffer} input
+ * @returns {number} The number of words in input
  */
 function countWords(input) {
     return input
@@ -29,9 +32,23 @@ function countWords(input) {
 
 /**
  * @param {buffer} input
+ * @returns {number} The number of lines in input
  */
 function countLines(input) {
     return (input.toString('utf-8').split('\n').length - 1).toString();
+}
+
+/**
+ * @param {buffer} input
+ * @returns {number} The length of the longest line in input
+ */
+function getLongestLine(input) {
+    return Math.max(
+        ...input
+            .toString('utf-8')
+            .split('\n')
+            .map(v => v.length)
+    );
 }
 
 const help = `
@@ -50,15 +67,16 @@ const help = `
         -c | --bytes                Print the byte counts.
         -m | --chars                Print the character counts.
         -w | --words                Print the word counts.
+        -L | --max-line-length      Print the length of the longest line.
 
     Info:
         Multiple options can be selected at a time, and printing 
-        is always in the following order: line, word, character, byte.`;
+        is always in the following order:
+            line, word, character, byte, max-line-length.`;
 
 (async function () {
     const fromSTDIN = isSTDINActive();
 
-    // TODO: add flag "L: 'max-line-length'"
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
@@ -66,6 +84,7 @@ const help = `
     parser.option('bytes', { alias: 'c', allowValue: false });
     parser.option('chars', { alias: 'm', allowValue: false });
     parser.option('words', { alias: 'w', allowValue: false });
+    parser.option('max-line-length', { alias: 'L', allowValue: false });
     parser.argument('file');
 
     const args = parser.parseArgv();
@@ -103,7 +122,14 @@ const help = `
     if (args.words) output.push(countWords(input));
     if (args.chars) output.push(countChars(input));
     if (args.bytes) output.push(countBytes(input));
-    if (!args.lines && !args.words && !args.chars && !args.bytes) {
+    if (args['max-line-length']) output.push(getLongestLine(input));
+    if (
+        !args.lines &&
+        !args.words &&
+        !args.chars &&
+        !args.bytes &&
+        !args['max-line-length']
+    ) {
         return console.log(
             [countLines(input), countWords(input), countChars(input)].join(' ')
         );

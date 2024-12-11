@@ -1,6 +1,6 @@
 {
     "name": "wc",
-    "version": "1.2.1",
+    "version": "1.3.0",
     "description": "A tool for counting words/lines/bytes from a file. (Port of UNIX's 'wc' tool).",
     "main": "index.js",
     "scripts": {
