@@ -226,6 +226,10 @@ class ArgvParser {
         const rest = [];
         const unknown = [];
 
+        // Defines a breaking point for when '--' is used
+        // To prevent arguments after '--' of being parsed later
+        let doubleDashIndex = process.argv.length;
+
         for (let i = 0; i < argv.length; i++) {
             let arg = argv[i];
             let next = argv[i + 1];
@@ -234,6 +238,7 @@ class ArgvParser {
             // Special case 1:
             // Deliberately informs that there will be no more arguments after '--'
             if (arg === '--') {
+                doubleDashIndex = rest.length;
                 rest.push(...argv.slice(i + 1));
                 break;
             }
@@ -347,14 +352,14 @@ class ArgvParser {
                 }
                 // For concatenated flag+value: -p80
                 // And for concatenated value-less flags: -abc instead of -a -b -c
-                // Their mix DOES NOT work:  -abcp=80 FAILS
                 else {
                     if (opt?.allowValue) {
                         value = arg.slice(1);
                     } else {
                         value = true;
                         // If it is a multiple flag sequence: -abc
-                        // append the rest (bc) into process argv
+                        // insert the rest (bc) into process argv
+                        argv[i] = '-' + arg.slice(0, 1);
                         argv.splice(i + 1, 0, '-' + arg.slice(1));
                     }
                 }
@@ -382,7 +387,12 @@ class ArgvParser {
             continue;
         }
 
-        for (let argument of this.arguments) {
+        for (
+            let i = 0;
+            i < Math.min(this.arguments.length, doubleDashIndex);
+            i++
+        ) {
+            let argument = this.arguments[i];
             let argval = rest.shift();
             if (argument.allowCasting) {
                 // Cast as number
