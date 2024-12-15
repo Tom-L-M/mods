@@ -1,9 +1,19 @@
+const http = require('node:http');
+const https = require('node:https');
 const path = require('node:path');
 const fs = require('node:fs');
-const { isSTDINActive, readStdinAsync } = require('../shared');
+const {
+    isSTDINActive,
+    readStdinAsync,
+    ArgvParser,
+    parseControlChars,
+} = require('../shared');
 
+const is200Code = res => res.statusCode.toString().startsWith('2');
+const is300Code = res => res.statusCode.toString().startsWith('3');
 const vID = () =>
     '################'.replace(/[#]/gm, () => Math.random().toString(16)[6]);
+const cloneObject = obj => JSON.parse(JSON.stringify(obj));
 
 const secureFileName = str => {
     let uri;
@@ -18,201 +28,243 @@ const secureFileName = str => {
         .replaceAll(/[^a-z0-9\.\-_= \[\]\(\)]/gi, '');
 };
 
-const fileNameFromURI = url => {
-    let u = new URL(url);
-    if (u.pathname === '/') return vID();
-    let lastpart = u.pathname.split('/').pop();
-    if (u.search) lastpart += u.search;
+const readLinksFromSTDIN = stdindata => {
+    return stdindata
+        .split('\n')
+        .map(v => v.trim())
+        .filter(Boolean);
+};
+
+const fileNameFromURI = IURL => {
+    if (IURL.pathname === '/') return vID();
+    let lastpart = IURL.pathname.split('/').pop();
+    if (IURL.search) lastpart += IURL.search;
     return secureFileName(lastpart);
 };
 
-const sendPacket = async context => {
-    let tm = Date.now();
-    return new Promise(r => {
-        const resolve = (...v) => {
-            console.error('Duration:', Date.now() - tm + 'ms');
-            console.error('V:', v);
-            r(...v);
-        };
-        const tryCatch = (func, onerr) => {
-            try {
-                return func();
-            } catch (err) {
-                return onerr(err);
-            }
-        };
-        const {
-            url: rawurl,
-            trace,
-            message,
-            http,
-            download,
-            downloadfname,
-            printRedirection,
-            next,
-            nextSeparator,
-            append,
-        } = context;
+const formatResponseHeaders = responseHeaders => {
+    let acc = '';
+    for (let prop in responseHeaders) {
+        acc += ' -  ' + prop + ': ' + responseHeaders[prop] + '\n';
+    }
+    return acc.trimEnd();
+};
 
-        const url =
-            !rawurl.startsWith('http://') && !rawurl.startsWith('https://')
-                ? 'http://' + rawurl
-                : rawurl;
+const printDownloadHeader = (url, fname) => {
+    console.log('+ Downloading', `[${url}] to [${fname}]`);
+    console.log(`    %    Total           Received        `);
+    return;
+};
 
-        const _options = tryCatch(
-            () => new URL(url),
-            err => console.log('<> Error: ' + err.message + ' - Aborted')
-        );
-        if (!_options) resolve('NO_OPTIONS');
+const printDownloadInfo = (total, recv, final = false) => {
+    process.stdout.write('\r');
+    process.stdout.write(' '.repeat(process.stdout.columns - 1));
+    process.stdout.write('\r');
 
-        const _proto = _options.protocol === 'https:' ? 'https' : 'http';
-        const _scheme = require(_proto);
+    let unit_total = total > 1000000 ? 'mb' : total > 1000 ? 'kb' : 'b';
+    let unit_recv = recv > 1000000 ? 'mb' : recv > 1000 ? 'kb' : 'b';
 
-        const options = {
-            method: http.method,
-            hostname: _options.hostname,
-            port: _options.port || undefined,
-            path: _options.href.replace(_options.origin, ''),
-            headers: { 'User-Agent': http.useragent },
-        };
+    let value_tot =
+        total > 1000000 ? total / 1000000 : total > 1000 ? total / 1000 : total;
+    if (value_tot)
+        value_tot = (value_tot.toFixed(2) + ' ' + unit_total).padEnd(16, ' ');
 
-        for (let header of http.headers) {
+    let value_recv =
+        recv > 1000000 ? recv / 1000000 : recv > 1000 ? recv / 1000 : recv;
+    if (value_recv)
+        value_recv = (value_recv.toFixed(2) + ' ' + unit_recv).padEnd(16, ' ');
+
+    if (!total) {
+        process.stdout.write(`    -    ---             ${value_recv}`);
+    } else {
+        let stats = Math.ceil((recv / total) * 100)
+            .toString()
+            .padStart(3, ' ');
+        process.stdout.write(`  ${stats}    ${value_tot}${value_recv}`);
+    }
+
+    if (final) console.log();
+
+    return;
+};
+
+async function sendPacket(context, { firstRun = false } = {}) {
+    let {
+        url,
+        next,
+        download,
+        trace,
+        method,
+        httpHeaders,
+        httpNofollow,
+        nextSeparator,
+        httpUseragent,
+        message,
+    } = context;
+
+    // Prints an empty line for formatting
+    // But skips if it is the first run (nothing before to separe)
+    // or if there is a proper output separator selected
+    if (!firstRun) console.log();
+
+    const protocol = url.protocol === 'http:' ? http : https;
+    const options = {
+        method: method,
+        hostname: url.hostname,
+        port: url.port,
+        path: url.href.replace(url.origin, ''),
+        headers: { 'User-Agent': httpUseragent },
+    };
+
+    return new Promise(resolve => {
+        for (let header of httpHeaders) {
             let [name, ...body] = header.split(':');
             options.headers['' + name] = body[0].trim();
         }
 
-        if (message.data) {
+        if (message) {
+            options.headers['Content-Length'] = message.length;
             options.headers['Content-Type'] =
                 'application/x-www-form-urlencoded';
-            options.headers['Content-Length'] = message.size;
-            ('');
         }
 
-        let output = 0;
+        const request = protocol.request(options, async res => {
+            let outputsize = 0;
+            let printedData = false;
 
-        const req = _scheme.request(options, async res => {
-            if (trace)
+            if (trace) {
                 console.log(
-                    `> Client reached >> [${options.method}@${url}] >> StatusCode: [${res.statusCode}]`
+                    `+ Connected to "${options.method}@${url}" - Status Code: ${res.statusCode}`
                 );
+                console.log(
+                    `+ Response headers: \n` +
+                        `${formatResponseHeaders(res.headers)}`
+                );
+            }
 
-            const fname = path.resolve(downloadfname || fileNameFromURI(url));
+            let fname;
 
+            if (download === '') download = fileNameFromURI(url);
             if (download) {
-                if (!fs.existsSync(fname) || (fs.existsSync() && !append)) {
-                    fs.writeFileSync(fname, Buffer.alloc(0));
-                }
-                if (append) {
-                    fs.appendFileSync(fname, Buffer.from(nextSeparator));
+                fname = path.resolve(download);
+
+                if (firstRun) fs.writeFileSync(fname, Buffer.alloc(0));
+
+                if (is200Code(res)) {
+                    printDownloadHeader(url.href, fname);
                 }
             }
 
-            // res.setEncoding('utf8');
             res.on('data', chunk => {
-                output += chunk.length;
-                if (download && res.statusCode.toString().startsWith('2')) {
+                outputsize += chunk.length;
+                if (download && is200Code(res)) {
                     fs.appendFileSync(fname, chunk);
-                    if (trace)
-                        console.log(
-                            `> Data received (${output} bytes) >> StatusCode: [${res.statusCode}] - Saved in [${fname}]`
-                        );
-                } else if (
-                    !printRedirection &&
-                    res.statusCode.toString().startsWith('3')
-                ) {
+                    printDownloadInfo(
+                        res.headers['content-length'],
+                        outputsize
+                    );
+                } else if (!trace && is300Code(res)) {
                     // placeholder
                 } else {
+                    printedData = true;
                     process.stdout.write(chunk.toString('utf-8'));
                 }
             });
+
             res.on('end', async () => {
-                // Download only final '2XX' occurences (not the 3XX redirection sets)
-                if (download && res.statusCode.toString().startsWith('2')) {
-                    //
-                }
-                // Download only final 200 occurences (not the 3XX redirection sets)
-                else {
-                    if (
-                        res.statusCode.toString().startsWith('3') &&
-                        !printRedirection
-                    ) {
+                if (printedData && !nextSeparator) console.log(); // Empty line for styling if something was already printed
+
+                // If there is no following to do, print result of current download
+                if (is200Code(res)) {
+                    if (download) {
+                        printDownloadInfo(outputsize, outputsize, true);
                         if (trace)
                             console.log(
-                                `> Data received (${output} bytes) >> StatusCode: [${res.statusCode}]`
+                                `+ Total data received (${outputsize} bytes) ` +
+                                    `- Saved in [${fname}]`
                             );
-                    } else {
-                        if (trace)
-                            console.log(
-                                `> Data received (${output} bytes) >> StatusCode: [${res.statusCode}]`
-                            );
-                        else {
-                            if (nextSeparator)
-                                process.stdout.write(nextSeparator);
-                        }
                     }
                 }
 
-                // Handle HTTP response code 3XX (redirections)
-                if (!context.http.nofollow) {
-                    if (
-                        res.statusCode.toString().startsWith('3') &&
-                        res.headers.location
-                    ) {
-                        let c = JSON.parse(JSON.stringify(context));
-                        c.url = url;
+                // If redirection following is requested, and there is a redirection destination
+                if (is300Code(res) && res.headers.location && !httpNofollow) {
+                    if (trace)
+                        console.log(
+                            `+ Client informed redirection - Redirecting to [${res.headers.location}]`
+                        );
 
-                        if (trace)
-                            console.log(
-                                '> Client informed redirection >> Redirecting to ' +
-                                    res.headers.location
-                            );
+                    const redirectionContext = cloneObject(context);
 
-                        // provided a relative url for redirection: e.g. /something
-                        if (!res.headers.location.startsWith('http'))
-                            c.url =
-                                new URL(c.url).origin + res.headers.location;
-                        // provided an absolute url for redirection: e.g. https://newplace.com/something
-                        else c.url = res.headers.location;
+                    // Prevent recursive calls of going to next URLs
+                    redirectionContext.next = [];
 
-                        await sendPacket(c); // Send a new request to the proper place now
-                        resolve('300nf');
+                    // Provided an absolute url for redirection: e.g. https://newplace.com/something
+                    if (res.headers.location.startsWith('http')) {
+                        redirectionContext.url = new URL(res.headers.location);
                     }
+                    // Provided a relative url for redirection: e.g. /something
+                    else {
+                        redirectionContext.url = new URL(
+                            url.origin + res.headers.location
+                        );
+                    }
+
+                    await sendPacket(redirectionContext); // Send a new request to the proper place now
                 }
 
+                // Start fetching the next URLs
                 if (next.length > 0) {
-                    const nexturl = next[0];
-                    const nextcontext = JSON.parse(JSON.stringify(context));
-                    if (nexturl) {
-                        nextcontext.url = nexturl;
-                        nextcontext.next = next.slice(1) || [];
-                        nextcontext.append = true;
-                        await sendPacket(nextcontext);
-                        resolve(next);
+                    const nextURL = next[0];
+                    const nextContext = cloneObject(context);
+                    if (nextURL) {
+                        nextContext.url = new URL(nextURL);
+                        nextContext.next = next.slice(1) || [];
+                        nextContext.append = true;
+
+                        if (download && nextSeparator)
+                            nextContext.download = download;
+                        else if (download) nextContext.download = '';
+                        else nextContext.download = false;
+
+                        if (!download) process.stdout.write(nextSeparator);
+                        else fs.appendFileSync(fname, nextSeparator);
+
+                        await sendPacket(nextContext);
+                        resolve();
                     }
                 }
+
+                // If there is nothing more to do, quit
+                resolve();
             });
         });
 
-        req.on('error', err => {
+        request.on('error', err => {
             if (trace)
                 console.log(
-                    `> Could not connect >> [${options.method}@${url} - ${err.message}]`
+                    `[x] Error: Could not connect to "${options.method}@${url}" - ${err.message}`
                 );
-            resolve(err.message);
+            resolve();
         });
 
-        if (message.data) {
-            req.write(message.data);
-            if (trace) console.log(`> Data sent (${message.size} bytes)`);
+        request.on('timeout', () => {
+            if (trace)
+                console.log(
+                    `[x] Timeout: Could not connect to "${options.method}@${url}"`
+                );
+            resolve();
+        });
+
+        if (message) {
+            request.write(message);
+            if (trace) console.log(`+ Data sent - ${message.size} bytes`);
         }
 
-        req.end();
+        request.end();
     });
-};
+}
 
 (async () => {
-    const args = process.argv.slice(2);
-
     const help = `
     [client-http-js]
         A tool for sending HTTP requests for servers and services
@@ -226,18 +278,18 @@ const sendPacket = async context => {
         -h | --help                    Prints the help message and quits.
         -v | --version                 Prints the version info and quits.
         -d | --download [FILENAME]     Downloads the response content instead of displaying it.
-        -s | --trace                   Prints information about connections, data, and redirections.
-        -t | --text <TEXT>             Sends a specific text as data in packet.
+        -t | --trace                   Prints information about connections, data, and redirections.
+        -s | --string <TEXT>           Sends a specific text as data in packet.
         -b | --bytes <BYTES>           Sends a specific series of hex bytes as data in packet.
         -f | --file <FILENAME>         Reads a file and sends its contents as data.
         -x | --method <METHOD>         Sets a request method (defaults to 'GET').
-        -p | --print-redirection       Prints the response from redirections (ignored by default).
         -U | --http-useragent <AGENT>  Sets the user_agent header (defaults to Chrome standart).
         -F | --http-nofollow           Ignores 3XX-Redirection response codes.
-        -H | --http-header             Sets a new HTTP header.
+        -H | --http-header <HEADER>    Sets a new HTTP header.
         -n | --next <URL>              Executes another request to URL, and concats the result after the first.
                                        Multiple --next flags may be used, and they will be requested in sequence.
-        -N | --next-separator <STRING> A separator to use to divide outputs from multiple URLs queried. (defaults to '\\n').
+        -C | --concat <STRING>         Concatenates the data from queries, with <STRING> as separator (defaults to '\\n\\n').
+                                       (This affects downloads too: all data will be written to a single download file).
 
     Info:
         It is possible to pass in multiple URLs from STDIN, by dividing them with newlines ('\\n');
@@ -259,132 +311,88 @@ const sendPacket = async context => {
         Querying Google with a custom useragent and some data in a POST request:
             client-http https://google.com.br/ -U MY_USER_AGENT -x POST -t "some text"`;
 
-    if (
-        args[0] == '--help' ||
-        args[0] == '-h' ||
-        (args.length == 0 && !isSTDINActive())
-    )
-        return console.log(help);
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('download', { alias: 'd' });
+    parser.option('trace', { alias: 't', allowValue: false });
+    parser.option('string', { alias: 's' });
+    parser.option('bytes', { alias: 'b' });
+    parser.option('file', { alias: 'f' });
+    parser.option('method', { alias: 'x' });
+    parser.option('http-useragent', { alias: 'U' });
+    parser.option('http-nofollow', { alias: 'F', allowValue: false });
+    parser.option('http-header', { alias: 'H', allowMultiple: true });
+    parser.option('next', { alias: 'n', allowMultiple: true });
+    parser.option('concat', { alias: 'C' });
+    parser.argument('url');
+    const args = parser.parseArgv();
 
-    if (args.includes('-v') || args.includes('--version'))
-        return console.log(require('./package.json')?.version);
+    const stdinActive = isSTDINActive();
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || (!args.url && !stdinActive)) return console.log(help);
+
+    const context = {
+        url: args.url,
+        next: args.next || [],
+        download: args.download,
+        trace: Boolean(args.trace),
+        method: args.method || 'GET',
+        httpHeaders: args['http-header'] || [],
+        httpNofollow: Boolean(args['http-nofollow']),
+        nextSeparator: parseControlChars(args.concat || '') || '\n\n',
+        httpUseragent:
+            args['http-useragent'] ||
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+        text: null,
+        bytes: null,
+        file: null,
+        message: null,
+    };
 
     // If multiple URLs are passed in a file, split them on '\n' and use the first as default url,
     // and the rest as '--next' parameters
-    let dataFromStdin = [];
     if (isSTDINActive()) {
-        dataFromStdin = (await readStdinAsync()).toString('utf-8').trim();
-        if (dataFromStdin.includes('\n'))
-            dataFromStdin = dataFromStdin.split('\n').map(v => v.trim());
-        else dataFromStdin = [dataFromStdin].filter(Boolean);
-    }
+        let stdindata = (await readStdinAsync()).toString('utf-8');
+        let stdinlinks = await readLinksFromSTDIN(stdindata);
 
-    const context = {
-        args: args,
-        url: args[0],
-        next: [],
-        nextSeparator: '\n',
-        trace: false,
-        download: false,
-        downloadfname: '',
-        printRedirection: false,
-        message: {
-            data: null,
-            size: null,
-        },
-        http: {
-            method: 'GET',
-            useragent:
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-            nofollow: false,
-            headers: [],
-        },
-    };
-
-    if (dataFromStdin.length > 0) {
-        context.url = dataFromStdin[0];
-        if (dataFromStdin.length > 1)
-            context.next = [...dataFromStdin.slice(1)];
-    }
-
-    let temp;
-    for (let i = 0; i < args.length; i++) {
-        let arg = args[i];
-        switch (arg) {
-            case '-t':
-            case '--text': // --text somecontent
-                context.message.data = args.slice(++i, i + 1).join(' ');
-                context.message.size = Buffer.byteLength(context.message.data);
-                break;
-
-            case '-b':
-            case '--bytes': // --bytes "73 6f 6d 65 63 6f 6e 74 65 6e 74"
-                context.message.data = args
-                    .slice(++i, i + 1)
-                    .map(x => parseInt(x, 16))
-                    .join(' ');
-                context.message.size = Buffer.byteLength(context.message.data);
-                break;
-
-            case '-d':
-            case '--download': // --download filename OR --download
-                context.download = true;
-                temp = args.slice(i + 1, i + 2).join(' ');
-                if (!temp.startsWith('-'))
-                    context.downloadfname = args.slice(++i, i + 1).join(' ');
-                break;
-
-            case '-n':
-            case '--next':
-                context.next.push(args.slice(++i, i + 1).join(' '));
-                break;
-
-            case '-N':
-            case '--next-separator':
-                context.nextSeparator = args.slice(++i, i + 1).join(' ');
-                context.nextSeparator = context.nextSeparator
-                    .replaceAll('\\n', '\n')
-                    .replaceAll('\\t', '\t');
-                break;
-
-            case '-f':
-            case '--file': // --file ./example/file.bin
-                context.message.data = fs.readFileSync(
-                    args.slice(++i, i + 1).join(' ')
-                );
-                context.message.size = Buffer.byteLength(context.message.data);
-                break;
-
-            case '-s':
-            case '--trace':
-                context.trace = true;
-                break;
-
-            case '-x':
-            case '--method':
-                context.http.method = args.slice(++i, i + 1).join('');
-                break;
-
-            case '-p':
-            case '--print-redirection':
-                context.printRedirection = true;
-                break;
-
-            case '-U':
-            case '--http-useragent':
-                context.http.useragent = args.slice(++i, i + 1).join('');
-                break;
-
-            case '-F':
-            case '--http-nofollow':
-                context.http.nofollow = true;
-                break;
-
-            case '-H':
-            case '--http-header':
-                context.http.headers.push(args.slice(++i, i + 1).join(''));
-                break;
+        if (stdinlinks.length) {
+            if (!context.url) {
+                context.url = stdinlinks[0];
+                stdinlinks = stdinlinks.slice(1);
+            }
+            if (stdinlinks.length) {
+                context.next.push(...stdinlinks.slice(1));
+            }
         }
     }
-    await sendPacket(context);
+
+    if (args.text) {
+        // --text somecontent
+        context.message = Buffer.from(args.text);
+    }
+
+    if (args.bytes) {
+        // --bytes "73 6f 6d 65 63 6f 6e 74 65 6e 74"
+        context.message = Buffer.from(
+            args.bytes.split(' ').map(v => parseInt(v, 16))
+        );
+    }
+
+    if (args.file) {
+        // --file ./example/file.bin
+        if (!fs.existsSync(args.file))
+            return console.log(
+                `Error: Invalid file path provided "${args.file}"`
+            );
+        context.message = fs.readFileSync(args.file);
+    }
+
+    try {
+        context.url = new URL(args.url);
+    } catch {
+        return console.log(`Error: Invalid URL provided "${args.url}"`);
+    }
+
+    await sendPacket(context, { firstRun: true });
 })();
