@@ -52,17 +52,20 @@ const formatResponseHeaders = responseHeaders => {
 
 const printDownloadHeader = (url, fname) => {
     console.log('+ Downloading', `[${url}] to [${fname}]`);
-    console.log(`    %    Total           Received        `);
+    console.log(`    %    Total           Received        Elapsed`);
     return;
 };
 
-const printDownloadInfo = (total, recv, final = false) => {
+const printDownloadInfo = (total, recv, startingTimeMS, final = false) => {
+    const elapsed = Date.now() - startingTimeMS;
+
     process.stdout.write('\r');
     process.stdout.write(' '.repeat(process.stdout.columns - 1));
     process.stdout.write('\r');
 
     let unit_total = total > 1000000 ? 'mb' : total > 1000 ? 'kb' : 'b';
     let unit_recv = recv > 1000000 ? 'mb' : recv > 1000 ? 'kb' : 'b';
+    let unit_elapsed = elapsed > 60000 ? 'min' : elapsed > 1000 ? 's' : 'ms';
 
     let value_tot =
         total > 1000000 ? total / 1000000 : total > 1000 ? total / 1000 : total;
@@ -74,13 +77,26 @@ const printDownloadInfo = (total, recv, final = false) => {
     if (value_recv)
         value_recv = (value_recv.toFixed(2) + ' ' + unit_recv).padEnd(16, ' ');
 
+    let value_elapsed =
+        elapsed > 60000
+            ? elapsed / 60000
+            : elapsed > 1000
+            ? elapsed / 1000
+            : elapsed;
+    if (value_elapsed)
+        value_elapsed = value_elapsed.toFixed(2) + ' ' + unit_elapsed;
+
     if (!total) {
-        process.stdout.write(`    -    ---             ${value_recv}`);
+        process.stdout.write(
+            `    -    ---             ${value_recv}${value_elapsed}`
+        );
     } else {
         let stats = Math.ceil((recv / total) * 100)
             .toString()
             .padStart(3, ' ');
-        process.stdout.write(`  ${stats}    ${value_tot}${value_recv}`);
+        process.stdout.write(
+            `  ${stats}    ${value_tot}${value_recv}${value_elapsed}`
+        );
     }
 
     if (final) console.log();
@@ -129,6 +145,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
         }
 
         const request = protocol.request(options, async res => {
+            const startMS = Date.now();
+
             let outputsize = 0;
             let printedData = false;
 
@@ -148,7 +166,14 @@ async function sendPacket(context, { firstRun = false } = {}) {
             if (download) {
                 fname = path.resolve(download);
 
-                if (firstRun) fs.writeFileSync(fname, Buffer.alloc(0));
+                try {
+                    if (firstRun) fs.writeFileSync(fname, Buffer.alloc(0));
+                } catch {
+                    console.log(
+                        `[x] Error: Cannot write to download destination [${fname}]. Aborting.`
+                    );
+                    return resolve();
+                }
 
                 if (is200Code(res)) {
                     printDownloadHeader(url.href, fname);
@@ -161,7 +186,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
                     fs.appendFileSync(fname, chunk);
                     printDownloadInfo(
                         res.headers['content-length'],
-                        outputsize
+                        outputsize,
+                        startMS
                     );
                 } else if (!trace && is300Code(res)) {
                     // placeholder
@@ -177,7 +203,12 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 // If there is no following to do, print result of current download
                 if (is200Code(res)) {
                     if (download) {
-                        printDownloadInfo(outputsize, outputsize, true);
+                        printDownloadInfo(
+                            outputsize,
+                            outputsize,
+                            startMS,
+                            true
+                        );
                         if (trace)
                             console.log(
                                 `+ Total data received (${outputsize} bytes) ` +
