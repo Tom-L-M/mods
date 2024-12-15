@@ -1,42 +1,3 @@
-function murmurHash(key, seed = 0) {
-    const C = { M: 0x5bd1e995, R: 0x18 };
-    const im32M = a => {
-        const c = { o: v => v & 0xffff, i: v => (v >>> 16) & 0xffff };
-        return (
-            c.o(a) * 59797 + (((c.i(a) * 59797 + c.o(a) * 23505) << 16) >>> 0)
-        );
-    };
-
-    let len = key.length;
-    let h = seed ^ len;
-    let i = 0;
-    let k = 0;
-
-    while (len >= 4) {
-        k = key[i++] | (key[i++] << 8) | (key[i++] << 16) | (key[i++] << 24);
-        k = im32M(k);
-        k ^= k >>> C.R;
-        k = im32M(k);
-        h = im32M(h) ^ k;
-        len -= 4;
-    }
-
-    switch (len) {
-        case 3:
-            h ^= key[i + 2] << 16;
-        case 2:
-            h ^= key[i + 1] << 8;
-        case 1:
-            h ^= key[i];
-            h = im32M(h);
-    }
-
-    h ^= h >>> 13;
-    h = im32M(h);
-    h ^= h >>> 15;
-    return h >>> 0;
-}
-
 function diceCoefficient(value, other, ngram_size = 2) {
     function chunk(n, value) {
         const nGrams = [];
@@ -159,9 +120,16 @@ const formatVerticalList = arr => {
         return versionstring;
     };
 
-    const compileContentVersionHash = vstring => {
-        const versionstring = vstring || compileContentVersionString();
-        return murmurHash(versionstring, versionstring.length);
+    const compileAccumulatedVersionNumber = () => {
+        const toollist = getAvailableTools();
+        let accumulatedVersion = 0;
+        for (let tool of toollist) {
+            let vers = JSON.parse(
+                fs.readFileSync(`${__dirname}/${tool}/package.json`, 'utf8')
+            ).version.replaceAll('.', '');
+            accumulatedVersion += +vers;
+        }
+        return accumulatedVersion;
     };
 
     const partialMatches = fragment => {
@@ -225,7 +193,7 @@ const formatVerticalList = arr => {
         console.log(toollist);
     } else if (['-V', '--content-version'].includes(tool)) {
         const versionstring = compileContentVersionString();
-        const versionhash = compileContentVersionHash(versionstring);
+        const versionhash = compileAccumulatedVersionNumber();
         console.log(`$${versionhash}$${versionstring}`);
     } else if (['--info', '-i'].includes(tool)) {
         if (args[2]) {
@@ -267,7 +235,9 @@ const formatVerticalList = arr => {
             console.log(pkg.version);
         } else {
             let pkg = require(`./package.json`);
-            console.log(pkg.version + '.' + compileContentVersionHash());
+            console.log(
+                pkg.version.slice(0, -1) + compileAccumulatedVersionNumber()
+            );
         }
     } else if (fs.existsSync(rpath)) {
         try {
