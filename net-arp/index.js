@@ -1,5 +1,6 @@
 const os = require('node:os');
 const child_process = require('node:child_process');
+const { ArgvParser } = require('../shared');
 
 // 00:00:00:00:00:00 -> 00-00-00-00-00-00
 // 00.00.00.00.00.00 -> 00-00-00-00-00-00
@@ -12,7 +13,7 @@ const normalizeMAC = mac =>
         .map(x => x.padStart(2, '0'))
         .join('-');
 const splitNetwork24 = value => value.split('.').slice(0, -1).join('.') + '.';
-const isValidToken = value => value == '*' || value == '**';
+const isValidToken = value => value == '@' || value == '@@';
 const isValidIP = value =>
     /^(?:(?:^|\.)(?:2(?:5[0-5]|[0-4]\d)|1?\d?\d)){4}$/.test(value);
 const isValidMAC = value =>
@@ -79,33 +80,32 @@ function fetchARPTable() {
         A tool for resolving IPs or MACs in a local network
 
     Usage:
-        net-arp [options] <IP|MAC|*|**>
+        net-arp [options] <IP|MAC|@|@@>
 
     Options:
         -h | --help         Prints the help message and quits.
         -v | --version      Prints the version info and quits.
 
     Info:
-        - * : Fetch all IP-MAC pairs for the current local network from the ARP table.
+        - @ : Fetch all IP-MAC pairs for the current local network from the ARP table.
           This uses the current cached ARP table. And is faster.
 
-        - ** : Fetch all IP-MAC pairs from ARP table and force discovery of other ones.
+        - @@ : Fetch all IP-MAC pairs from ARP table and force discovery of other ones.
           This forces the build of a new ARP table. And is coniderably slower.
         
         - IP|MAC : This will trigger a series of ICMP requests - which may not bring all results if 
           targets in the network block ping probes. In that case, a UDP or TCP scan will 
           be best suited.`;
-    const args = process.argv.slice(2);
-    if (args.includes('--version') || args.includes('-v'))
-        return console.log(require('./package.json')?.version);
-    if (args.includes('--help') || args.includes('-h') || !args[0])
-        return console.log(help);
 
-    if (args.length < 1)
-        return console.log(
-            '<> Error: Not enought arguments passed. Use --help to access the help menu'
-        );
-    const address = args[0];
+    const parser = new ArgvParser();
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.argument('address');
+    const args = parser.parseArgv();
+
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || !args.address) return console.log(help);
+    const address = args.address;
 
     // Check if is a valid IP/MAC
     if (!isValidIP(address) && !isValidMAC(address) && !isValidToken(address)) {
@@ -123,8 +123,8 @@ function fetchARPTable() {
     // Fetch ARP table:
     let arpTable = fetchARPTable();
 
-    // Check if is an 'all cached' token (*)
-    if (address == '*') {
+    // Check if is an 'all cached' token (@)
+    if (address == '@') {
         // Return all ip-mac pairs cached in the ARP table
         let network = splitNetwork24(self.ip);
         let valid = [];
@@ -135,7 +135,7 @@ function fetchARPTable() {
         }
         if (valid.length == 0)
             return console.log(
-                '<> Error: no hosts found in network - try "**" option to rebuild ARP table'
+                '<> Error: no hosts found in network - try "@@" option to rebuild ARP table'
             );
         return console.log(
             valid
@@ -144,8 +144,8 @@ function fetchARPTable() {
         );
     }
 
-    // Check if is an 'all non-cached' token (*)
-    else if (address == '**') {
+    // Check if is an 'all non-cached' token (@)
+    else if (address == '@@') {
         // Ping all IPs to force build of new arp table
         let pingResult = await pingAllIPs(self.ip);
         // If error, return error message
