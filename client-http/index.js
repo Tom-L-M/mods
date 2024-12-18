@@ -193,7 +193,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 if (!mime.includes('text') && !mime.includes('json')) {
                     safeToPrintOnSTDOUT = false;
                     console.log(
-                        'Warning: There is binary data on the output. Printing to STDOUT may be dangerous. \nUse "--output <FILE>" to safely output the data to a file, or "--output -" if you want to output it to terminal anyway.'
+                        'Warning: There is binary data on the output. Printing to STDOUT may be dangerous. \nUse "--output [FILE]" to safely output the data to a file, or "--output -" if you want to output it to terminal anyway.'
                     );
                 }
             }
@@ -329,7 +329,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
     Options:
         -h | --help                    Prints the help message and quits.
         -v | --version                 Prints the version info and quits.
-        -o | --output [FILENAME] [-] Downloads the response content instead of displaying it.
+        -o | --output [FILE | -]       Downloads the response content instead of displaying it.
         -t | --trace                   Prints information about connections, data, and redirections.
         -s | --string <TEXT>           Sends a specific text as data in packet.
         -b | --bytes <BYTES>           Sends a specific series of hex bytes as data in packet.
