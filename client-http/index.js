@@ -15,6 +15,15 @@ const vID = () =>
     '################'.replace(/[#]/gm, () => Math.random().toString(16)[6]);
 const cloneObject = obj => JSON.parse(JSON.stringify(obj));
 
+const formatAsUpperKebabCase = string => {
+    return string
+        .split(' ')
+        .join('-')
+        .split('-')
+        .map(v => v[0].toUpperCase() + v.slice(1))
+        .join('-');
+};
+
 const secureFileName = str => {
     let uri;
     try {
@@ -42,10 +51,15 @@ const fileNameFromURI = IURL => {
     return secureFileName(lastpart);
 };
 
-const formatResponseHeaders = responseHeaders => {
+const formatResponseHeaders = (responseHeaders, prefix = '') => {
     let acc = '';
     for (let prop in responseHeaders) {
-        acc += ' -  ' + prop + ': ' + responseHeaders[prop] + '\n';
+        acc +=
+            prefix +
+            formatAsUpperKebabCase(prop) +
+            ': ' +
+            responseHeaders[prop] +
+            '\n';
     }
     return acc.trimEnd();
 };
@@ -109,6 +123,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         url,
         next,
         download,
+        dump,
         trace,
         method,
         httpHeaders,
@@ -150,13 +165,27 @@ async function sendPacket(context, { firstRun = false } = {}) {
             let outputsize = 0;
             let printedData = false;
 
+            if (dump) {
+                console.log(
+                    'HTTP/' + res.httpVersion,
+                    res.statusCode.toString(),
+                    res.statusMessage
+                );
+                console.log(formatResponseHeaders(res.headers), '\n');
+            }
+
             if (trace) {
                 console.log(
                     `+ Connected to "${options.method}@${url}" - Status Code: ${res.statusCode}`
                 );
+                if (message) {
+                    console.log(
+                        `+ Sent data: ${message.length || message.size} bytes`
+                    );
+                }
                 console.log(
                     `+ Response headers: \n` +
-                        `${formatResponseHeaders(res.headers)}`
+                        `${formatResponseHeaders(res.headers, ' -  ')}\n`
                 );
             }
 
@@ -309,7 +338,6 @@ async function sendPacket(context, { firstRun = false } = {}) {
 
         if (message) {
             request.write(message);
-            if (trace) console.log(`+ Data sent - ${message.size} bytes`);
         }
 
         request.end();
@@ -329,18 +357,19 @@ async function sendPacket(context, { firstRun = false } = {}) {
     Options:
         -h | --help                    Prints the help message and quits.
         -v | --version                 Prints the version info and quits.
-        -o | --output [FILE | -]       Downloads the response content instead of displaying it.
         -t | --trace                   Prints information about connections, data, and redirections.
-        -s | --string <TEXT>           Sends a specific text as data in packet.
-        -b | --bytes <BYTES>           Sends a specific series of hex bytes as data in packet.
-        -f | --file <FILENAME>         Reads a file and sends its contents as data.
-        -x | --method <METHOD>         Sets a request method (defaults to 'GET').
+        -i | --include-headers         Includes the response headers, dumping the HTTP response as-is.
+        -x | --method <METHOD>         Sets a request method (defaults to 'GET'). Both "x" and "X" are valid.
+        -o | --output [FILE | -]       Downloads the response content instead of displaying it.
+        -D   --data-ascii <TEXT>       Sends a specific text as data in packet.
+             --data-bytes <BYTES>      Sends a specific series of hex bytes as data in packet.
+             --data-file <FILENAME>    Reads a file and sends its contents as data.
         -U | --http-useragent <AGENT>  Sets the user_agent header (defaults to Chrome standart).
         -F | --http-nofollow           Ignores 3XX-Redirection response codes.
         -H | --http-header <HEADER>    Sets a new HTTP header.
         -n | --next <URL>              Executes another request to URL, and concats the result after the first.
                                        Multiple --next flags may be used, and they will be requested in sequence.
-        -C | --concat <STRING>         Concatenates the data from queries, with <STRING> as separator (defaults to '\\n\\n').
+        -c | --concat <STRING>         Concatenates the data from queries, with <STRING> as separator (defaults to '\\n\\n').
                                        (This affects downloads too: all data will be written to a single download file).
 
     Info:
@@ -366,17 +395,18 @@ async function sendPacket(context, { firstRun = false } = {}) {
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
-    parser.option('output', { alias: 'o', allowDash: true });
     parser.option('trace', { alias: 't', allowValue: false });
-    parser.option('string', { alias: 's' });
-    parser.option('bytes', { alias: 'b' });
-    parser.option('file', { alias: 'f' });
-    parser.option('method', { alias: 'x' });
+    parser.option('include-headers', { alias: 'i', allowValue: false });
+    parser.option('method', { alias: ['x', 'X'] });
+    parser.option('output', { alias: 'o', allowDash: true });
+    parser.option('data-ascii', { alias: 'D' });
+    parser.option('data-bytes');
+    parser.option('data-file');
     parser.option('http-useragent', { alias: 'U' });
     parser.option('http-nofollow', { alias: 'F', allowValue: false });
     parser.option('http-header', { alias: 'H', allowMultiple: true });
     parser.option('next', { alias: 'n', allowMultiple: true });
-    parser.option('concat', { alias: 'C' });
+    parser.option('concat', { alias: 'c' });
     parser.argument('url');
     const args = parser.parseArgv();
 
@@ -388,6 +418,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         url: args.url,
         next: args.next || [],
         download: args.output,
+        dump: args['include-headers'],
         trace: Boolean(args.trace),
         method: args.method || 'GET',
         httpHeaders: args['http-header'] || [],
@@ -419,25 +450,28 @@ async function sendPacket(context, { firstRun = false } = {}) {
         }
     }
 
-    if (args.text) {
+    // If both 'trace' and 'dump' are active, disable 'dump', as 'trace' already includes all the info
+    if (context.trace && context.dump) context.dump = false;
+
+    if (args['data-ascii']) {
         // --text somecontent
-        context.message = Buffer.from(args.text);
+        context.message = Buffer.from(args['data-ascii']);
     }
 
-    if (args.bytes) {
+    if (args['data-bytes']) {
         // --bytes "73 6f 6d 65 63 6f 6e 74 65 6e 74"
         context.message = Buffer.from(
-            args.bytes.split(' ').map(v => parseInt(v, 16))
+            args['data-bytes'].split(' ').map(v => parseInt(v, 16))
         );
     }
 
-    if (args.file) {
+    if (args['data-file']) {
         // --file ./example/file.bin
-        if (!fs.existsSync(args.file))
+        if (!fs.existsSync(args['data-file']))
             return console.log(
-                `Error: Invalid file path provided "${args.file}"`
+                `Error: Invalid file path provided "${args['data-file']}"`
             );
-        context.message = fs.readFileSync(args.file);
+        context.message = fs.readFileSync(args['data-file']);
     }
 
     try {
