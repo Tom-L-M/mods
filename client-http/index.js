@@ -160,10 +160,11 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 );
             }
 
-            let fname;
+            let fname,
+                safeToPrintOnSTDOUT = true;
 
             if (download === '') download = fileNameFromURI(url);
-            if (download) {
+            if (download && download !== '-') {
                 fname = path.resolve(download);
 
                 try {
@@ -180,9 +181,26 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 }
             }
 
+            // If the user accepts the risk of printing to STDOUT:
+            else if (download === '-') {
+                safeToPrintOnSTDOUT = true;
+            }
+
+            // If there is no download selected, and the data is non-textual (binary)
+            // skips printing and warn the client
+            else {
+                let mime = res.headers['content-type'];
+                if (!mime.includes('text') && !mime.includes('json')) {
+                    safeToPrintOnSTDOUT = false;
+                    console.log(
+                        'Warning: There is binary data on the output. Printing to STDOUT may be dangerous. \nUse "--output <FILE>" to safely output the data to a file, or "--output -" if you want to output it to terminal anyway.'
+                    );
+                }
+            }
+
             res.on('data', chunk => {
                 outputsize += chunk.length;
-                if (download && is200Code(res)) {
+                if (download && is200Code(res) && download !== '-') {
                     fs.appendFileSync(fname, chunk);
                     printDownloadInfo(
                         res.headers['content-length'],
@@ -192,8 +210,10 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 } else if (!trace && is300Code(res)) {
                     // placeholder
                 } else {
-                    printedData = true;
-                    process.stdout.write(chunk.toString('utf-8'));
+                    if (safeToPrintOnSTDOUT) {
+                        printedData = true;
+                        process.stdout.write(chunk.toString('utf-8'));
+                    }
                 }
             });
 
@@ -202,7 +222,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
 
                 // If there is no following to do, print result of current download
                 if (is200Code(res)) {
-                    if (download) {
+                    if (download && download !== '-') {
                         printDownloadInfo(
                             outputsize,
                             outputsize,
@@ -257,7 +277,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
                         else if (download) nextContext.download = '';
                         else nextContext.download = false;
 
-                        if (!download) process.stdout.write(nextSeparator);
+                        if (!download || download === '-')
+                            process.stdout.write(nextSeparator);
                         else fs.appendFileSync(fname, nextSeparator);
 
                         await sendPacket(nextContext);
@@ -308,7 +329,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
     Options:
         -h | --help                    Prints the help message and quits.
         -v | --version                 Prints the version info and quits.
-        -d | --download [FILENAME]     Downloads the response content instead of displaying it.
+        -o | --output [FILENAME] [-] Downloads the response content instead of displaying it.
         -t | --trace                   Prints information about connections, data, and redirections.
         -s | --string <TEXT>           Sends a specific text as data in packet.
         -b | --bytes <BYTES>           Sends a specific series of hex bytes as data in packet.
@@ -323,18 +344,18 @@ async function sendPacket(context, { firstRun = false } = {}) {
                                        (This affects downloads too: all data will be written to a single download file).
 
     Info:
-        It is possible to pass in multiple URLs from STDIN, by dividing them with newlines ('\\n');
-        This will cause the first URL to be the main one, and the rest to be passed as "--next" arguments.
-        (Spaces in beginning/end of a URL are ignored)
-        E.g. The call:      echo "link1 \\n link2" | client-http
-        is the same as:     client-http link1 -n link2
+        + Use "--output -" to output binary data to STDOUT and supress the warning message for binary output.
+        + It is possible to pass in multiple URLs from STDIN, by dividing them with newlines ('\\n');
+          This will cause the first URL to be the main one, and the rest to be passed as "--next" arguments.
+            E.g. The call:      echo "link1 \\n link2" | client-http
+            is the same as:     client-http link1 -n link2
 
     Example:
         Dowloading a file from catbox:
-            client-http https://files.catbox.moe/AAAAAA.png -d image.png
+            client-http https://files.catbox.moe/AAAAAA.png -o image.png
 
         Querying with a link in a file and a next link:
-            cat link.txt | client-http -d -n https://google.com.br/
+            cat link.txt | client-http -o -n https://google.com.br/
 
         Querying Google with a custom useragent and special 'test' header:
             client-http https://google.com.br/ -U MY_USER_AGENT -H "test: something"
@@ -345,7 +366,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
-    parser.option('download', { alias: 'd' });
+    parser.option('output', { alias: 'o', allowDash: true });
     parser.option('trace', { alias: 't', allowValue: false });
     parser.option('string', { alias: 's' });
     parser.option('bytes', { alias: 'b' });
@@ -366,7 +387,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
     const context = {
         url: args.url,
         next: args.next || [],
-        download: args.download,
+        download: args.output,
         trace: Boolean(args.trace),
         method: args.method || 'GET',
         httpHeaders: args['http-header'] || [],
