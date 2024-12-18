@@ -334,7 +334,23 @@ class ArgvParser {
                 arg = arg.slice(1);
                 key = arg[0];
 
-                const opt = this.#resolveOptionName(key);
+                let opt = this.#resolveOptionName(key);
+
+                // For concatenated value-less flags: -abc instead of -a -b -c
+                //  First we need to expand the flags into their respective slots
+                if (arg.length > 1 && arg[1] !== '=' && !opt?.allowValue) {
+                    // If it is a multiple flag sequence: -abc
+                    // insert the rest (bc) into process argv
+                    argv[i] = '-' + arg.slice(0, 1);
+                    argv.splice(i + 1, 0, '-' + arg.slice(1));
+                    //  And then we reset the local variables to reflect the current option
+                    arg = argv[i].slice(1);
+                    key = arg[0];
+                    //  After the above block, the current option is no more 'abc',
+                    //  it is just 'a' and 'bc' was pushed as the next argument
+                    opt = this.#resolveOptionName(key);
+                }
+
                 if (!opt) {
                     unknown.push(key);
                     continue;
@@ -353,22 +369,15 @@ class ArgvParser {
                         value = true;
                     }
                 }
+
                 // For concatenated flag=value: -p=80
                 else if (arg[1] === '=') {
                     value = arg.slice(2);
                 }
+
                 // For concatenated flag+value: -p80
-                // And for concatenated value-less flags: -abc instead of -a -b -c
-                else {
-                    if (opt?.allowValue) {
-                        value = arg.slice(1);
-                    } else {
-                        value = true;
-                        // If it is a multiple flag sequence: -abc
-                        // insert the rest (bc) into process argv
-                        argv[i] = '-' + arg.slice(0, 1);
-                        argv.splice(i + 1, 0, '-' + arg.slice(1));
-                    }
+                else if (opt?.allowValue) {
+                    value = arg.slice(1);
                 }
 
                 // Cast as number
