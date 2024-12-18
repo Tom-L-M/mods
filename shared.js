@@ -177,6 +177,7 @@ class ArgvParser {
             allowMultiple = false,
             allowCasting = false,
             allowNegation = false,
+            allowDash = false,
         } = {}
     ) {
         this.registered.push({
@@ -186,6 +187,7 @@ class ArgvParser {
             allowMultiple,
             allowCasting,
             allowNegation,
+            allowDash,
         });
         return this;
     }
@@ -219,7 +221,12 @@ class ArgvParser {
      * All other properties have as keys the respective defined option flag or argument.
      */
     parseArgv(args) {
-        const isOption = v => v && v.startsWith('-');
+        const isOption = (v, { allowDash = false } = {}) => {
+            if (!v || (allowDash && v === '-')) return false;
+            if (v.startsWith('-')) return true;
+            return false;
+        };
+
         const argv = args || process.argv.slice(2);
 
         const params = {};
@@ -280,7 +287,7 @@ class ArgvParser {
                     }
 
                     if (opt?.allowValue) {
-                        if (!isOption(next)) {
+                        if (!isOption(next, { allowDash: opt?.allowDash })) {
                             value = next ? (i++, next) : '';
                         } else {
                             value = '';
@@ -337,7 +344,7 @@ class ArgvParser {
                 // And for postvalue flags:  -p 80
                 if (arg.length === 1) {
                     if (opt?.allowValue) {
-                        if (!isOption(next)) {
+                        if (!isOption(next, { allowDash: opt?.allowDash })) {
                             value = next ? (i++, next) : '';
                         } else {
                             value = '';
