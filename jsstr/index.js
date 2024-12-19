@@ -1,4 +1,4 @@
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
 
 const help = `
     [jsstr-js]
@@ -23,8 +23,8 @@ const help = `
             So, by using an IIFE wrapper, you can run multiple commands or assign variables.
 
     Examples:
-        Simple string splitting:
-            echo "hello world!" | node jsstr "$.split(' ')[0]"       # Prints "hello"
+        Simple string splitting: (Prints "hello")
+            echo "hello world!" | node jsstr "$.split(' ')[0]"       
 
         Using an IIFE to run a block of code: 
         (List the directories in the current cwd recursively) 
@@ -43,12 +43,15 @@ function customeval(string, buffer) {
 
 (async function () {
     const fromSTDIN = isSTDINActive();
-    const data = process.argv[2] || '$';
-    const opts = { h: 'help', v: 'version' };
-    const args = parseArgv(opts);
+
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.argument('data');
+    const args = parser.parseArgv();
 
     if (args.version) return console.log(require('./package.json')?.version);
-    if (args.help || (!fromSTDIN && !data)) return console.log(help);
+    if (args.help || (!fromSTDIN && !args.data)) return console.log(help);
 
     let input;
 
@@ -59,5 +62,5 @@ function customeval(string, buffer) {
     // E.g. there is input via pipes
     else input = await readStdinAsync();
 
-    customeval(data, input);
+    customeval(args.data, input);
 })();
