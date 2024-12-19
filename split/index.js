@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('node:path');
-const { parseArgv, isSTDINActive, readStdinAsync } = require('../shared');
+const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
 
 const randomName = (len = 10) =>
     '#'.repeat(len).replace(/[#]/gim, () => Math.random().toString(16)[6]);
@@ -27,7 +27,7 @@ const help = `
     [split-js]
 
     Split Files:
-        split FILE [options]
+        split [options] file
        OR
         <stdin> | split [options]
 
@@ -40,9 +40,9 @@ const help = `
                             Defaults to current directory.
 
     Info:
+        > Prints the number of files generated (unless '-q' is used).
         > The default value for splitting blocks is 1kb.
         > Values for splitting may be passed in bytes or with units (kb, mb, gb).
-        > Prints the number of files generated.
 
     Example:
         > Split file into blocks of 10mb (1048576 bytes)
@@ -51,16 +51,17 @@ const help = `
           split -f file.txt`;
 
 (async function main() {
-    const argv = process.argv.slice(2);
-    const args = parseArgv({
-        v: 'version',
-        h: 'help',
-        s: 'size',
-        o: 'output',
-        q: 'quiet',
-    });
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('size', { alias: 's' });
+    parser.option('quiet', { alias: 'q', allowValue: false });
+    parser.option('output', { alias: 'o' });
+    parser.argument('file');
+    const args = parser.parseArgv();
+
     const DEFAULT_SIZE = 1024 * 1024;
-    let file = argv[0];
+    let file = args.file;
 
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || (!isSTDINActive() && !file)) return console.log(help);
