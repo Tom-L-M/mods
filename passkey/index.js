@@ -1,4 +1,4 @@
-const { parseArgv } = require('../shared');
+const { ArgvParser } = require('../shared');
 
 // Returns a random int between 'min' and 'max' ('min' is inclusive, 'max' is exclusive)
 const randomInt = (min = 0, max = 100) =>
@@ -56,23 +56,20 @@ const samples = ([...arr], sampleSize = 1) => {
     context.isNumeric = false;
     context.isAlphabetic = false;
 
-    const args = parseArgv({
-        h: 'help',
-        v: 'version',
-        c: 'count',
-
-        W: 'words',
-        S: 'separator',
-        E: 'no-ending',
-
-        p: 'password',
-        t: 'token',
-        n: 'numeric',
-        a: 'alphabetic',
-
-        l: 'lowercase',
-        u: 'uppercase',
-    });
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('count', { alias: 'c', allowCasting: true });
+    parser.option('lowercase', { alias: 'l', allowValue: false });
+    parser.option('uppercase', { alias: 'u', allowValue: false });
+    parser.option('words', { alias: 'W', allowCasting: true });
+    parser.option('separator', { alias: 'S' });
+    parser.option('no-ending', { alias: 'E', allowValue: false });
+    parser.option('password', { alias: 'p', allowCasting: true });
+    parser.option('token', { alias: 't', allowCasting: true });
+    parser.option('numeric', { alias: 'n', allowCasting: true });
+    parser.option('alphabetic', { alias: 'a', allowCasting: true });
+    const args = parser.parseArgv();
 
     // PARSE ARGUMENTS
 
@@ -81,11 +78,11 @@ const samples = ([...arr], sampleSize = 1) => {
 
     // For number of passphrases to generate:
     let numberToGenerate = args.count;
-    if (numberToGenerate) context.times = Number(numberToGenerate);
+    if (numberToGenerate) context.times = numberToGenerate;
 
     // For number of words:
     let numberOfWords = args.words;
-    if (numberOfWords) context.words = Number(numberOfWords);
+    if (numberOfWords) context.words = numberOfWords;
 
     // For separator:
     let separator = args.separator;

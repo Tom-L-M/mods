@@ -1,6 +1,6 @@
 {
     "name": "passkey",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "description": "A tool for generating random passkeys and passwords.",
     "main": "index.js",
     "scripts": {
