@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { ArgvParser } = require('../shared');
 
 function calculateEntropy(file) {
     const data = fs.readFileSync(file);
@@ -46,17 +47,17 @@ async function walk(dirpath) {
     Info:
         > If a directory path is passed as <path> instead of a file path, 
           the entropy of all files in folders and subfolders will be calculated.`;
-    const args = process.argv.slice(2);
-    if (args.includes('--version') || args.includes('-v'))
-        return console.log(require('./package.json')?.version);
-    if (args.includes('--help') || args.includes('-h') || !args[0])
-        return console.log(help);
-    if (args.length < 1)
-        return console.log(
-            '<> Error: Not enought arguments passed. Use --help to see the help menu.'
-        );
 
-    const fpath = args[0];
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.argument('path');
+    const args = parser.parseArgv();
+
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || !args.path) return console.log(help);
+
+    const fpath = args.path;
     let result;
     try {
         const isDir = fs.statSync(fpath).isDirectory();
