@@ -10,9 +10,10 @@
         lsr         - List all ADS file streams in the specified folder and below, recursively
         lsrc        - List all ADS file streams in the specified folder and below, recursively, and reads them
 */
-const { execSync } = require('node:child_process');
 const fs = require('node:fs');
-const os = require('os');
+const os = require('node:os');
+const { ArgvParser } = require('../shared');
+const { execSync } = require('node:child_process');
 
 const lsAds = (dir, { read, recursive }) => {
     const tmppath = `C:\\Users\\${
@@ -141,7 +142,7 @@ function deleteADS(target) {
         A tool for manipulating Alternate Data Streams (ADSs) in WindowsOS
     
     > Usage:
-        altfs [options] <command> <file> [content]
+        altfs [options] <command> [file] [content]
 
     > Options:
         -h | --help         Prints the help message and quits.
@@ -161,16 +162,20 @@ function deleteADS(target) {
         Read a Zone Identifier ADS in a downloaded file:
             altfs read somefile.txt:Zone.Identifier`;
 
-    const args = process.argv.slice(2);
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.argument('command');
+    parser.argument('file');
+    parser.argument('content');
+    const args = parser.parseArgv();
 
-    if (!args[0] || args.includes('--help') || args.includes('-h'))
-        return console.log(HELP);
-    if (args.includes('--version') || args.includes('-v'))
-        return console.log(require('./package.json')?.version);
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || !args.command) return console.log(HELP);
 
-    const command = args[0];
-    const target = args[1] || '.';
-    const content = args.slice(2).join(' ');
+    const command = args.command;
+    const target = args.file || '.';
+    const content = args.content;
 
     switch (command) {
         case 'write':
