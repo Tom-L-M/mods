@@ -1,3 +1,5 @@
+const { ArgvParser } = require('../shared');
+
 // Step 1 <> Select type:
 // numeric only => type C
 // upper-case alphanumeric => type A
@@ -189,35 +191,30 @@ class Barcode {
     }
 }
 
+const help = `
+    [barcode-js]
+        Generates barcodes from strings
+
+    Usage:
+        barcode [options] [string]
+
+    Options:
+        -h | --help         Prints the help message and quits.
+        -v | --version      Prints the version info and quits.
+
+    Info:
+        Generates a barcode based on the provided string.
+        Use --help to access this help screen.`;
+
 (function () {
-    const help = `
-        [barcode-js]
-            Generates barcodes from strings
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.argument('string');
+    const args = parser.parseArgv();
 
-        Usage:
-            barcode [options] [string]
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || !args.string) return console.log(help);
 
-        Options:
-            -h | --help         Prints the help message and quits.
-            -v | --version      Prints the version info and quits.
-
-        Info:
-            Generates a barcode based on the provided string.
-            Use --help to access this help screen.`;
-
-    const args = process.argv.slice(2);
-
-    if (
-        args[0] == '--help' ||
-        args[0] == '-h' ||
-        !args[0] ||
-        args.length < 1 ||
-        args[0] == ''
-    ) {
-        console.log(help);
-    } else if (args.includes('-v') || args.includes('--version')) {
-        return console.log(require('./package.json')?.version);
-    } else {
-        new Barcode(args.join(' ')).render();
-    }
+    new Barcode(args.string).render();
 })();
