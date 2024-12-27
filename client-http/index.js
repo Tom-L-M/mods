@@ -333,10 +333,15 @@ async function sendPacket(context, { firstRun = false } = {}) {
         });
 
         request.on('error', err => {
-            if (trace)
-                console.log(
-                    `[x] Error: Could not connect to "[${options.method}] ${url}" - ${err.message}`
-                );
+            // If the request was already destroyed, it means the 'timeout' was triggered first
+            // so we only print the error message if there was no other destructible event before
+            if (!request.destroyed) {
+                request.destroy();
+                if (trace)
+                    console.log(
+                        `[x] Error: Could not connect to "[${options.method}] ${url}" - ${err.message}`
+                    );
+            }
             resolve();
         });
 
@@ -345,6 +350,9 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 console.log(
                     `[x] Timeout: Could not connect to "[${options.method}] ${url}"`
                 );
+            // To prevent the redundant 'socket hang up' error from appearing, we destroy the request
+            // in order to inform the callback for the error event, that it shouldn't log anything
+            request.destroy();
             resolve();
         });
 
@@ -374,7 +382,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         -x | --method <METHOD>         Sets a request method (defaults to 'GET'). Both "x" and "X" are valid.
         -o | --output [FILE | -]       Downloads the response content instead of displaying it.
         -O | --no-output               Ignores the response content. Behaves like a HEAD request (prints only status).
-        -T | --timeout <MS>            Number of milisseconds to wait before triggering a timeout. Defaults to 5000ms.
+        -T | --timeout <MS>            Number of milisseconds to wait before triggering a timeout. Defaults to 3000ms.
         -D   --data-ascii <TEXT>       Sends a specific text as data in packet.
              --data-bytes <BYTES>      Sends a specific series of hex bytes as data in packet.
              --data-file <FILENAME>    Reads a file and sends its contents as data.
@@ -438,7 +446,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         httpHeaders: args['http-header'] || [],
         httpNofollow: Boolean(args['http-nofollow']),
         nextSeparator: parseControlChars(args.concat || '') || '\n\n',
-        timeout: !isNaN(parseInt(args.timeout, 10)) ? args.timeout : 5000,
+        timeout: !isNaN(parseInt(args.timeout, 10)) ? args.timeout : 3000,
         httpUseragent:
             args['http-useragent'] ||
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
