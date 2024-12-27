@@ -9,6 +9,8 @@ const {
     parseControlChars,
 } = require('../shared');
 
+const isDirectory = file =>
+    fs.existsSync(file) && fs.statSync(file).isDirectory();
 const is200Code = res => res.statusCode.toString().startsWith('2');
 const is300Code = res => res.statusCode.toString().startsWith('3');
 const vID = () =>
@@ -207,6 +209,11 @@ async function sendPacket(context, { firstRun = false } = {}) {
             if (download && download !== '-') {
                 fname = path.resolve(download);
 
+                // If the provided download path is a directory, append a filename to it
+                if (isDirectory(fname)) {
+                    fname = path.join(fname, fileNameFromURI(url));
+                }
+
                 try {
                     if (firstRun) fs.writeFileSync(fname, Buffer.alloc(0));
                 } catch {
@@ -313,13 +320,27 @@ async function sendPacket(context, { firstRun = false } = {}) {
                         nextContext.next = next.slice(1) || [];
                         nextContext.append = true;
 
-                        if (download && nextSeparator)
+                        // If download is requested, and there is a separator then keep downloading in the same file
+                        if (download && nextSeparator) {
                             nextContext.download = download;
-                        else if (download) nextContext.download = '';
-                        else nextContext.download = false;
+                        }
+                        // If download is requested, but there is no separator
+                        // download in a different file
+                        else if (download) {
+                            // If download is requested, and the download path is a directory name,
+                            //   keep using it (the filename after the dir will be automatically changed)
+                            if (isDirectory(download))
+                                nextContext.download = download;
+                            // Else, if download is requested, but the path is a file name, refresh it
+                            else nextContext.download = '';
+                        }
+                        // If no download is requested, skip it
+                        else {
+                            nextContext.download = false;
+                        }
 
                         if (!download || download === '-')
-                            process.stdout.write(nextSeparator);
+                            process.stdout.write(nextSeparator || '\n\n');
                         else fs.appendFileSync(fname, nextSeparator);
 
                         await sendPacket(nextContext);
@@ -439,13 +460,13 @@ async function sendPacket(context, { firstRun = false } = {}) {
         url: args.url,
         next: args.next || [],
         download: args.output,
-        dump: args['include-headers'],
+        dump: Boolean(args['include-headers']),
         noOutput: Boolean(args['no-output']),
         trace: Boolean(args.trace),
         method: args.method || 'GET',
         httpHeaders: args['http-header'] || [],
         httpNofollow: Boolean(args['http-nofollow']),
-        nextSeparator: parseControlChars(args.concat || '') || '\n\n',
+        nextSeparator: parseControlChars(args.concat || '') || '',
         timeout: !isNaN(parseInt(args.timeout, 10)) ? args.timeout : 3000,
         httpUseragent:
             args['http-useragent'] ||
@@ -468,7 +489,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 stdinlinks = stdinlinks.slice(1);
             }
             if (stdinlinks.length) {
-                context.next.push(...stdinlinks.slice(1));
+                context.next.push(...stdinlinks);
             }
         }
     }
@@ -498,9 +519,9 @@ async function sendPacket(context, { firstRun = false } = {}) {
     }
 
     try {
-        context.url = new URL(args.url);
+        context.url = new URL(context.url);
     } catch {
-        return console.log(`Error: Invalid URL provided "${args.url}"`);
+        return console.log(`Error: Invalid URL provided "${context.url}"`);
     }
 
     await sendPacket(context, { firstRun: true });
