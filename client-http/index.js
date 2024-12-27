@@ -363,6 +363,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
                         `[x] Error: Could not connect to "[${options.method}] ${url}" - ${err.message}`
                     );
             }
+            // Exit with an error level greater than 0, to inform that the request failed
+            process.exitCode = 1;
             resolve();
         });
 
@@ -374,6 +376,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
             // To prevent the redundant 'socket hang up' error from appearing, we destroy the request
             // in order to inform the callback for the error event, that it shouldn't log anything
             request.destroy();
+            // Exit with an error level greater than 0, to inform that the request failed
+            process.exitCode = 1;
             resolve();
         });
 
