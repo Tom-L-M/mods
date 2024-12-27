@@ -176,10 +176,11 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 console.log(formatResponseHeaders(res.headers), '\n');
             }
 
+            console.log(
+                `+ [${options.method}] ${url} - ${res.statusCode} ${res.statusMessage}`
+            );
+
             if (trace) {
-                console.log(
-                    `+ Connected to "${options.method}@${url}" - ${res.statusCode} ${res.statusMessage}`
-                );
                 if (message) {
                     console.log(
                         `+ Sent data: ${message.length || message.size} bytes`
@@ -325,7 +326,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         request.on('error', err => {
             if (trace)
                 console.log(
-                    `[x] Error: Could not connect to "${options.method}@${url}" - ${err.message}`
+                    `[x] Error: Could not connect to "[${options.method}] ${url}" - ${err.message}`
                 );
             resolve();
         });
@@ -333,7 +334,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         request.on('timeout', () => {
             if (trace)
                 console.log(
-                    `[x] Timeout: Could not connect to "${options.method}@${url}"`
+                    `[x] Timeout: Could not connect to "[${options.method}] ${url}"`
                 );
             resolve();
         });
