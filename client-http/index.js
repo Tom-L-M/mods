@@ -78,6 +78,11 @@ const printDownloadHeader = (url, fname) => {
 };
 
 const printDownloadInfo = (total, recv, startingTimeMS, final = false) => {
+    // Sometimes, the server sends back the "['content-size']" header as a string
+    // So, o convert it to a number, to prevent problems later
+    if (typeof total === 'string') total = parseInt(total, 10);
+    if (typeof recv === 'string') recv = parseInt(recv, 10);
+
     const elapsed = Date.now() - startingTimeMS;
 
     process.stdout.write('\r');
@@ -157,7 +162,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         path: url.href.replace(url.origin, ''),
         headers: { 'User-Agent': httpUseragent },
         timeout,
-        agent: firstRun ? false : true,
+        agent: firstRun ? false : undefined,
     };
 
     return new Promise(resolve => {
@@ -279,12 +284,12 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 // If there is no following to do, print result of current download
                 if (is200Code(res)) {
                     if (download && download !== '-') {
-                        printDownloadInfo(
-                            outputsize,
-                            outputsize,
-                            startMS,
-                            true
-                        );
+                        // printDownloadInfo(
+                        //     outputsize,
+                        //     outputsize,
+                        //     startMS,
+                        //     true
+                        // );
                         if (trace)
                             console.log(
                                 `+ Total data received (${outputsize} bytes) ` +
