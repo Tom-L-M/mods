@@ -123,6 +123,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         url,
         next,
         download,
+        timeout,
         dump,
         trace,
         method,
@@ -145,6 +146,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         port: url.port,
         path: url.href.replace(url.origin, ''),
         headers: { 'User-Agent': httpUseragent },
+        timeout,
     };
 
     return new Promise(resolve => {
@@ -176,7 +178,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
 
             if (trace) {
                 console.log(
-                    `+ Connected to "${options.method}@${url}" - Status Code: ${res.statusCode}`
+                    `+ Connected to "${options.method}@${url}" - ${res.statusCode} ${res.statusMessage}`
                 );
                 if (message) {
                     console.log(
@@ -361,6 +363,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         -i | --include-headers         Includes the response headers, dumping the HTTP response as-is.
         -x | --method <METHOD>         Sets a request method (defaults to 'GET'). Both "x" and "X" are valid.
         -o | --output [FILE | -]       Downloads the response content instead of displaying it.
+        -T | --timeout <MS>            Number of milisseconds to wait before triggering a timeout. Defaults to 5000ms.
         -D   --data-ascii <TEXT>       Sends a specific text as data in packet.
              --data-bytes <BYTES>      Sends a specific series of hex bytes as data in packet.
              --data-file <FILENAME>    Reads a file and sends its contents as data.
@@ -399,6 +402,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
     parser.option('include-headers', { alias: 'i', allowValue: false });
     parser.option('method', { alias: ['x', 'X'] });
     parser.option('output', { alias: 'o', allowDash: true });
+    parser.option('timeout', { alias: 'T', allowCasting: true });
     parser.option('data-ascii', { alias: 'D' });
     parser.option('data-bytes');
     parser.option('data-file');
@@ -424,6 +428,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         httpHeaders: args['http-header'] || [],
         httpNofollow: Boolean(args['http-nofollow']),
         nextSeparator: parseControlChars(args.concat || '') || '\n\n',
+        timeout: !isNaN(parseInt(args.timeout, 10)) ? args.timeout : 5000,
         httpUseragent:
             args['http-useragent'] ||
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
