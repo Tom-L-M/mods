@@ -9,6 +9,9 @@ const {
     parseControlChars,
 } = require('../shared');
 
+const MAX_TIMEOUT_RETRIES = 5;
+const TIMEOUT_INTERVAL = 5000;
+
 const isDirectory = file =>
     fs.existsSync(file) && fs.statSync(file).isDirectory();
 const is200Code = res => res.statusCode.toString().startsWith('2');
@@ -16,6 +19,8 @@ const is300Code = res => res.statusCode.toString().startsWith('3');
 const vID = () =>
     '################'.replace(/[#]/gm, () => Math.random().toString(16)[6]);
 const cloneObject = obj => JSON.parse(JSON.stringify(obj));
+
+const sleep = timeMs => new Promise(resolve => setTimeout(resolve, timeMs));
 
 const formatAsUpperKebabCase = string => {
     return string
@@ -126,6 +131,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
         next,
         download,
         timeout,
+        retryOnTimeout,
+        timeoutRetries,
         noOutput,
         dump,
         trace,
@@ -150,6 +157,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         path: url.href.replace(url.origin, ''),
         headers: { 'User-Agent': httpUseragent },
         timeout,
+        agent: firstRun ? false : true,
     };
 
     return new Promise(resolve => {
@@ -353,26 +361,45 @@ async function sendPacket(context, { firstRun = false } = {}) {
             });
         });
 
+        request.on('socket', () => {
+            if (trace) console.log(`[+] Trying ${context.url}...`);
+        });
+
         request.on('error', err => {
             // If the request was already destroyed, it means the 'timeout' was triggered first
             // so we only print the error message if there was no other destructible event before
             if (!request.destroyed) {
                 request.destroy();
-                if (trace)
-                    console.log(
-                        `[x] Error: Could not connect to "[${options.method}] ${url}" - ${err.message}`
-                    );
             }
+            if (trace && err.code !== 'ETIMEDOUT')
+                console.log(
+                    `[x] Error: Could not connect to "[${options.method}] ${url}" - ${err.code} - ${err.message}`
+                );
             // Exit with an error level greater than 0, to inform that the request failed
             process.exitCode = 1;
             resolve();
         });
 
-        request.on('timeout', () => {
+        request.on('timeout', async () => {
             if (trace)
                 console.log(
-                    `[x] Timeout: Could not connect to "[${options.method}] ${url}"`
+                    `[x] Timeout: Could not connect to "[${options.method}] ${url}" (${timeout} ms)`
                 );
+
+            // Try again if informed
+            if (retryOnTimeout && timeoutRetries < MAX_TIMEOUT_RETRIES) {
+                timeoutRetries = context.timeoutRetries += 1;
+
+                if (trace)
+                    console.log(
+                        `[+] Trying again "[${options.method}] ${url}" - Attempt: ${timeoutRetries}/${MAX_TIMEOUT_RETRIES} - Interval: ${TIMEOUT_INTERVAL} ms`
+                    );
+
+                await sleep(TIMEOUT_INTERVAL);
+                await sendPacket(context);
+                return resolve();
+            }
+
             // To prevent the redundant 'socket hang up' error from appearing, we destroy the request
             // in order to inform the callback for the error event, that it shouldn't log anything
             request.destroy();
@@ -382,10 +409,10 @@ async function sendPacket(context, { firstRun = false } = {}) {
         });
 
         if (message) {
-            request.write(message);
+            request.write(message, () => request.end());
+        } else {
+            request.end();
         }
-
-        request.end();
     });
 }
 
@@ -400,24 +427,25 @@ async function sendPacket(context, { firstRun = false } = {}) {
         <stdin> | client-http [options]
 
     Options:
-        -h | --help                    Prints the help message and quits.
-        -v | --version                 Prints the version info and quits.
-        -t | --trace                   Prints information about connections, data, and redirections.
-        -i | --include-headers         Includes the response headers, dumping the HTTP response as-is.
-        -x | --method <METHOD>         Sets a request method (defaults to 'GET'). Both "x" and "X" are valid.
-        -o | --output [FILE | -]       Downloads the response content instead of displaying it.
-        -O | --no-output               Ignores the response content. Behaves like a HEAD request (prints only status).
-        -T | --timeout <MS>            Number of milisseconds to wait before triggering a timeout. Defaults to 3000ms.
-        -D   --data-ascii <TEXT>       Sends a specific text as data in packet.
-             --data-bytes <BYTES>      Sends a specific series of hex bytes as data in packet.
-             --data-file <FILENAME>    Reads a file and sends its contents as data.
-        -U | --http-useragent <AGENT>  Sets the user_agent header (defaults to Chrome standart).
-        -F | --http-nofollow           Ignores 3XX-Redirection response codes.
-        -H | --http-header <HEADER>    Sets a new HTTP header.
-        -n | --next <URL>              Executes another request to URL, and concats the result after the first.
-                                       Multiple --next flags may be used, and they will be requested in sequence.
-        -c | --concat <STRING>         Concatenates the data from queries, with <STRING> as separator (defaults to '\\n\\n').
-                                       (This affects downloads too: all data will be written to a single download file).
+        -h | --help                     Prints the help message and quits.
+        -v | --version                  Prints the version info and quits.
+        -t | --trace                    Prints information about connections, data, and redirections.
+        -i | --include-headers          Includes the response headers, dumping the HTTP response as-is.
+        -x | --method <METHOD>          Sets a request method (defaults to 'GET'). Both "x" and "X" are valid.
+        -o | --output [FILE | -]        Downloads the response content instead of displaying it.
+        -O | --no-output                Ignores the response content. Behaves like a HEAD request (prints only status).
+        -T | --timeout <MS>             Number of milisseconds to wait before triggering a timeout. Defaults to 3000ms.
+        -R | --no-retry                 Do not retry on timeout.
+        -D   --data-ascii <TEXT>        Sends a specific text as data in packet.
+             --data-bytes <BYTES>       Sends a specific series of hex bytes as data in packet.
+             --data-file <FILENAME>     Reads a file and sends its contents as data.
+        -U | --http-useragent <AGENT>   Sets the user_agent header (defaults to Chrome standart).
+        -F | --http-nofollow            Ignores 3XX-Redirection response codes.
+        -H | --http-header <HEADER>     Sets a new HTTP header.
+        -n | --next <URL>               Executes another request to URL, and concats the result after the first.
+                                        Multiple --next flags may be used, and they will be requested in sequence.
+        -c | --concat <STRING>          Concatenates the data from queries, with <STRING> as separator (defaults to '\\n\\n').
+                                        (This affects downloads too: all data will be written to a single download file).
 
     Info:
         + Use "--output -" to output binary data to STDOUT and supress the warning message.
@@ -445,6 +473,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
     parser.option('output', { alias: 'o', allowDash: true });
     parser.option('no-output', { alias: 'O', allowValue: false });
     parser.option('timeout', { alias: 'T', allowCasting: true });
+    parser.option('no-retry', { alias: 'R', allowValue: false });
     parser.option('data-ascii', { alias: 'D' });
     parser.option('data-bytes');
     parser.option('data-file');
@@ -466,6 +495,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
         download: args.output,
         dump: Boolean(args['include-headers']),
         noOutput: Boolean(args['no-output']),
+        retryOnTimeout: !args['no-retry'],
+        timeoutRetries: 0,
         trace: Boolean(args.trace),
         method: args.method || 'GET',
         httpHeaders: args['http-header'] || [],
