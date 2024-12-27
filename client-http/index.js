@@ -124,6 +124,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         next,
         download,
         timeout,
+        noOutput,
         dump,
         trace,
         method,
@@ -195,6 +196,13 @@ async function sendPacket(context, { firstRun = false } = {}) {
             let fname,
                 safeToPrintOnSTDOUT = true;
 
+            // If the user opted for no output, block console printing
+            // and block download feature (even if --output is also selected).
+            if (noOutput) {
+                safeToPrintOnSTDOUT = false;
+                download = false;
+            }
+
             if (download === '') download = fileNameFromURI(url);
             if (download && download !== '-') {
                 fname = path.resolve(download);
@@ -225,8 +233,9 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 if (!mime.includes('text') && !mime.includes('json')) {
                     safeToPrintOnSTDOUT = false;
                     console.log(
-                        'Warning: There is binary data on the output. Printing to STDOUT may be dangerous. \nUse "--output [FILE]" to safely output the data to a file, or "--output -" if you want to output it to terminal anyway.'
+                        'Warning: There may be binary data on the output. Printing to STDOUT could be dangerous. \nUse "--output [FILE]" to safely output the data to a file, or "--output -" if you want to output it to terminal anyway.'
                     );
+                    console.log(mime);
                 }
             }
 
@@ -364,6 +373,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         -i | --include-headers         Includes the response headers, dumping the HTTP response as-is.
         -x | --method <METHOD>         Sets a request method (defaults to 'GET'). Both "x" and "X" are valid.
         -o | --output [FILE | -]       Downloads the response content instead of displaying it.
+        -O | --no-output               Ignores the response content. Behaves like a HEAD request (prints only status).
         -T | --timeout <MS>            Number of milisseconds to wait before triggering a timeout. Defaults to 5000ms.
         -D   --data-ascii <TEXT>       Sends a specific text as data in packet.
              --data-bytes <BYTES>      Sends a specific series of hex bytes as data in packet.
@@ -377,7 +387,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
                                        (This affects downloads too: all data will be written to a single download file).
 
     Info:
-        + Use "--output -" to output binary data to STDOUT and supress the warning message for binary output.
+        + Use "--output -" to output binary data to STDOUT and supress the warning message.
         + It is possible to pass in multiple URLs from STDIN, by dividing them with newlines ('\\n');
           This will cause the first URL to be the main one, and the rest to be passed as "--next" arguments.
             E.g. The call:      echo "link1 \\n link2" | client-http
@@ -389,12 +399,9 @@ async function sendPacket(context, { firstRun = false } = {}) {
 
         Querying with a link in a file and a next link:
             cat link.txt | client-http -o -n https://google.com.br/
-
-        Querying Google with a custom useragent and special 'test' header:
-            client-http https://google.com.br/ -U MY_USER_AGENT -H "test: something"
         
-        Querying Google with a custom useragent and some data in a POST request:
-            client-http https://google.com.br/ -U MY_USER_AGENT -x POST -t "some text"`;
+        Querying Google with a custom useragent, a new header, and some data in a POST request:
+            client-http https://google.com.br/ -U MY_USER_AGENT -H "test: something" -x POST -t "some text"`;
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
@@ -403,6 +410,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
     parser.option('include-headers', { alias: 'i', allowValue: false });
     parser.option('method', { alias: ['x', 'X'] });
     parser.option('output', { alias: 'o', allowDash: true });
+    parser.option('no-output', { alias: 'O', allowValue: false });
     parser.option('timeout', { alias: 'T', allowCasting: true });
     parser.option('data-ascii', { alias: 'D' });
     parser.option('data-bytes');
@@ -424,6 +432,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         next: args.next || [],
         download: args.output,
         dump: args['include-headers'],
+        noOutput: Boolean(args['no-output']),
         trace: Boolean(args.trace),
         method: args.method || 'GET',
         httpHeaders: args['http-header'] || [],
