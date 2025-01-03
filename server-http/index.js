@@ -117,7 +117,7 @@ function startHttpExecServer(context) {
     const { execSync } = require('child_process');
     let { host, port, dump, content, ssl, sslkey, sslcert, auth, mime } =
         context;
-    let extension = null;
+    let extension = 'text/html';
     let contentType = 'text://';
     let fname = content;
 
@@ -365,10 +365,10 @@ function startHttpSiteServer(context) {
             .listen(port, host, listenhandle);
 }
 
-function startHttpServer(context) {
+function startHttpBaseServer(context) {
     let { host, port, dump, content, ssl, sslkey, sslcert, auth, mime } =
         context;
-    let extension = null;
+    let extension = 'text/html';
     let fname = content;
     let contentType = 'text://';
 
@@ -728,6 +728,8 @@ function startHttpRedirectionServer(context) {
             req.socket.remotePort,
         ];
 
+        res.setHeader('Content-Type', 'text/html');
+
         if (auth.use) {
             let r_header = req.headers.authorization || ''; // get the auth header
             let r_token = r_header.split(/\s+/).pop() || ''; // and the encoded auth token
@@ -744,7 +746,6 @@ function startHttpRedirectionServer(context) {
                     } - Auth:Rejected`
                 );
                 res.writeHead(401, {
-                    'Content-Type': 'text/html',
                     'WWW-Authenticate':
                         'Basic realm="Access to the staging site"',
                 });
@@ -877,13 +878,20 @@ function generateAuthStringPair() {
 // ---- UTILS ----
 
 (function wrapper() {
-    const args = process.argv.slice(2);
     const help = `
     [server-http-js]
         A protocol-compliant HTTP/HTTPS server with multiple modes
 
     Usage:
-        server-http [-h] [-v] <protocol> [-d] [-p PORT] [-o HOST] [-r RESOURCE] [-s KEY,CERT]
+        server-http <protocol> [options] [-r RESOURCE] [-s KEY,CERT]
+
+    Protocol:        (Port)     (Comment)               (Resource Type)
+        site          80         HTTP site server        Directory     
+        file          80         Static file server      Directory     
+        move          80         Redirection server      Text          
+        base          80         Raw HTTP server         File | Text   
+        exec          8080       C2 local HTTP server    File | Text   
+        comm          8000       Simple command server   Text          
 
     Options:
         --help    | -h  : Shows this help menu
@@ -894,20 +902,22 @@ function generateAuthStringPair() {
         --resp    | -r  : Uses a specific resource as response (see table below)
         --auth    | -a  : Enables default HTTP-Auth headers
         --https   | -s  : Uses HTTPS instead of HTTP - require key and certificate
-        --mime    | -m  : Uses a specific MIME type for the responses
+        --mime    | -m  : Uses a specific MIME type for the responses`;
 
-    ┌───────────────────────────────────────────────────────────────────┐
-    │         Default ports and possible options by protocol            │
-    ├───────────────────────────────────────────────────────────────────┤
-    │  Protocol:     Port:      Comment:                Resource Type:  │
-    ├───────────────────────────────────────────────────────────────────┤
-    │  site          80         HTTP site server        Directory       │
-    │  file          80         Static file server      Directory       │
-    │  move          80         Redirection server      Text            │
-    │  base          80         Raw HTTP server         File | Text     │
-    │  exec          8080       C2 local HTTP server    File | Text     │
-    │  comm          8000       Simple command server   Text            │
-    └───────────────────────────────────────────────────────────────────┘
+    const fullhelp = `
+
+        ┌───────────────────────────────────────────────────────────────────┐
+        │         Default ports and possible options by protocol            │
+        ├───────────────────────────────────────────────────────────────────┤
+        │  Protocol:     Port:      Comment:                Resource Type:  │
+        ├───────────────────────────────────────────────────────────────────┤
+        │  site          80         HTTP site server        Directory       │
+        │  file          80         Static file server      Directory       │
+        │  move          80         Redirection server      Text            │
+        │  base          80         Raw HTTP server         File | Text     │
+        │  exec          8080       C2 local HTTP server    File | Text     │
+        │  comm          8000       Simple command server   Text            │
+        └───────────────────────────────────────────────────────────────────┘
 
     Info:
         > The '--mime' option does not affect 'site', 'file' or 'move' servers.
@@ -931,8 +941,10 @@ function generateAuthStringPair() {
           The order is 'KEY,CERT'. If a directory is provided it will look for 'key.pem' 
           and 'cert.pem' inside it.
           EX:   [...] --https ./keys/key.pem,./keys/cert.pem     (Using individual paths)
-          EX:   [...] --https ./keys                             (Using a directory)`;
+          EX:   [...] --https ./keys                             (Using a directory)
+    `;
 
+    const args = process.argv.slice(2);
     const context = {
         args: args,
         help: help,
@@ -951,12 +963,8 @@ function generateAuthStringPair() {
     };
 
     if (!args[0]) return console.log(help);
-    if (args.length < 1)
-        return console.log(
-            '<> Error: Not enought arguments passed. Use --help to access the help menu.'
-        );
 
-    for (let i = 1; i < args.length; i++) {
+    for (let i = 0; i < args.length; i++) {
         let arg = args[i];
         let next = args[++i];
         let keyobj;
@@ -964,6 +972,11 @@ function generateAuthStringPair() {
             case '-h':
             case '--help':
                 return console.log(help);
+
+            case '-H':
+            case '--help-all':
+                return console.log(help, '\n', fullhelp);
+
             case '-v':
             case '--version':
                 return console.log(require('./package.json')?.version);
@@ -1020,6 +1033,7 @@ function generateAuthStringPair() {
                 break;
 
             default:
+                break;
         }
     }
 
@@ -1042,7 +1056,7 @@ function generateAuthStringPair() {
                 if (!context.port) context.port = 80;
                 if (!context.content)
                     context.content = `<html><head><title>HTTP_AutoServer_Base</title></head><body>Status: OK</body></html>`;
-                startHttpServer(context);
+                startHttpBaseServer(context);
                 break;
 
             case 'file':
