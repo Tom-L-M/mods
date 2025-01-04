@@ -523,7 +523,7 @@ function tryf(func) {
 
 const tryReading = fname => tryf(() => fs.readFileSync(fname, 'utf-8'));
 const tryWriting = (fname, data) => tryf(() => fs.writeFileSync(fname, data));
-const checkFile = fname =>
+const validateFile = fname =>
     tryf(() => {
         const exists = fs.existsSync(fname);
         const isFile = fs.statSync(fname).isFile();
@@ -554,5 +554,5 @@ module.exports = {
     tryf,
     tryReading,
     tryWriting,
-    checkFile,
+    validateFile,
 };

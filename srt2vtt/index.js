@@ -4,7 +4,7 @@ const {
     readStdinAsync,
     tryReading,
     tryWriting,
-    checkFile,
+    validateFile,
 } = require('../shared');
 
 const help = `
@@ -71,14 +71,14 @@ function convertVTTtoSRT(sourceData) {
             `[x] Error: invalid parameters [ ${args._invalid.join(', ')} ]`
         );
 
-    let sourceCheck = checkFile(args.source);
+    let sourceCheck = validateFile(args.source);
     if (args.source && !sourceCheck.ok) {
         return console.log(
             `Error: Invalid file provided as source (${args.source}) - ${sourceCheck.error}`
         );
     }
 
-    let outputCheck = checkFile(args.source);
+    let outputCheck = validateFile(args.source);
     if (args.output && args.output !== '-' && !outputCheck.ok) {
         return console.log(
             `Error: Invalid file provided as output destination (${args.output}) - ${outputCheck.error}`
