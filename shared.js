@@ -1,3 +1,164 @@
+class Logger {
+    constructor({ stdout, format, colors = true } = {}) {
+        this.stdout = stdout || process.stdout;
+        this.colors = colors;
+        if (format && typeof format === 'function') {
+            this.formatter = format;
+        } else {
+            this.formatter = param => {
+                return JSON.stringify(param);
+            };
+        }
+    }
+
+    #timestampGenerator() {
+        return new Date().toISOString();
+    }
+
+    #colorize(color = '', string) {
+        if (!this.colors) return string;
+        const colors = { red: 31, green: 32, blue: 34, yellow: 33 };
+        return `\x1b[0m\x1b[${colors[color] || ''}m${string}\x1b[0m`;
+    }
+
+    #log(level, props, message) {
+        let result = {
+            timestamp: this.#timestampGenerator(),
+            level,
+        };
+
+        if (typeof message !== 'string') {
+            message = JSON.stringify(message);
+        }
+
+        if (typeof props !== 'object') {
+            props = { info: props };
+        }
+
+        for (let prop in props) {
+            result[prop] = props[prop];
+        }
+
+        result.message = message || result.message;
+        result = this.formatter(result);
+        if (this.colors) {
+            result = this.#colorize(
+                level === 'info'
+                    ? 'blue'
+                    : level === 'warn'
+                    ? 'yellow'
+                    : level === 'error'
+                    ? 'red'
+                    : level === 'debug'
+                    ? 'green'
+                    : null,
+                result
+            );
+        }
+        return this.stdout.write(result + '\n');
+    }
+
+    disableColors() {
+        this.colors = false;
+        return this;
+    }
+
+    enableColors() {
+        this.colors = true;
+        return this;
+    }
+
+    info(props, message) {
+        return this.#log('info', props, message);
+    }
+
+    error(props, message) {
+        return this.#log('error', props, message);
+    }
+
+    warn(props, message) {
+        return this.#log('warn', props, message);
+    }
+
+    debug(props, message) {
+        return this.#log('debug', props, message);
+    }
+
+    /**
+     * Paints a text with specified foreground and background colors.
+     *
+     * Colors can be passed in either string mode, numerical mode, or hex mode.
+     *
+     * The colors available in string mode are the ones supported by 8/16 color terminals:
+     * black, red, green, yellow, blue, magenta, cyan, white, default
+     *
+     * The colors available in numerical mode are the supported by 8-bit color terminals:
+     * https://user-images.githubusercontent.com/995050/47952855-ecb12480-df75-11e8-89d4-ac26c50e80b9.png
+     *
+     * Hex mode can be the short (#RGB) or long (#RRGGBB) ones.
+     * The terminal must support TrueColor.
+     *
+     * @param {string|number} foreground
+     * @param {string|number} background
+     * @returns {string}
+     */
+    print(text, foreground = '', background = '') {
+        if (!this.colors) return console.log(text);
+        const CSI = '\x1b[';
+        const RESET = CSI + '0m';
+        const COLOR_TABLE_8BIT = {
+            black: 0,
+            red: 1,
+            green: 2,
+            yellow: 3,
+            blue: 4,
+            magenta: 5,
+            cyan: 6,
+            white: 7,
+            default: 9,
+        };
+        const fromColorCode = (color, type) => {
+            // For 8-bit colors
+            if (COLOR_TABLE_8BIT[color] !== undefined)
+                return `${CSI}${type === 'fg' ? '3' : '4'}${
+                    COLOR_TABLE_8BIT[color]
+                }m`;
+            // For complete colors
+            else if (typeof color === 'number')
+                return `${CSI}${type === 'fg' ? '3' : '4'}8;5;${color}m`;
+            // For TrueColor mode
+            else if (color.startsWith('#')) {
+                if (color.length === 4) {
+                    // Short codes: #RGB
+                    const c = [color[1], color[2], color[3]].map(v =>
+                        parseInt(v, 16)
+                    );
+                    return `${CSI}${type === 'fg' ? '3' : '4'}8;2;${c[0]};${
+                        c[1]
+                    };${c[2]}m`;
+                } else if (color.length === 7) {
+                    // Long codes: #RRGGBB
+                    const c = [
+                        color.slice(1, 3),
+                        color.slice(3, 5),
+                        color.slice(5, 7),
+                    ].map(v => parseInt(v, 16));
+                    return `${CSI}${type === 'fg' ? '3' : '4'}8;2;${c[0]};${
+                        c[1]
+                    };${c[2]}m`;
+                }
+            } else return '';
+        };
+        return console.log(
+            RESET +
+                fromColorCode(foreground, 'fg') +
+                fromColorCode(background, 'bg') +
+                text +
+                RESET
+        );
+    }
+}
+
 class ArgvParser {
     constructor() {
         this.registered = [];
@@ -348,213 +509,41 @@ function readStdinAsync({ controlChars = false } = {}) {
 }
 
 const isSTDINActive = () => !process.stdin.isTTY;
+const fs = require('node:fs');
 
-class Logger {
-    constructor({ stdout, format, colors = true } = {}) {
-        this.stdout = stdout || process.stdout;
-        this.colors = colors;
-        if (format && typeof format === 'function') {
-            this.formatter = format;
-        } else {
-            this.formatter = param => {
-                return JSON.stringify(param);
-            };
-        }
+function tryf(func) {
+    let result;
+    try {
+        result = func();
+        return { ok: true, error: '', result };
+    } catch (err) {
+        return { ok: false, error: err.message, result };
     }
+}
 
-    #timestampGenerator() {
-        return new Date().toISOString();
-    }
-
-    #colorize(color = '', string) {
-        if (!this.colors) return string;
-        const colors = { red: 31, green: 32, blue: 34, yellow: 33 };
-        return `\x1b[0m\x1b[${colors[color] || ''}m${string}\x1b[0m`;
-    }
-
-    #log(level, props, message) {
-        let result = {
-            timestamp: this.#timestampGenerator(),
-            level,
-        };
-
-        if (typeof message !== 'string') {
-            message = JSON.stringify(message);
-        }
-
-        if (typeof props !== 'object') {
-            props = { info: props };
-        }
-
-        for (let prop in props) {
-            result[prop] = props[prop];
-        }
-
-        result.message = message || result.message;
-        result = this.formatter(result);
-        if (this.colors) {
-            result = this.#colorize(
-                level === 'info'
-                    ? 'blue'
-                    : level === 'warn'
-                    ? 'yellow'
-                    : level === 'error'
-                    ? 'red'
-                    : level === 'debug'
-                    ? 'green'
-                    : null,
-                result
+const tryReading = fname => tryf(() => fs.readFileSync(fname, 'utf-8'));
+const tryWriting = (fname, data) => tryf(() => fs.writeFileSync(fname, data));
+const checkFile = fname =>
+    tryf(() => {
+        const exists = fs.existsSync(fname);
+        const isFile = fs.statSync(fname).isFile();
+        // the isAccessible below won't return false, it will just throw
+        const access = tryf(() =>
+            fs.accessSync(fname, fs.constants.W_OK | fs.constants.R_OK)
+        );
+        if (!exists || !isFile || !access.ok) {
+            throw new Error(
+                'Item is ' +
+                    (!exists
+                        ? 'inexistent'
+                        : !access.ok
+                        ? 'unreacheable'
+                        : !isFile
+                        ? 'not a file'
+                        : '')
             );
         }
-        return this.stdout.write(result + '\n');
-    }
-
-    disableColors() {
-        this.colors = false;
-        return this;
-    }
-
-    enableColors() {
-        this.colors = true;
-        return this;
-    }
-
-    info(props, message) {
-        return this.#log('info', props, message);
-    }
-
-    error(props, message) {
-        return this.#log('error', props, message);
-    }
-
-    warn(props, message) {
-        return this.#log('warn', props, message);
-    }
-
-    debug(props, message) {
-        return this.#log('debug', props, message);
-    }
-
-    /**
-     * Paints a text with specified foreground and background colors.
-     *
-     * Colors can be passed in either string mode, numerical mode, or hex mode.
-     *
-     * The colors available in string mode are the ones supported by 8/16 color terminals:
-     * black, red, green, yellow, blue, magenta, cyan, white, default
-     *
-     * The colors available in numerical mode are the supported by 8-bit color terminals:
-     * https://user-images.githubusercontent.com/995050/47952855-ecb12480-df75-11e8-89d4-ac26c50e80b9.png
-     *
-     * Hex mode can be the short (#RGB) or long (#RRGGBB) ones.
-     * The terminal must support TrueColor.
-     *
-     * @param {string|number} foreground
-     * @param {string|number} background
-     * @returns {string}
-     */
-    print(text, foreground = '', background = '') {
-        if (!this.colors) return console.log(text);
-        const CSI = '\x1b[';
-        const RESET = CSI + '0m';
-        const COLOR_TABLE_8BIT = {
-            black: 0,
-            red: 1,
-            green: 2,
-            yellow: 3,
-            blue: 4,
-            magenta: 5,
-            cyan: 6,
-            white: 7,
-            default: 9,
-        };
-        const fromColorCode = (color, type) => {
-            // For 8-bit colors
-            if (COLOR_TABLE_8BIT[color] !== undefined)
-                return `${CSI}${type === 'fg' ? '3' : '4'}${
-                    COLOR_TABLE_8BIT[color]
-                }m`;
-            // For complete colors
-            else if (typeof color === 'number')
-                return `${CSI}${type === 'fg' ? '3' : '4'}8;5;${color}m`;
-            // For TrueColor mode
-            else if (color.startsWith('#')) {
-                if (color.length === 4) {
-                    // Short codes: #RGB
-                    const c = [color[1], color[2], color[3]].map(v =>
-                        parseInt(v, 16)
-                    );
-                    return `${CSI}${type === 'fg' ? '3' : '4'}8;2;${c[0]};${
-                        c[1]
-                    };${c[2]}m`;
-                } else if (color.length === 7) {
-                    // Long codes: #RRGGBB
-                    const c = [
-                        color.slice(1, 3),
-                        color.slice(3, 5),
-                        color.slice(5, 7),
-                    ].map(v => parseInt(v, 16));
-                    return `${CSI}${type === 'fg' ? '3' : '4'}8;2;${c[0]};${
-                        c[1]
-                    };${c[2]}m`;
-                }
-            } else return '';
-        };
-        return console.log(
-            RESET +
-                fromColorCode(foreground, 'fg') +
-                fromColorCode(background, 'bg') +
-                text +
-                RESET
-        );
-    }
-}
-
-function prettifyRawRequestData(buffer) {
-    const chunk = (array = [], chunkSize = 2, filler = undefined) => {
-        let arr = [...array];
-        if (filler !== undefined)
-            arr.push(
-                ...new Array(
-                    array.length < chunkSize
-                        ? chunkSize - array.length
-                        : array.length % chunkSize
-                ).fill(filler)
-            ); // If a filler is set, fills a next part of chunk
-        let acc = [];
-        let tmp = [];
-        for (let i = 0; i < arr.length; i++) {
-            if (tmp.length < chunkSize) {
-                tmp.push(arr[i]);
-            }
-            if (tmp.length === chunkSize || i === arr.length - 1) {
-                acc.push(tmp);
-                tmp = [];
-            }
-        }
-        return acc;
-    };
-    const chunkedBuffer = chunk(buffer, 16);
-    const chunkedString = chunk([...buffer.toString()], 16);
-    return chunkedBuffer
-        .map(
-            (v, i) =>
-                '  ' +
-                v
-                    .map(x =>
-                        x
-                            ? '0x' +
-                              x.toString(16).padStart(2, '0').toUpperCase()
-                            : '    '
-                    )
-                    .join(' ')
-                    .padEnd(16 * 5, ' ') +
-                ' |' +
-                chunkedString[i].join('').padEnd(16, ' ') +
-                '|'
-        )
-        .join('\n');
-}
+    });
 
 module.exports = {
     ArgvParser,
@@ -562,5 +551,8 @@ module.exports = {
     readStdinAsync,
     parseControlChars,
     Logger,
-    prettifyRawRequestData,
+    tryf,
+    tryReading,
+    tryWriting,
+    checkFile,
 };
