@@ -63,7 +63,7 @@ const help = `
     Options:  
         -h | --help                 Print the help message and quits.
         -v | --version              Prints the version info and quits.
-        -n | --lines                Print the newline counts.
+        -l | --lines                Print the newline counts.
         -c | --bytes                Print the byte counts.
         -m | --chars                Print the character counts.
         -w | --words                Print the word counts.
@@ -80,7 +80,7 @@ const help = `
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
-    parser.option('lines', { alias: 'n', allowValue: false });
+    parser.option('lines', { alias: 'l', allowValue: false });
     parser.option('bytes', { alias: 'c', allowValue: false });
     parser.option('chars', { alias: 'm', allowValue: false });
     parser.option('words', { alias: 'w', allowValue: false });
