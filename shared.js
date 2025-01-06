@@ -467,17 +467,45 @@ class ArgvParser {
     }
 }
 
-function parseControlChars(string) {
-    return string
-        .replaceAll('\\t', '\t')
-        .replaceAll('\\n', '\n')
-        .replaceAll('\\b', '\b')
-        .replaceAll('\\r', '\r')
-        .replaceAll('\\f', '\f')
-        .replaceAll('\\0', '\0') // Parse literal NULL bytes (useful with C strings)
-        .replaceAll(/\\x([a-f0-9]{1,2})/gi, (match, n1) =>
+/**
+ * Parse control char literals in strings, converting to actual control char bytes
+ * @info Specially useful for reading literals from STDIN and parsing them
+ * @param {string} string The string to parse
+ * @param {string} tab For enabling Tab (\b). Default: true.
+ * @param {string} lf For enabling Line-Feed (\n). Default: true.
+ * @param {string} cr For enabling Carriage-Return (\r). Default: true.
+ * @param {string} bs For enabling Backspace (\b). Default: true.
+ * @param {string} vt For enabling Vertical Tab (\f). Default: true.
+ * @param {string} nul For enabling Null Byte (\0). Default: true.
+ * @param {string} hex For enabling Hex-Encoded bytes (\xAB). Default: true.
+ * @param {string} all For enabling all control chars. Default: true.
+ * @returns {string} The string with the selected control chars enabled
+ */
+function parseControlChars(
+    string,
+    {
+        tab = false, // For Tab (\b)
+        lf = false, // For Line-Feed (\n)
+        cr = false, // For Carriage-Return (\r)
+        bs = false, // For Backspace (\b)
+        vt = false, // For Vertical Tab (\f)
+        nul = false, // For Null Byte (\0)
+        hex = false, // For Hex-Encoded bytes (\xAB)
+        all = true,
+    } = {}
+) {
+    let out = string;
+    if (all || tab) out = out.replaceAll('\\t', '\t');
+    if (all || lf) out = out.replaceAll('\\n', '\n');
+    if (all || cr) out = out.replaceAll('\\r', '\r');
+    if (all || bs) out = out.replaceAll('\\b', '\b');
+    if (all || vt) out = out.replaceAll('\\f', '\f');
+    if (all || nul) out = out.replaceAll('\\0', '\0');
+    if (all || hex)
+        out = out.replaceAll(/\\x([a-f0-9]{1,2})/gi, (_, n1) =>
             String.fromCharCode(parseInt(n1, 16))
         );
+    return out;
 }
 
 function readStdinAsync({ controlChars = false, encoding = null } = {}) {
