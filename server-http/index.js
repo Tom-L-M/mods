@@ -894,15 +894,17 @@ function generateAuthStringPair() {
         comm          8000       Simple command server   Text          
 
     Options:
-        --help    | -h  : Shows this help menu
-        --version | -v  : Shows version information
-        --port    | -p  : Selects a port to use
-        --host    | -o  : Selects an interface to use (default is '0.0.0.0')
-        --dump    | -d  : Dumps request headers for all requests in the console
-        --resp    | -r  : Uses a specific resource as response (see table below)
-        --auth    | -a  : Enables default HTTP-Auth headers
-        --https   | -s  : Uses HTTPS instead of HTTP - require key and certificate
-        --mime    | -m  : Uses a specific MIME type for the responses`;
+        -h, --help                  Shows this help message
+        -H, --help-all              Shows a longer help message
+        -v, --version               Shows version information
+        -p, --port <PORT>           Selects a port to use
+        -o, --host <HOST>           Selects an interface to use (default is '0.0.0.0')
+        -d, --dump                  Dumps request headers for all requests in the console
+        -r, --res  <RESOURCE>       Uses a specific resource as response (see table below)
+        -a, --auth <USER>:<PASS>    Enables default HTTP-Auth headers
+        -m, --mime <MIME-TYPE>      Uses a specific MIME type for the responses
+        -s, --https <KEY>,<CERT>    Uses HTTPS instead of HTTP - require key and certificate
+            --https <DIR>`;
 
     const fullhelp = `
 
@@ -913,15 +915,13 @@ function generateAuthStringPair() {
         ├───────────────────────────────────────────────────────────────────┤
         │  site          80         HTTP site server        Directory       │
         │  file          80         Static file server      Directory       │
-        │  move          80         Redirection server      Text            │
+        │  move          80         Redirection server      URL             │
         │  base          80         Raw HTTP server         File | Text     │
         │  exec          8080       C2 local HTTP server    File | Text     │
         │  comm          8000       Simple command server   Text            │
         └───────────────────────────────────────────────────────────────────┘
 
     Info:
-        > The '--mime' option does not affect 'site', 'file' or 'move' servers.
-
         > When using 'move' protocol (redirection server), you must provide an url for redirection.
           EX:   server-http move -r "www.bing.com"
           (The default for the resource URL is "www.google.com")
@@ -933,8 +933,8 @@ function generateAuthStringPair() {
         > When using '--auth' option, the server provides an http-auth header, forcing 
           the user to input login and password, or an 'Authorization' header must be sent.
           Pass the correct credentials as a ':' divided string:
-          EX:   [...] --auth fake_username:fake-password
-          It is also possible to pass in '*' for '--auth' parameter, to use random user+pass:
+          EX:   [...] --auth username:password
+          It is also possible to pass in '*' for '--auth' parameter, to use a random user+pass combination:
           EX:   [...] --auth *      (will result in something like: X23RBCl1!6 and qXYFmz&QEy)
 
         > When using '--https' option, a key/certificate set, or a directory, must be passed.
@@ -1005,7 +1005,7 @@ function generateAuthStringPair() {
                 break;
 
             case '-r':
-            case '--resp':
+            case '--res':
                 context.content = next;
                 break;
 
