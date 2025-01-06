@@ -86,7 +86,7 @@ function convertVTTtoSRT(sourceData) {
 
     let sourcedata = null;
     if (fromSTDIN) {
-        sourcedata = await readStdinAsync();
+        sourcedata = await readStdinAsync({ encoding: 'utf-8' });
     } else {
         let readingResult = tryReading(args.source);
         if (!readingResult) {
