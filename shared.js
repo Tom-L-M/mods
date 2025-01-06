@@ -555,9 +555,15 @@ function tryf(func) {
 
 const tryReading = fname => tryf(() => fs.readFileSync(fname, 'utf-8'));
 const tryWriting = (fname, data) => tryf(() => fs.writeFileSync(fname, data));
-const validateFile = fname =>
+const validateFile = (fname, { throwOnMissing = true } = {}) =>
     tryf(() => {
         const exists = fs.existsSync(fname);
+
+        // If throwOnMissing === false, we ignore if the file exists or not
+        // Useful when writing (you need to know if there is access to it, but it may not exist)
+        if (!throwOnMissing && !exists) return true;
+        // if the file dont exist, ignore the rest of the checks
+
         const isFile = fs.statSync(fname).isFile();
         // the isAccessible below won't return false, it will just throw
         const access = tryf(() =>
