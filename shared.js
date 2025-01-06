@@ -480,7 +480,7 @@ function parseControlChars(string) {
         );
 }
 
-function readStdinAsync({ controlChars = false } = {}) {
+function readStdinAsync({ controlChars = false, encoding = null } = {}) {
     return new Promise((resolve, reject) => {
         const stream = process.stdin;
         const chunks = [];
@@ -490,11 +490,15 @@ function readStdinAsync({ controlChars = false } = {}) {
         const onEnd = () =>
             quit() &&
             resolve(
-                Buffer.from(
-                    (controlChars ? parseControlChars : v => v)(
-                        Buffer.concat(chunks).toString()
-                    )
-                )
+                (() => {
+                    const final = Buffer.from(
+                        (controlChars ? parseControlChars : v => v)(
+                            Buffer.concat(chunks).toString()
+                        )
+                    );
+                    if (encoding) return final.toString(encoding);
+                    return final;
+                })()
             );
 
         const quit = () => {
