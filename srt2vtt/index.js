@@ -14,7 +14,7 @@ const help = `
     Usage:
         node srt2vtt [options] [file]
       OR
-        <stdin> | node srt2vtt [options] [file]
+        <stdin> | node srt2vtt [options]
 
     Options:
         -h | --help             Prints the help message and quits.
@@ -24,7 +24,6 @@ const help = `
                                 set <FILE> to "-" to output to stdout.`;
 
 function convertSRTtoVTT(sourceData) {
-    console.log(98, sourceData);
     const srtBuffer = sourceData;
     const lines = srtBuffer.split('\n');
     const vttBuffer = ['WEBVTT', '']; // Add the "WEBVTT" signature at the top
