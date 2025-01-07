@@ -71,13 +71,55 @@ const formatResponseHeaders = (responseHeaders, prefix = '') => {
     return acc.trimEnd();
 };
 
-const printDownloadHeader = (url, fname) => {
-    console.log('+ Downloading', `[${url}] to [${fname}]`);
-    console.log(`    %    Total           Received        Elapsed`);
+// Converts MS to time units:
+// 3500 becomes "3.30 seconds"...
+const milissecondsAsTimeUnits = float => {
+    float = float / 60000; // => From MS to
+    const hours = Math.floor(float / 60); // Extract hours from total minutes
+    const totalMinutes = Math.floor(float); // Total minutes
+    const minutes = totalMinutes % 60; // Remaining minutes after hours
+    const totalSeconds = (float - totalMinutes) * 60; // Fractional part converted to total seconds
+    const seconds = Math.floor(totalSeconds); // Extract whole seconds
+    const milliseconds = Math.round((totalSeconds - seconds) * 1000); // Remaining fractional part converted to ms
+
+    // Handle cascading overflow
+    let finalMinutes = minutes;
+    let finalHours = hours;
+    let finalSeconds = seconds;
+    // let finalMilliseconds = milliseconds;
+
+    if (milliseconds === 1000) {
+        // finalMilliseconds = 0;
+        finalSeconds += 1; // Increment seconds
+    }
+    if (finalSeconds === 60) {
+        finalSeconds = 0;
+        finalMinutes += 1; // Increment minutes
+    }
+    if (finalMinutes === 60) {
+        finalMinutes = 0;
+        finalHours += 1; // Increment hours
+    }
+
+    // Construct the time string
+    let timeString =
+        `${finalHours.toString().padStart(2, '0')}:` +
+        `${finalMinutes.toString().padStart(2, '0')}:` +
+        `${finalSeconds.toString().padStart(2, '0')}`;
+    // If you want to add the milisseconds to the counter, just uncomment here and up some lines
+    // `${finalMilliseconds.toString().padStart(3, '0')}`;
+    return timeString.trim();
+};
+
+const printDownloadHeader = fname => {
+    console.log(`+ Downloading as [${fname}]`);
+    console.log(
+        `    %    Total           Received        Elapsed         Speed`
+    );
     return;
 };
 
-const printDownloadInfo = (total, recv, startingTimeMS, final = false) => {
+const printDownloadInfo = (total, recv, startingTimeMS, lastChunkSize) => {
     // Sometimes, the server sends back the "['content-size']" header as a string
     // So, o convert it to a number, to prevent problems later
     if (typeof total === 'string') total = parseInt(total, 10);
@@ -91,7 +133,6 @@ const printDownloadInfo = (total, recv, startingTimeMS, final = false) => {
 
     let unit_total = total > 1000000 ? 'mb' : total > 1000 ? 'kb' : 'b';
     let unit_recv = recv > 1000000 ? 'mb' : recv > 1000 ? 'kb' : 'b';
-    let unit_elapsed = elapsed > 60000 ? 'min' : elapsed > 1000 ? 's' : 'ms';
 
     let value_tot =
         total > 1000000 ? total / 1000000 : total > 1000 ? total / 1000 : total;
@@ -103,29 +144,30 @@ const printDownloadInfo = (total, recv, startingTimeMS, final = false) => {
     if (value_recv)
         value_recv = (value_recv.toFixed(2) + ' ' + unit_recv).padEnd(16, ' ');
 
-    let value_elapsed =
-        elapsed > 60000
-            ? elapsed / 60000
-            : elapsed > 1000
-            ? elapsed / 1000
-            : elapsed;
+    let value_elapsed = elapsed;
     if (value_elapsed)
-        value_elapsed = value_elapsed.toFixed(2) + ' ' + unit_elapsed;
+        value_elapsed = milissecondsAsTimeUnits(value_elapsed).padEnd(16, ' ');
+
+    let speed = lastChunkSize;
+    if (lastChunkSize > 1000000) {
+        speed = (Math.abs(lastChunkSize) / 1000000).toFixed(2) + ' Mb/s';
+    } else if (lastChunkSize > 1000) {
+        speed = (Math.abs(lastChunkSize) / 1000).toFixed(2) + ' Kb/s';
+    }
+    speed = speed.padEnd(16, ' ');
 
     if (!total) {
         process.stdout.write(
-            `    -    ---             ${value_recv}${value_elapsed}`
+            `    -    ---             ${value_recv}${value_elapsed}${speed}`.trimEnd()
         );
     } else {
         let stats = Math.ceil((recv / total) * 100)
             .toString()
             .padStart(3, ' ');
         process.stdout.write(
-            `  ${stats}    ${value_tot}${value_recv}${value_elapsed}`
+            `  ${stats}    ${value_tot}${value_recv}${value_elapsed}${speed}`.trimEnd()
         );
     }
-
-    if (final) console.log();
 
     return;
 };
@@ -182,6 +224,10 @@ async function sendPacket(context, { firstRun = false } = {}) {
 
             let outputsize = 0;
             let printedData = false;
+            // Tracks printing intervals, to avoid printing the same info repeatedly on stale connections
+            let lastInfoPrint = 0;
+            // Tracks download speed with metered chunks per second
+            let lastChunkSize = 0;
 
             if (dump) {
                 console.log(
@@ -193,7 +239,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
             }
 
             console.log(
-                `+ [${options.method}] ${url} - ${res.statusCode} ${res.statusMessage}`
+                `+ ${options.method} (${res.statusCode} ${res.statusMessage}) - ${url}`
             );
 
             if (trace) {
@@ -237,7 +283,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 }
 
                 if (is200Code(res)) {
-                    printDownloadHeader(url.href, fname);
+                    printDownloadHeader(fname);
                 }
             }
 
@@ -261,13 +307,21 @@ async function sendPacket(context, { firstRun = false } = {}) {
 
             res.on('data', chunk => {
                 outputsize += chunk.length;
+                lastChunkSize += chunk.length;
                 if (download && is200Code(res) && download !== '-') {
                     fs.appendFileSync(fname, chunk);
-                    printDownloadInfo(
-                        res.headers['content-length'],
-                        outputsize,
-                        startMS
-                    );
+
+                    // Let the download status update very 1 second (1000ms)
+                    if (lastInfoPrint + 1000 < Date.now()) {
+                        printDownloadInfo(
+                            res.headers['content-length'] || chunk.length,
+                            outputsize,
+                            startMS,
+                            lastChunkSize
+                        );
+                        lastInfoPrint = Date.now();
+                        lastChunkSize = 0;
+                    }
                 } else if (!trace && is300Code(res)) {
                     // placeholder
                 } else {
@@ -284,12 +338,6 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 // If there is no following to do, print result of current download
                 if (is200Code(res)) {
                     if (download && download !== '-') {
-                        // printDownloadInfo(
-                        //     outputsize,
-                        //     outputsize,
-                        //     startMS,
-                        //     true
-                        // );
                         if (trace)
                             console.log(
                                 `+ Total data received (${outputsize} bytes) ` +
@@ -367,7 +415,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         });
 
         request.on('socket', () => {
-            if (trace) console.log(`[+] Trying ${context.url}...`);
+            if (trace) console.log(`+ Trying ${context.url}...`);
         });
 
         request.on('error', err => {
@@ -397,7 +445,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
 
                 if (trace)
                     console.log(
-                        `[+] Trying again "[${options.method}] ${url}" - Attempt: ${timeoutRetries}/${MAX_TIMEOUT_RETRIES} - Interval: ${TIMEOUT_INTERVAL} ms`
+                        `+ Trying again "[${options.method}] ${url}" - Attempt: ${timeoutRetries}/${MAX_TIMEOUT_RETRIES} - Interval: ${TIMEOUT_INTERVAL} ms`
                     );
 
                 await sleep(TIMEOUT_INTERVAL);
@@ -446,28 +494,17 @@ async function sendPacket(context, { firstRun = false } = {}) {
              --data-file <FILENAME>     Reads a file and sends its contents as data.
         -U | --http-useragent <AGENT>   Sets the user_agent header (defaults to Chrome standart).
         -F | --http-nofollow            Ignores 3XX-Redirection response codes.
-        -H | --http-header <HEADER>     Sets a new HTTP header.
+        -H | --http-header <HEADER>     Sets a new HTTP header, inthe format of:    "Header: Content".
         -n | --next <URL>               Executes another request to URL, and concats the result after the first.
                                         Multiple --next flags may be used, and they will be requested in sequence.
-        -c | --concat <STRING>          Concatenates the data from queries, with <STRING> as separator (defaults to '\\n\\n').
+        -c | --concat <STRING>          Concatenates the data from queries, with <STRING> as separator.
                                         (This affects downloads too: all data will be written to a single download file).
 
     Info:
-        + Use "--output -" to output binary data to STDOUT and supress the warning message.
-        + It is possible to pass in multiple URLs from STDIN, by dividing them with newlines ('\\n');
+        + It is possible to pass-in multiple URLs from STDIN, by dividing them with newlines ('\\n');
           This will cause the first URL to be the main one, and the rest to be passed as "--next" arguments.
             E.g. The call:      echo "link1 \\n link2" | client-http
-            is the same as:     client-http link1 -n link2
-
-    Example:
-        Dowloading a file from catbox:
-            client-http https://files.catbox.moe/AAAAAA.png -o image.png
-
-        Querying with a link in a file and a next link:
-            cat link.txt | client-http -o -n https://google.com.br/
-        
-        Querying Google with a custom useragent, a new header, and some data in a POST request:
-            client-http https://google.com.br/ -U MY_USER_AGENT -H "test: something" -x POST -t "some text"`;
+            is the same as:     client-http link1 -n link2`;
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
