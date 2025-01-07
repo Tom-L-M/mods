@@ -41,7 +41,10 @@ const secureFileName = str => {
     }
     return uri
         .replaceAll('?', '_')
-        .replaceAll(/[^a-z0-9\.\-_= \[\]\(\)]/gi, '');
+        .replaceAll(
+            /[^a-z0-9 '!@#$%¨`´~^& \,\.\-_=\[\]\(\)çáàâäãéèêëíìîïóòôöõúùûüñýÿÇÁÀÂÄÃÉÈÊËÍÌÎÏÓÒÔÖÕÚÙÛÜÑÝ]/gi,
+            ''
+        );
 };
 
 const readLinksFromSTDIN = stdindata => {
@@ -338,11 +341,19 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 // If there is no following to do, print result of current download
                 if (is200Code(res)) {
                     if (download && download !== '-') {
+                        printDownloadInfo(
+                            res.headers['content-length'] || outputsize,
+                            outputsize,
+                            // res.headers['content-length'] || outputsize,
+                            startMS,
+                            lastChunkSize
+                        );
                         if (trace)
                             console.log(
                                 `+ Total data received (${outputsize} bytes) ` +
                                     `- Saved in [${fname}]`
                             );
+                        console.log();
                     }
                 }
 
