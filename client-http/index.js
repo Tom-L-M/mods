@@ -156,6 +156,8 @@ const printDownloadInfo = (total, recv, startingTimeMS, lastChunkSize) => {
         speed = (Math.abs(lastChunkSize) / 1000000).toFixed(2) + ' Mb/s';
     } else if (lastChunkSize > 1000) {
         speed = (Math.abs(lastChunkSize) / 1000).toFixed(2) + ' Kb/s';
+    } else {
+        speed = Math.abs(lastChunkSize).toFixed(2) + ' bytes/s';
     }
     speed = speed.padEnd(16, ' ');
 
@@ -283,7 +285,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
                     if (firstRun) fs.writeFileSync(fname, Buffer.alloc(0));
                 } catch {
                     console.log(
-                        `[x] Error: Cannot write to download destination [${fname}]. Aborting.`
+                        `x Error: Cannot write to download destination [${fname}]. Aborting.`
                     );
                     return resolve();
                 }
@@ -440,7 +442,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
             }
             if (trace && err.code !== 'ETIMEDOUT')
                 console.log(
-                    `[x] Error: Could not connect to "[${options.method}] ${url}" - ${err.code} - ${err.message}`
+                    `- Error: Could not connect to "[${options.method}] ${url}" - ${err.code} - ${err.message}`
                 );
             // Exit with an error level greater than 0, to inform that the request failed
             process.exitCode = 1;
@@ -450,7 +452,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         request.on('timeout', async () => {
             if (trace)
                 console.log(
-                    `[x] Timeout: Could not connect to "[${options.method}] ${url}" (${timeout} ms)`
+                    `- Timeout: Could not connect to "[${options.method}] ${url}" (${timeout} ms)`
                 );
 
             // Try again if informed
