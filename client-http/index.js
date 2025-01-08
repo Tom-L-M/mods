@@ -267,6 +267,9 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 download = false;
             }
 
+            // If a dot is provided, ignore and treat as empty (auto-name download)
+            if (download === '.') download = '';
+
             if (download === '') download = fileNameFromURI(url);
             if (download && download !== '-') {
                 fname = path.resolve(download);
@@ -496,7 +499,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
         -t | --trace                    Prints information about connections, data, and redirections.
         -i | --include-headers          Includes the response headers, dumping the HTTP response as-is.
         -x | --method <METHOD>          Sets a request method (defaults to 'GET'). Both "x" and "X" are valid.
-        -o | --output [FILE | -]        Downloads the response content instead of displaying it.
+        -o | --output [FILE | - | .]    Downloads the response content instead of displaying it.
+                                        Set to '-' to output to STDOUT, or to '.' to download with an automatic file name.
         -O | --no-output                Ignores the response content. Behaves like a HEAD request (prints only status).
         -T | --timeout <MS>             Number of milisseconds to wait before triggering a timeout. Defaults to 3000ms.
         -R | --no-retry                 Do not retry on timeout.
