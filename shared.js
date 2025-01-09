@@ -545,6 +545,22 @@ function readStdin({ controlChars = false, encoding = null } = {}) {
 const isStdinActive = () => !process.stdin.isTTY;
 const fs = require('node:fs');
 
+/**
+ * A function for wrapping any operation as a Try-Catch block.
+ * It behaves like the still-expected 'safe operator' feature from a future JS:
+ * the left side expression (in this case a callback) is called, and the return
+ * value and any errors are placed in an array in the right side.
+ * @param {function} func The function to attempt to execute.
+ * @returns {Array<null,any>|Array<Error,null>} Returns [Error, null] if it fails, or [null, <result>] if it succeeds.
+ * @example
+ * ```
+ *  // If an error is raised, "error" will be the raised Error Object, and "result" will be null.
+ *  // Else, "error" will be null, and "result" will be the data read from the file.
+ *  const [error, result] = attempt(() => fs.readFileSync('somefile.txt'));
+ *  if (error) return;
+ *  console.log(result);
+ * ```
+ */
 function attempt(func) {
     try {
         return [null, func()];
