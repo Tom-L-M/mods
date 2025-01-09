@@ -1,10 +1,10 @@
+const fs = require('node:fs');
 const {
     ArgvParser,
-    isSTDINActive,
-    readStdinAsync,
+    isStdinActive,
+    readStdin,
     parseControlChars,
-    tryReading,
-    tryWriting,
+    attempt,
     validateFile,
 } = require('../shared');
 
@@ -44,14 +44,14 @@ function windowsToUnix(sourcedata) {
 }
 
 (async function () {
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('windows', { alias: 'w', allowValue: false });
     parser.option('literals', { alias: 'l', allowValue: false });
-    parser.option('output', { alias: 'o' });
+    parser.option('output', { alias: 'o', allowDash: true });
     parser.argument('source');
     const args = parser.parseArgv();
 
@@ -76,31 +76,37 @@ function windowsToUnix(sourcedata) {
         }
     }
 
-    let sourceCheck = validateFile(args.source);
-    if (args.source && !sourceCheck.ok) {
-        return console.log(
-            `Error: Invalid file provided as source (${args.source}) - ${sourceCheck.error}`
-        );
+    {
+        const [sourceCheckErr] = validateFile(args.source);
+        if (args.source && sourceCheckErr) {
+            return console.log(
+                `Error: Invalid file provided as source (${args.source}) - ${sourceCheckErr.message}`
+            );
+        }
     }
 
-    let outputCheck = validateFile(args.output, { throwOnMissing: false });
-    if (args.output && args.output !== '-' && !outputCheck.ok) {
-        return console.log(
-            `Error: Invalid file provided as output destination (${args.output}) - ${outputCheck.error}`
-        );
+    {
+        const [outputCheckErr] = validateFile(args.output, {
+            throwOnMissing: false,
+        });
+        if (args.output && args.output !== '-' && outputCheckErr) {
+            return console.log(
+                `Error: Invalid file provided as output destination (${args.output}) - ${outputCheckErr.message}`
+            );
+        }
     }
 
     let sourcedata = null;
     if (fromSTDIN) {
-        sourcedata = await readStdinAsync({ encoding: 'utf8' });
+        sourcedata = await readStdin({ encoding: 'utf8' });
     } else {
-        let readingResult = tryReading(args.source);
-        if (!readingResult) {
+        const [err, data] = attempt(() => fs.readFileSync(args.source, 'utf8'));
+        if (err) {
             return console.log(
-                `Error: Invalid file provided as source (${args.source}) - ${readingResult.error}`
+                `Error: Invalid file provided as source (${args.source}) - ${err.message}`
             );
         }
-        sourcedata = readingResult.result;
+        sourcedata = data;
     }
 
     if (args.literals) {
@@ -121,10 +127,10 @@ function windowsToUnix(sourcedata) {
     if (args.output === '-' || !args.output) {
         return process.stdout.write(result);
     } else {
-        let writingResult = tryWriting(args.output, result);
-        if (!writingResult) {
+        const [err] = attempt(() => fs.writeFileSync(args.output, result));
+        if (err) {
             return console.log(
-                `Error: Invalid file provided as output destination (${args.output}) - ${writingResult.error}`
+                `Error: Invalid file provided as output destination (${args.output}) - ${err.message}`
             );
         }
     }
