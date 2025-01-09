@@ -189,6 +189,7 @@ class ArgvParser {
      *  allowMultiple: boolean,
      *  allowCasting: boolean,
      *  allowNegation: boolean
+     *  allowDash: boolean
      * }} options A list of possible options for controlling the parser behaviour.
      *  - alias: a string or array of strings containing aliases for the flag - usually the short name.
      *    (E.g. 'p' for option 'port')
@@ -197,6 +198,7 @@ class ArgvParser {
      *  - allowMultiple: Defaults to false. If set to true, multiple uses of the same flag will add as an array. Otherwise, the last use overrides the previous.
      *  - allowCasting: Defaults to false. If set to true, tries to convert the value as a number (if possible).
      *  - allowNegation: Defaults to false. If set to true, accepts the existance of a negated prefix and a corresponding boolean value of 'false'.
+     *  - allowDash: Defaults to false. If set to true, accepts a dash "-" as a valid parameter.
      *    (E.g. '--column' may accept a negated version: '--no-column').
      * @returns {ArgvParser}
      *
@@ -543,20 +545,16 @@ function readStdinAsync({ controlChars = false, encoding = null } = {}) {
 const isSTDINActive = () => !process.stdin.isTTY;
 const fs = require('node:fs');
 
-function tryf(func) {
-    let result;
+function attempt(func) {
     try {
-        result = func();
-        return { ok: true, error: '', result };
+        return [null, func()];
     } catch (err) {
-        return { ok: false, error: err.message, result };
+        return [err, null];
     }
 }
 
-const tryReading = fname => tryf(() => fs.readFileSync(fname, 'utf-8'));
-const tryWriting = (fname, data) => tryf(() => fs.writeFileSync(fname, data));
 const validateFile = (fname, { throwOnMissing = true } = {}) =>
-    tryf(() => {
+    attempt(() => {
         const exists = fs.existsSync(fname);
 
         // If throwOnMissing === false, we ignore if the file exists or not
@@ -566,15 +564,15 @@ const validateFile = (fname, { throwOnMissing = true } = {}) =>
 
         const isFile = fs.statSync(fname).isFile();
         // the isAccessible below won't return false, it will just throw
-        const access = tryf(() =>
+        const [accessErr] = attempt(() =>
             fs.accessSync(fname, fs.constants.W_OK | fs.constants.R_OK)
         );
-        if (!exists || !isFile || !access.ok) {
+        if (!exists || !isFile || accessErr) {
             throw new Error(
                 'Item is ' +
                     (!exists
                         ? 'inexistent'
-                        : !access.ok
+                        : accessErr
                         ? 'unreacheable'
                         : !isFile
                         ? 'not a file'
@@ -589,8 +587,6 @@ module.exports = {
     readStdinAsync,
     parseControlChars,
     Logger,
-    tryf,
-    tryReading,
-    tryWriting,
+    attempt,
     validateFile,
 };
