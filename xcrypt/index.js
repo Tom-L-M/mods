@@ -282,7 +282,7 @@ async function xorFiles(file1, file2, outputStream) {
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('stdin-key', { alias: 's', allowValue: false });
-    parser.option('output', { alias: 'o' });
+    parser.option('output', { alias: 'o', allowDash: true });
     const args = parser.parseArgv();
 
     if (args.version) return console.log(require('./package.json')?.version);
@@ -341,9 +341,10 @@ async function xorFiles(file1, file2, outputStream) {
         }
     }
 
-    const outputstream = outfile
-        ? fs.createWriteStream(outfile)
-        : process.stdout;
+    const outputstream =
+        outfile && outfile !== '-'
+            ? fs.createWriteStream(outfile)
+            : process.stdout;
 
     if (Buffer.isBuffer(file)) {
         return await xorBufferAndFile(file, key, outputstream);

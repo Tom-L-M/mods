@@ -56,7 +56,7 @@ const help = `
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('size', { alias: 's' });
     parser.option('quiet', { alias: 'q', allowValue: false });
-    parser.option('output', { alias: 'o' });
+    parser.option('output', { alias: 'o', allowDash: true });
     parser.argument('file');
     const args = parser.parseArgv();
 
