@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isStdinActive, readStdin } = require('../shared');
 
 const help = `
     [fold-js]
@@ -130,7 +130,7 @@ function formatInput(input, { width = 80, preserveWords = false, ignoreLf }) {
 }
 
 (async function () {
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
@@ -170,7 +170,7 @@ function formatInput(input, { width = 80, preserveWords = false, ignoreLf }) {
     // If it is called like:   cat somefile | node script.js [flags]
     // E.g. there is input via pipes
     else {
-        input = await readStdinAsync();
+        input = await readStdin();
     }
 
     process.stdout.write(

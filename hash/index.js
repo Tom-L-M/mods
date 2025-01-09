@@ -1,4 +1,4 @@
-const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
+const { isStdinActive, readStdin, ArgvParser } = require('../shared');
 
 function compare(a, b) {
     return a?.toLowerCase() === b?.toLowerCase();
@@ -41,7 +41,7 @@ const fs = require('fs');
     parser.argument('data');
     const args = parser.parseArgv();
 
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
 
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || (!args.data && !fromSTDIN)) return console.log(help);
@@ -52,7 +52,7 @@ const fs = require('fs');
     const isText = args.text;
     const comparison = args.compare;
 
-    let input = fromSTDIN ? await readStdinAsync() : file;
+    let input = fromSTDIN ? await readStdin() : file;
 
     if (
         !['md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512'].includes(

@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isStdinActive, readStdin } = require('../shared');
 
 function streamToSTDOUT(fname) {
     return new Promise((resolve, reject) => {
@@ -50,7 +50,7 @@ const help = `
     const args = parser.parseArgv();
     const files = args._;
 
-    const stdinActive = isSTDINActive();
+    const stdinActive = isStdinActive();
 
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || (!files.length && !stdinActive)) return console.log(help);
@@ -61,7 +61,7 @@ const help = `
     const separator = typeof args.separator === 'string' ? args.separator : '';
 
     let file,
-        stdindata = stdinActive ? await readStdinAsync() : '';
+        stdindata = stdinActive ? await readStdin() : '';
     try {
         for (let i = 0; i < files.length; i++) {
             file = files[i];

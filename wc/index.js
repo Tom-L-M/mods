@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isStdinActive, readStdin } = require('../shared');
 
 /**
  * @param {buffer} input
@@ -75,7 +75,7 @@ const help = `
             line, word, character, byte, max-line-length.`;
 
 (async function () {
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
@@ -111,7 +111,7 @@ const help = `
 
     // If it is called like:   cat somefile | node script.js [flags]
     // E.g. there is input via pipes
-    else input = await readStdinAsync();
+    else input = await readStdin();
 
     // Precedence:
     //  lines >> words >> chars >> bytes

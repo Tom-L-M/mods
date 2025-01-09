@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
+const { isStdinActive, readStdin, ArgvParser } = require('../shared');
 
 function escapeRegExp(string) {
     return string.replaceAll(/[^a-z0-9]/gi, '\\$&');
@@ -149,7 +149,7 @@ function parseRegexString(
     parser.argument('string');
     parser.argument('file');
     const args = parser.parseArgv();
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
 
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || !args.string || (!fromSTDIN && !args.file))
@@ -157,7 +157,7 @@ function parseRegexString(
 
     let input;
     try {
-        input = fromSTDIN ? await readStdinAsync() : fs.readFileSync(args.file);
+        input = fromSTDIN ? await readStdin() : fs.readFileSync(args.file);
         input = input.toString('utf-8');
     } catch {
         return console.log(`Error: Could not read input "${args.file}"`);

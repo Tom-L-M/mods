@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 
-const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isStdinActive, readStdin } = require('../shared');
 
 /**
  * XOR's a file and a buffer, using the file as primary guide.
@@ -288,8 +288,8 @@ async function xorFiles(file1, file2, outputStream) {
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || args._.length === 0) return console.log(help);
 
-    const fromSTDIN = isSTDINActive();
-    const stdin = fromSTDIN ? await readStdinAsync() : null;
+    const fromSTDIN = isStdinActive();
+    const stdin = fromSTDIN ? await readStdin() : null;
 
     // Validate provided parameter <file>
     const file = stdin && !args['stdin-key'] ? stdin : args._[0];

@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isStdinActive, readStdin } = require('../shared');
 
 const help = `
     [diff-js]
@@ -112,7 +112,7 @@ function patch(data1, data2, { quiet, nocolor } = {}) {
     const file = args._[0];
     const fileB = args._[1];
 
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || (!fromSTDIN && !file)) return console.log(help);
 
@@ -138,7 +138,7 @@ function patch(data1, data2, { quiet, nocolor } = {}) {
     // If it is called like:   cat somefile | node script.js [somefileB] [flags]
     // E.g. there is input via pipes
     else {
-        input = await readStdinAsync();
+        input = await readStdin();
         try {
             inputB = fs.readFileSync(file);
         } catch {

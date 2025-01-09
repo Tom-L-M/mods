@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const {
-    isSTDINActive,
-    readStdinAsync,
+    isStdinActive,
+    readStdin,
     ArgvParser,
     parseControlChars,
 } = require('../shared');
@@ -409,7 +409,7 @@ const fullHelp = `
     const args = parser.parseArgv();
     const file = args.file;
 
-    const stdinActive = isSTDINActive();
+    const stdinActive = isStdinActive();
 
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || (!stdinActive && !file)) return console.log(help);
@@ -424,7 +424,7 @@ const fullHelp = `
         return console.log(`Error: Invalid file path provided [${file}]`);
 
     const input = stdinActive
-        ? (await readStdinAsync()).toString('utf-8')
+        ? (await readStdin()).toString('utf-8')
         : fs.readFileSync(file, 'utf-8');
 
     const maxCellSize = parseInt(args['max-cell-size']) || null;

@@ -1,6 +1,6 @@
 const {
-    isSTDINActive,
-    readStdinAsync,
+    isStdinActive,
+    readStdin,
     ArgvParser,
     parseControlChars,
 } = require('../shared');
@@ -43,7 +43,7 @@ const help = `
     parser.option('separator', { alias: 's' });
     const args = parser.parseArgv();
     const texts = args._.map(parseControlChars);
-    const stdinActive = isSTDINActive();
+    const stdinActive = isStdinActive();
 
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || (!texts.length && !stdinActive)) return console.log(help);
@@ -66,7 +66,7 @@ const help = `
     const useSTDERR = Boolean(args.stderr);
     const useSTDALL = Boolean(args.stdall);
     const stdindata = stdinActive
-        ? (await readStdinAsync({ controlChars: true })).toString().trim()
+        ? (await readStdin({ controlChars: true })).toString().trim()
         : '';
     const output = string => {
         if (useSTDERR || useSTDALL) process.stderr.write(string);

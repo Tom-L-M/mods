@@ -1,4 +1,4 @@
-const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
+const { isStdinActive, readStdin, ArgvParser } = require('../shared');
 const path = require('node:path');
 const repl = require('node:repl');
 
@@ -35,7 +35,7 @@ const help = `
     parser.argument('script');
     const args = parser.parseArgv();
 
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
 
     if (args.version) return console.log(require('./package.json')?.version);
     if (args['node-version']) return console.log(process.version);
@@ -71,7 +71,7 @@ const help = `
     }
 
     if (fromSTDIN) {
-        let input = (await readStdinAsync()).toString();
+        let input = (await readStdin()).toString();
         if (args.eval) input += '\n' + args.eval.join('\n');
         return eval(input);
     }

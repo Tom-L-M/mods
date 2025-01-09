@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isStdinActive, readStdin } = require('../shared');
 
 function tryToReadFile(fname) {
     try {
@@ -35,16 +35,16 @@ function tryToReadFile(fname) {
     const args = parser.parseArgv();
 
     if (args.version) return console.log(require('./package.json')?.version);
-    if (args.help || (!isSTDINActive() && !args.data)) return console.log(help);
+    if (args.help || (!isStdinActive() && !args.data)) return console.log(help);
 
     let input;
 
-    if (isSTDINActive()) {
-        input = await readStdinAsync();
+    if (isStdinActive()) {
+        input = await readStdin();
     }
 
     if (args.file) {
-        if (isSTDINActive()) {
+        if (isStdinActive()) {
             input = tryToReadFile(input.toString().trim());
             if (!input) return console.log('Error: Invalid file path on STDIN');
         } else {

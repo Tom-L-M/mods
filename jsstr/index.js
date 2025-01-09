@@ -1,4 +1,4 @@
-const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
+const { isStdinActive, readStdin, ArgvParser } = require('../shared');
 
 const help = `
     [jsstr-js]
@@ -42,7 +42,7 @@ function customeval(string, buffer) {
 }
 
 (async function () {
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
@@ -60,7 +60,7 @@ function customeval(string, buffer) {
     if (!fromSTDIN) return 'Error: no data on <STDIN> pipe.';
     // If it is called like:   cat somefile | node script.js [flags]
     // E.g. there is input via pipes
-    else input = await readStdinAsync();
+    else input = await readStdin();
 
     customeval(args.data, input);
 })();

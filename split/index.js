@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('node:path');
-const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
+const { isStdinActive, readStdin, ArgvParser } = require('../shared');
 
 const randomName = (len = 10) =>
     '#'.repeat(len).replace(/[#]/gim, () => Math.random().toString(16)[6]);
@@ -64,15 +64,15 @@ const help = `
     let file = args.file;
 
     if (args.version) return console.log(require('./package.json')?.version);
-    if (args.help || (!isSTDINActive() && !file)) return console.log(help);
+    if (args.help || (!isStdinActive() && !file)) return console.log(help);
 
     if (args.size) args.size = parseUnit(args.size);
     else args.size = DEFAULT_SIZE;
 
     let input, inputSize;
 
-    if (isSTDINActive()) {
-        input = await readStdinAsync();
+    if (isStdinActive()) {
+        input = await readStdin();
         inputSize = input.length;
         file = undefined;
     } else {

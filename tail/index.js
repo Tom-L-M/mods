@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isStdinActive, readStdin } = require('../shared');
 
 const help = `
     [tail-js]
@@ -45,7 +45,7 @@ function slice(data, { lines, bytes, reverse } = {}) {
 }
 
 (async function () {
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
@@ -73,7 +73,7 @@ function slice(data, { lines, bytes, reverse } = {}) {
 
     // If it is called like:   cat somefile | node script.js [flags]
     // E.g. there is input via pipes
-    let inputFromSTDIN = fromSTDIN ? await readStdinAsync() : '';
+    let inputFromSTDIN = fromSTDIN ? await readStdin() : '';
 
     if (inputFromSTDIN && !args._.includes('-')) args._.unshift('-');
 

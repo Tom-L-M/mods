@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
+const { isStdinActive, readStdin, ArgvParser } = require('../shared');
 
 function safeParseJSON(string) {
     try {
@@ -70,15 +70,15 @@ function unsafeReachObject(string, context) {
     const args = parser.parseArgv();
 
     if (args.version) return console.log(require('./package.json')?.version);
-    if ((!args.file && !isSTDINActive()) || args.help) return console.log(help);
+    if ((!args.file && !isStdinActive()) || args.help) return console.log(help);
 
     let file = args.file;
     let val = args.value;
     let key = args.key;
     let context;
 
-    if (isSTDINActive() || file === '-') {
-        context = (await readStdinAsync()).toString('utf-8');
+    if (isStdinActive() || file === '-') {
+        context = (await readStdin()).toString('utf-8');
     } else {
         if (!fs.existsSync(file))
             return console.log(

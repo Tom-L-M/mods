@@ -3,8 +3,8 @@ const https = require('node:https');
 const path = require('node:path');
 const fs = require('node:fs');
 const {
-    isSTDINActive,
-    readStdinAsync,
+    isStdinActive,
+    readStdin,
     ArgvParser,
     parseControlChars,
 } = require('../shared');
@@ -544,7 +544,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
     parser.argument('url');
     const args = parser.parseArgv();
 
-    const stdinActive = isSTDINActive();
+    const stdinActive = isStdinActive();
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || (!args.url && !stdinActive)) return console.log(help);
 
@@ -573,8 +573,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
 
     // If multiple URLs are passed in a file, split them on '\n' and use the first as default url,
     // and the rest as '--next' parameters
-    if (isSTDINActive()) {
-        let stdindata = (await readStdinAsync()).toString('utf-8');
+    if (isStdinActive()) {
+        let stdindata = (await readStdin()).toString('utf-8');
         let stdinlinks = await readLinksFromSTDIN(stdindata);
 
         if (stdinlinks.length) {

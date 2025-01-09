@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const PROPS = require('./props.json');
 const SKINS_DIR = path.join(__dirname, 'skins');
-const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isStdinActive, readStdin } = require('../shared');
 
 const randomItem = array => array[Math.floor(Math.random() * array.length)];
 
@@ -229,7 +229,7 @@ const help = `
             node cowsay -f ../some/skin.txt "something to say"`;
 
 (async function () {
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
@@ -272,7 +272,7 @@ const help = `
         );
 
     const input = fromSTDIN
-        ? (await readStdinAsync()).toString('utf8').trimEnd()
+        ? (await readStdin()).toString('utf8').trimEnd()
         : args.string || '';
 
     const skin = args.random ? randomItem(listSkins()) : args.file || 'cow';

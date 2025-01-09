@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { isSTDINActive, readStdinAsync } = require('../shared');
+const { isStdinActive, readStdin } = require('../shared');
 
 /**
  * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
@@ -240,7 +240,7 @@ const help = `
 
     const args = parseargs(opts);
     const file = process.argv[2];
-    const fromStdin = isSTDINActive();
+    const fromStdin = isStdinActive();
 
     const count = args.count ? parseInt(args.count) : null;
     const offset = args.offset ? parseInt(args.offset) : null;
@@ -271,7 +271,7 @@ const help = `
     }
     // If it is called like:   cat somefile | node script.js [flags]
     // E.g. there is input via pipes
-    else input = await readStdinAsync();
+    else input = await readStdin();
 
     return hexdump(input, {
         offset,

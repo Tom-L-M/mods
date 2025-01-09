@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { isSTDINActive, readStdinAsync, ArgvParser } = require('../shared');
+const { isStdinActive, readStdin, ArgvParser } = require('../shared');
 
 const help = `
     [tee-js]
@@ -15,7 +15,7 @@ const help = `
         -a | --append           Append to FILE, do not overwrite.`;
 
 (async function () {
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
@@ -35,7 +35,7 @@ const help = `
     if (!fromSTDIN) input = Buffer.from('');
     // If it is called like:   cat somefile | node script.js [flags]
     // E.g. there is input via pipes
-    else input = await readStdinAsync();
+    else input = await readStdin();
 
     if (append) {
         fs.appendFileSync(args.file, input);

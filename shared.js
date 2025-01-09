@@ -510,7 +510,7 @@ function parseControlChars(
     return out;
 }
 
-function readStdinAsync({ controlChars = false, encoding = null } = {}) {
+function readStdin({ controlChars = false, encoding = null } = {}) {
     return new Promise((resolve, reject) => {
         const stream = process.stdin;
         const chunks = [];
@@ -542,7 +542,7 @@ function readStdinAsync({ controlChars = false, encoding = null } = {}) {
     });
 }
 
-const isSTDINActive = () => !process.stdin.isTTY;
+const isStdinActive = () => !process.stdin.isTTY;
 const fs = require('node:fs');
 
 function attempt(func) {
@@ -583,8 +583,8 @@ const validateFile = (fname, { throwOnMissing = true } = {}) =>
 
 module.exports = {
     ArgvParser,
-    isSTDINActive,
-    readStdinAsync,
+    isStdinActive,
+    readStdin,
     parseControlChars,
     Logger,
     attempt,

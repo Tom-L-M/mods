@@ -49,7 +49,7 @@ function getSignature(stream, signatures, dumpall) {
 
 const fs = require('fs');
 const signatures = require('./signatures.json');
-const { ArgvParser, isSTDINActive, readStdinAsync } = require('../shared');
+const { ArgvParser, isStdinActive, readStdin } = require('../shared');
 
 const help = `
     [signatures-js]
@@ -74,14 +74,14 @@ const help = `
     parser.argument('file');
     const args = parser.parseArgv();
 
-    const fromSTDIN = isSTDINActive();
+    const fromSTDIN = isStdinActive();
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || (!fromSTDIN && !args.file)) return console.log(help);
 
     try {
         let data;
         if (fromSTDIN) {
-            data = await readStdinAsync();
+            data = await readStdin();
         } else {
             // If not trying to get all extensions,
             // then read only the first 150 bytes instead of entire file
