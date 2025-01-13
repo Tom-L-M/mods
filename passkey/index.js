@@ -95,31 +95,27 @@ const samples = ([...arr], sampleSize = 1) => {
     }
 
     // For password instead of passkey
-    if (args.password) {
+    if (args.password && typeof args.password !== 'boolean') {
         context.isPassword = true;
-        context.passlength =
-            args.password !== true ? args.password : context.passlength;
+        context.passlength = args.password;
     }
 
     // For token instead of passkey
-    if (args.token) {
+    if (args.token && typeof args.token !== 'boolean') {
         context.isToken = true;
-        context.passlength =
-            args.token !== true ? args.token : context.passlength;
+        context.passlength = args.token;
     }
 
     // For numeric instead of passkey
-    if (args.numeric) {
+    if (args.numeric && typeof args.numeric !== 'boolean') {
         context.isNumeric = true;
-        context.passlength =
-            args.numeric !== true ? args.numeric : context.passlength;
+        context.passlength = args.numeric;
     }
 
     // For alphabetic instead of passkey
-    if (args.alphabetic) {
+    if (args.alphabetic && typeof args.alphabetic !== 'boolean') {
         context.isAlphabetic = true;
-        context.passlength =
-            args.alphabetic !== true ? args.alphabetic : context.passlength;
+        context.passlength = args.alphabetic;
     }
 
     let results = [];
