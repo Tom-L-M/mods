@@ -1,12 +1,12 @@
 {
-	"name": "uuid",
-	"version": "1.3.0",
-	"description": "A tool for generating RFC-compliant UUIDs.",
-	"main": "index.js",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"keywords": [],
-	"author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
-	"license": "MIT"
+    "name": "uuid",
+    "version": "1.4.0",
+    "description": "A tool for generating RFC-compliant UUIDs.",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "Tomás Luchesi <no.mad.devtech@gmail.com>",
+    "license": "MIT"
 }

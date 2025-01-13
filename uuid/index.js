@@ -32,16 +32,17 @@ const uuid = {
 
 const help = `
     [uuid-js]
-        A tool for generating UUIDs
+        A tool for generating UUIDs (v4)
 
     Usage:
         uuid [options]
         
     Options:
-        -h | --help         Prints the help message and quits.
-        -v | --version      Prints the version info and quits.
-        -c | --count INT    Prints the complete help message and quits. Default: 1.
-        -u | --upper        Prints the UUID in upper-case mode. Default: false.`;
+        -h | --help         Prints the help message.
+        -v | --version      Prints the version info.
+        -c | --count INT    Prints a batch of ids.
+        -u | --upper        Prints the UUID in upper-case mode. Default: false.
+        -d | --no-dash      Removes the dashes. Default: false.`;
 
 (function () {
     const parser = new ArgvParser();
@@ -49,25 +50,28 @@ const help = `
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('count', { alias: 'c', allowCasting: true });
     parser.option('upper', { alias: 'u', allowValue: false });
+    parser.option('no-dash', { alias: 'd', allowValue: false });
     parser.argument('path');
     const args = parser.parseArgv();
 
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help) return console.log(help);
 
-    const options = {
+    const selectedOptions = {
         count: parseInt(args.count || 1),
-        upperCase: !!args.upper,
+        upperCase: args.upper,
+        noDash: args['no-dash'],
     };
 
-    if (options.count < 1)
+    if (selectedOptions.count < 1)
         return console.log(
-            `\n Error: Invalid UUID bulk count provided [${options.count}] - Expected a positive integer.`
+            `\n Error: Invalid UUID bulk count provided [${selectedOptions.count}] - Expected a positive integer.`
         );
 
     let out = [];
-    for (let i = 0; i < options.count; i++) out.push(uuid.v4());
+    for (let i = 0; i < selectedOptions.count; i++) out.push(uuid.v4());
 
-    if (options.upperCase) out = out.map(v => v.toUpperCase());
-    console.log(out.join('\n'));
+    if (selectedOptions.upperCase) out = out.map(v => v.toUpperCase());
+    if (selectedOptions.noDash) out = out.map(v => v.replaceAll('-', ''));
+    console.log(out.join('\n').trim());
 })();
