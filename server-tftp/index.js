@@ -2,7 +2,7 @@ const dgram = require('dgram');
 const path = require('path');
 const fs = require('fs');
 
-const { Logger } = require('../shared');
+const { Logger, ArgvParser } = require('../shared');
 const logger = new Logger({
     format: msg => {
         return (
@@ -303,68 +303,48 @@ function startTftpServer(context) {
 }
 
 (function wrapper() {
-    const args = process.argv.slice(2);
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('port', { alias: 'p' });
+    parser.option('host', { alias: 'o' });
+    parser.option('dir', { alias: 'd' });
+    parser.option('no-color', { alias: 'C', allowValue: false });
+    const args = parser.parseArgv();
+
     const help = `
     [server-tftp-js]
         A tool for creating and running a TFTP server
 
     Usage:
-        server-tftp [--port PORT] [--host HOST] [--dir DIR]
+        server-tftp [options]
 
     Options:
-        --help    | -h  : Shows this help menu
-        --version | -v  : Shows version information
-        --port    | -p  : Selects a port to use (default is 69)
-        --host    | -o  : Selects an interface to use (default is '0.0.0.0')
-        --dir     | -d  : Responds requests with the contents of a dir`;
+        -h, --help          Shows this help message
+        -v, --version       Shows version information
+        -p, --port          Selects a port to use (default is 69)
+        -o, --host          Selects an interface to use (default is '0.0.0.0')
+        -d, --dir           Responds requests with the contents of a dir
+        -C, --no-color      Disable the colored output`;
 
     const context = {
-        args: args,
         help: help,
         host: '0.0.0.0',
-        protocol: (args[0] || '').toLowerCase(),
-        port: null,
-        content: null,
+        port: 69,
+        content: process.cwd(),
         // Creates an external namespace, for data
         // that must be kept higher than socket-scope
         EXTERNAL: {},
     };
 
-    for (let i = 0; i < args.length; i++) {
-        let arg = args[i];
-        let next = args[++i];
-
-        switch (arg) {
-            case '-h':
-            case '--help':
-                return console.log(help);
-
-            case '-v':
-            case '--version':
-                return console.log(require('./package.json')?.version);
-
-            case '-o':
-            case '--host':
-                context.host = next;
-                break;
-
-            case '-p':
-            case '--port':
-                context.port = next;
-                break;
-
-            case '-d':
-            case '--dir':
-                context.content = next;
-                break;
-
-            default:
-        }
-    }
+    if (args.help) return console.log(help);
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.host) context.host = args.host;
+    if (args.port) context.port = args.port;
+    if (args.dir) context.dir = args.dir;
+    if (args['no-color']) logger.disableColors();
 
     try {
-        if (!context.port) context.port = 69;
-        if (!context.content) context.content = process.cwd();
         startTftpServer(context);
     } catch (err) {
         logger.print('Server Fatal Error: ' + err.message, 'red');

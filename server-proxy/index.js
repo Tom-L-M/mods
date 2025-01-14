@@ -399,8 +399,7 @@ function parseArgs() {
                 break;
 
             default:
-                logger.print(`[x] Error: Invalid argument [${args[i]}]`, 'red');
-                process.exit(1);
+                break;
         }
     }
 
@@ -418,6 +417,8 @@ function parseArgs() {
         return console.log(require('./package.json')?.version);
     if (args.includes('--help') || args.includes('-h') || args.length === 0)
         return console.log(help);
+    if (args.includes('-C') || args.includes('--no-color'))
+        logger.disableColors();
 
     const routes = parseArgs();
     for (const route of routes) {

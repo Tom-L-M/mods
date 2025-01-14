@@ -91,7 +91,7 @@ function startTcpServer(host, port, content, { dump } = {}) {
     Usage:
         server-tcp [options]
 
-    Universal Options:
+    Options:
         -h | --help         Shows this help menu
         -v | --version      Shows version information
         -p | --port PORT    Selects a port to use (default is 8000)
@@ -99,8 +99,7 @@ function startTcpServer(host, port, content, { dump } = {}) {
         -f | --file FILE    Responds requests with a file data
         -t | --text TEXT    Responds requests with a string
         -C | --no-color     Prevents printing with color codes
-        -D | --no-dump      Prevents printing hexdumps from requests
-        `;
+        -D | --no-dump      Prevents printing hexdumps from requests`;
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });

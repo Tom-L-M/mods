@@ -259,14 +259,14 @@ function startEchoServer(host, port) {
         A tool for creating and running the Simple-TCP/IP services (chargen/daytime/discard/echo)
 
     Usage:
-        server-simptcp <service> [--help] [--port PORT] [--host HOST]
+        server-simptcp <service> [options]
 
     Options:
-        --help    | -h  : Shows this help menu
-        --version | -v  : Shows version information
-        --port    | -p  : Selects a port to use (defaults vary)
-        --host    | -o  : Selects an interface to use (default is '0.0.0.0')
-        --no-color      : Disable the colorful output
+        -h, --help          Shows this help message
+        -v, --version       Shows version information
+        -p, --port          Selects a port to use (defaults vary)
+        -o, --host          Selects an interface to use (default is '0.0.0.0')
+        -C, --no-color      Disable the colorful output
 
     Services and Default Ports:
     ┌──────────────────────────────────────────────────────────────────────┐

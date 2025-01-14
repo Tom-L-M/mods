@@ -81,15 +81,17 @@ function startUdpServer(context) {
         A tool for creating and running raw UDP servers
 
     Usage:
-        server-udp [--help] [--port PORT] [--host HOST] [--file/--text CONTENT]
+        server-udp [options]
 
-    Universal Options:
-        --help    | -h  : Shows this help menu
-        --version | -v  : Shows version information
-        --port    | -p  : Selects a port to use (default is 5000)
-        --host    | -o  : Selects an interface to use (default is '0.0.0.0')
-        --file    | -f  : Responds requests with a file data
-        --text    | -t  : Responds requests with a string`;
+    Options:
+        -h, --help          Shows this help menu
+        -v, --version       Shows version information
+        -p, --port          Selects a port to use (default is 5000)
+        -o, --host          Selects an interface to use (default is '0.0.0.0')
+        -f, --file          Responds requests with a file data
+        -t, --text          Responds requests with a string
+        -C, --no-color      Disable the colored output`;
+
     const context = {
         args: args,
         help: help,
@@ -130,6 +132,11 @@ function startUdpServer(context) {
             case '-t':
             case '--text':
                 context.content = next;
+                break;
+
+            case '-C':
+            case '--no-color':
+                logger.disableColors();
                 break;
 
             default:
