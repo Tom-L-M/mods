@@ -3,7 +3,18 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 const types = require('./mime.json');
-// Remember: When using it as a compiled package, the execution 'chdir' is one level upper
+const { Logger, ArgvParser } = require('../shared');
+const logger = new Logger({
+    format: msg => {
+        return (
+            `[${msg.timestamp}] ` +
+            `${msg.level.toUpperCase()} ` +
+            `${msg.event.toUpperCase()} ` +
+            msg.client +
+            (msg.message ? ' - ' + msg.message : '')
+        );
+    },
+});
 
 function startHttpCommandServer(context) {
     // A server to run a command and return the result for every request instead of retunrning a static string or file
@@ -90,18 +101,29 @@ function startHttpCommandServer(context) {
     }
 
     function listenhandle() {
-        console.log(`HTTP-COMM server running on http://${host}:${port}/`);
-        console.log(
-            `Auto response configured to serve [${contentType}${fname}] on base path`
+        logger.print(`[+] Exposed Interface: (HTTP) ${host}:${port}`, 'yellow');
+        logger.print(
+            `[+] Local Link: http://` +
+                (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                `:${port}/`,
+            'yellow'
+        );
+        logger.print(`[+] Responding with ${content.length} bytes`, 'yellow');
+        logger.print(
+            `[+] Response configured to serve [${contentType}${fname}] on base path`,
+            'yellow'
         );
         if (ssl)
-            console.log(
-                `SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`
+            logger.print(
+                `[+] SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`,
+                'yellow'
             );
         if (auth.use)
-            console.log(
-                `Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`
+            logger.print(
+                `[+] Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`,
+                'yellow'
             );
+        console.log(); // Empty line for styling
     }
 
     if (!ssl)
@@ -211,24 +233,37 @@ function startHttpExecServer(context) {
     }
 
     function listenhandle() {
-        console.log(`HTTP-EXEC server running on http://${host}:${port}/`);
-        console.log(
-            `Auto response configured to serve [${contentType}${fname}] on base path`
+        logger.print(`[+] Exposed Interface: (HTTP) ${host}:${port}`, 'yellow');
+        logger.print(
+            `[+] Local Link: http://` +
+                (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                `:${port}/`,
+            'yellow'
+        );
+        logger.print(`[+] Responding with ${content.length} bytes`, 'yellow');
+        logger.print(
+            `[+] Response configured to serve [${contentType}${fname}] on base path`,
+            'yellow'
         );
         if (ssl)
-            console.log(
-                `SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`
+            logger.print(
+                `[+] SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`,
+                'yellow'
             );
         if (auth.use)
-            console.log(
-                `Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`
+            logger.print(
+                `[+] Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`,
+                'yellow'
             );
-        console.log(
-            `Access http://${host}:${port}/ and append a command to execute`
+        logger.print(
+            `[i] Access http://${host}:${port}/ and append a command to execute`,
+            'cyan'
         );
-        console.log(
-            `Ex: http://${host}:${port}/ping%201.1.1.1 to ping the IP 1.1.1.1`
+        logger.print(
+            `[i] Ex: http://${host}:${port}/ping%201.1.1.1 to ping the IP 1.1.1.1`,
+            'cyan'
         );
+        console.log(); // Empty line for styling
     }
 
     if (!ssl)
@@ -298,6 +333,7 @@ function startHttpSiteServer(context) {
                         .map(x => x.join(': '))
                         .join('\n  & ')
             );
+
         let extension = path.extname(req.url).slice(1);
         let type = extension
             ? types[extension]
@@ -345,16 +381,29 @@ function startHttpSiteServer(context) {
     }
 
     function listenhandle() {
-        console.log(`HTTP-SITE server running on http://${host}:${port}/`);
-        console.log(`Auto response configured to serve [dir://${content}]`);
+        logger.print(`[+] Exposed Interface: (HTTP) ${host}:${port}`, 'yellow');
+        logger.print(
+            `[+] Local Link: http://` +
+                (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                `:${port}/`,
+            'yellow'
+        );
+        logger.print(`[+] Responding with ${content.length} bytes`, 'yellow');
+        logger.print(
+            `[+] Response configured to serve [${content}] on base path`,
+            'yellow'
+        );
         if (ssl)
-            console.log(
-                `SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`
+            logger.print(
+                `[+] SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`,
+                'yellow'
             );
         if (auth.use)
-            console.log(
-                `Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`
+            logger.print(
+                `[+] Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`,
+                'yellow'
             );
+        console.log(); // Empty line for styling
     }
 
     if (!ssl)
@@ -476,18 +525,29 @@ function startHttpBaseServer(context) {
     }
 
     function listenhandle() {
-        console.log(`HTTP server running on http://${host}:${port}/`);
-        console.log(
-            `Auto response configured to serve [${contentType}${fname}]`
+        logger.print(`[+] Exposed Interface: (HTTP) ${host}:${port}`, 'yellow');
+        logger.print(
+            `[+] Local Link: http://` +
+                (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                `:${port}/`,
+            'yellow'
+        );
+        logger.print(`[+] Responding with ${content.length} bytes`, 'yellow');
+        logger.print(
+            `[+] Response configured to serve [${contentType}${fname}] on base path`,
+            'yellow'
         );
         if (ssl)
-            console.log(
-                `SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`
+            logger.print(
+                `[+] SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`,
+                'yellow'
             );
         if (auth.use)
-            console.log(
-                `Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`
+            logger.print(
+                `[+] Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`,
+                'yellow'
             );
+        console.log(); // Empty line for styling
     }
 
     if (!ssl)
@@ -676,11 +736,37 @@ function startHttpFileServer(context) {
                 let extension =
                     types[path.extname(referencePath).slice(1)] ||
                     types['default'];
-                res.writeHead(200, {
-                    'Content-Type': extension + '; charset=UTF-8',
-                });
-                const stream = fs.createReadStream(referencePath);
-                stream.pipe(res);
+                // For videos and audios, there may be a range being used, instead of a
+                // continuous stream. In this case we need to handle slices of data
+                // Unless the file is under 1mb, in this case we send it entirely
+                if (req.headers['range'] && stat.size >= 1024 * 1024) {
+                    const range = parseRange(req.headers['range'], stat.size);
+                    res.writeHead(206, {
+                        'Content-Type': extension, // + '; charset=UTF-8',
+                        'Accept-Ranges': 'bytes',
+                        'Content-Length': range.size,
+                        'Content-Range':
+                            'bytes ' +
+                            range.start +
+                            '-' +
+                            range.end +
+                            '/' +
+                            stat.size,
+                    });
+                    const buffer = Buffer.alloc(range.size);
+                    const fd = fs.openSync(referencePath);
+                    fs.readSync(fd, buffer, 0, range.size, range.start);
+                    console.log(
+                        `[+] Sent [${buffer.length}] bytes, with MIME "${extension}". Ranging from ${range.start} to ${range.end}. Out of ${stat.size}.`
+                    );
+                    res.end(buffer);
+                } else {
+                    res.writeHead(200, {
+                        'Content-Type': extension, // + '; charset=UTF-8',
+                    });
+                    const stream = fs.createReadStream(referencePath);
+                    stream.pipe(res);
+                }
             } else {
                 res.writeHead(404, { 'Content-Type': 'text/html' });
                 res.end('404: File not found');
@@ -692,16 +778,29 @@ function startHttpFileServer(context) {
     }
 
     function listenhandle() {
-        console.log(`HTTP server running on http://${host}:${port}/`);
-        console.log(`Auto response configured to serve [dir://${basepath}]`);
+        logger.print(`[+] Exposed Interface: (HTTP) ${host}:${port}`, 'yellow');
+        logger.print(
+            `[+] Local Link: http://` +
+                (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                `:${port}/`,
+            'yellow'
+        );
+        logger.print(`[+] Responding with ${content.length} bytes`, 'yellow');
+        logger.print(
+            `[+] Response configured to serve [${basepath}]`,
+            'yellow'
+        );
         if (ssl)
-            console.log(
-                `SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`
+            logger.print(
+                `[+] SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`,
+                'yellow'
             );
         if (auth.use)
-            console.log(
-                `Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`
+            logger.print(
+                `[+] Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`,
+                'yellow'
             );
+        console.log(); // Empty line for styling
     }
 
     if (!ssl)
@@ -813,18 +912,29 @@ function startHttpRedirectionServer(context) {
     }
 
     function listenhandle() {
-        console.log(
-            `HTTP redirection server running on http://${host}:${port}/`
+        logger.print(`[+] Exposed Interface: (HTTP) ${host}:${port}`, 'yellow');
+        logger.print(
+            `[+] Local Link: http://` +
+                (host !== '0.0.0.0' ? host : '127.0.0.1') +
+                `:${port}/`,
+            'yellow'
         );
-        console.log(`Auto response configured to redirect to [${content}]`);
+        logger.print(`[+] Responding with ${content.length} bytes`, 'yellow');
+        logger.print(
+            `[+] Response configured to redirect to [${content}]`,
+            'yellow'
+        );
         if (ssl)
-            console.log(
-                `SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`
+            logger.print(
+                `[+] SSL configured with key [${context.sslkeypath}] and cert [${context.sslcertpath}]`,
+                'yellow'
             );
         if (auth.use)
-            console.log(
-                `Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`
+            logger.print(
+                `[+] Basic HTTP-Authorization configured with user [${auth.user}] and password [${auth.pass}]`,
+                'yellow'
             );
+        console.log(); // Empty line for styling
     }
 
     if (!ssl)
@@ -875,6 +985,26 @@ function generateAuthStringPair() {
     return part1 + ':' + part2;
 }
 
+function parseRange(rangeHeader, fileSize) {
+    let [, value] = rangeHeader.split('=');
+    let [start, end] = value.split('-').map(Number);
+    // If no size is specified, send a 1mb chunk
+    if (end - start <= 0) end = start + 1024 * 1024;
+    if (end >= fileSize) end = fileSize;
+    let size = end - start;
+    let ended = end === fileSize;
+    return { start, end: end - 1, size, ended };
+}
+
+// function logmiddleware(req, res) {
+//     logger.info(
+//         { event: 'request', client },
+//         `Received ${data.length} bytes` +
+//             (dump ? '\n' + prettifyRawRequestData(data) : '')
+//     );
+//     logger.info({ event: 'response', client }, `Sent ${content.length} bytes`);
+// }
+
 // ---- UTILS ----
 
 (function wrapper() {
@@ -883,7 +1013,7 @@ function generateAuthStringPair() {
         A protocol-compliant HTTP/HTTPS server with multiple modes
 
     Usage:
-        server-http <protocol> [options] [-r RESOURCE] [-s KEY,CERT]
+        server-http <protocol> [options] [-r RESOURCE]
 
     Protocol:        (Port)     (Comment)               (Resource Type)
         site          80         HTTP site server        Directory     
@@ -903,6 +1033,7 @@ function generateAuthStringPair() {
         -r, --res  <RESOURCE>       Uses a specific resource as response (see table below)
         -a, --auth <USER>:<PASS>    Enables default HTTP-Auth headers
         -m, --mime <MIME-TYPE>      Uses a specific MIME type for the responses
+        -C, --no-color              Disables colored output
         -s, --https <KEY>,<CERT>    Uses HTTPS instead of HTTP - require key and certificate
             --https <DIR>`;
 
@@ -944,12 +1075,24 @@ function generateAuthStringPair() {
           EX:   [...] --https ./keys                             (Using a directory)
     `;
 
-    const args = process.argv.slice(2);
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('help-all', { alias: 'H', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('port', { alias: 'p' });
+    parser.option('host', { alias: 'o' });
+    parser.option('dump', { alias: 'd', allowValue: false });
+    parser.option('res', { alias: 'r' });
+    parser.option('auth', { alias: 'a' });
+    parser.option('mime', { alias: 'm' });
+    parser.option('https', { alias: 's' });
+    parser.option('no-color', { alias: 'C', allowValue: false });
+    parser.argument('protocol');
+    const args = parser.parseArgv();
+
     const context = {
-        args: args,
-        help: help,
         host: '0.0.0.0',
-        protocol: (args[0] || '').toLowerCase(),
+        protocol: (args.protocol || '').toLowerCase(),
         auth: { user: null, pass: null, use: false },
         port: null,
         content: null,
@@ -962,78 +1105,36 @@ function generateAuthStringPair() {
         mime: null,
     };
 
-    if (!args[0]) return console.log(help);
-
-    for (let i = 0; i < args.length; i++) {
-        let arg = args[i];
-        let next = args[++i];
-        let keyobj;
-        switch (arg) {
-            case '-h':
-            case '--help':
-                return console.log(help);
-
-            case '-H':
-            case '--help-all':
-                return console.log(help, '\n', fullhelp);
-
-            case '-v':
-            case '--version':
-                return console.log(require('./package.json')?.version);
-
-            case '-o':
-            case '--host':
-                context.host = next;
-                break;
-
-            case '-p':
-            case '--port':
-                context.port = next;
-                break;
-
-            case '-a':
-            case '--auth':
-                if (next == '*') next = generateAuthStringPair();
-                context.auth.user = next.split(':')[0];
-                context.auth.pass = next.split(':')[1];
-                context.auth.use = true;
-                break;
-
-            case '-d':
-            case '--dump':
-                context.dump = true;
-                break;
-
-            case '-r':
-            case '--res':
-                context.content = next;
-                break;
-
-            case '-m':
-            case '--mime':
-                context.mime = next;
-                break;
-
-            case '-s':
-            case '--https':
-                keyobj = validateKeys(next);
-                context.ssl = true;
-                context.sslkey = keyobj.key;
-                context.sslcert = keyobj.cert;
-                context.sslkeypath = keyobj.keypath;
-                context.sslcertpath = keyobj.certpath;
-                if (
-                    !context.sslkey ||
-                    !context.sslcert ||
-                    !context.sslkeypath ||
-                    !context.sslcertpath
-                ) {
-                    return console.log('Error: Invalid KEY/CERTIFICATE');
-                }
-                break;
-
-            default:
-                break;
+    if (!args.protocol || args.help) return console.log(help);
+    if (args['help-all']) return console.log(help, '\n', fullhelp);
+    if (args.version) console.log(require('./package.json')?.version);
+    if (args.host) context.host = args.host;
+    if (args.port) context.port = args.port;
+    if (args.dump) context.dump = true;
+    if (args.res) context.content = args.res;
+    if (args.mime) context.mime = args.mime;
+    if (args['no-color']) logger.disableColors();
+    if (args.auth) {
+        let temp;
+        if (args.auth == '*') temp = generateAuthStringPair();
+        context.auth.user = temp.split(':')[0];
+        context.auth.pass = temp.split(':')[1];
+        context.auth.use = true;
+    }
+    if (args.https) {
+        let keyobj = validateKeys(args.https);
+        context.ssl = true;
+        context.sslkey = keyobj.key;
+        context.sslcert = keyobj.cert;
+        context.sslkeypath = keyobj.keypath;
+        context.sslcertpath = keyobj.certpath;
+        if (
+            !context.sslkey ||
+            !context.sslcert ||
+            !context.sslkeypath ||
+            !context.sslcertpath
+        ) {
+            return console.log('Error: Invalid KEY/CERTIFICATE');
         }
     }
 
