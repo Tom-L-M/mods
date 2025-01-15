@@ -50,7 +50,12 @@ const secureFileName = str => {
 const readLinksFromSTDIN = stdindata => {
     return stdindata
         .split('\n')
-        .map(v => v.trim())
+        .map(v => {
+            let lnk = v.trim();
+            // Remove the commented lines
+            if (lnk[0] === '#' || lnk[0] === '//') return null;
+            return lnk;
+        })
         .filter(Boolean);
 };
 
@@ -519,9 +524,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
 
     Info:
         + It is possible to pass-in multiple URLs from STDIN, by dividing them with newlines ('\\n');
-          This will cause the first URL to be the main one, and the rest to be passed as "--next" arguments.
-            E.g. The call:      echo "link1 \\n link2" | client-http
-            is the same as:     client-http link1 -n link2`;
+          Commented lines are ignored. (Comment tokens are '#' and '//').
+          This will cause the first URL to be the main one, and the rest to be passed as "--next" arguments.`;
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
