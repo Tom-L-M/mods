@@ -4,6 +4,9 @@ const { isStdinActive, readStdin, ArgvParser } = require('../shared');
 function escapeRegExp(string) {
     return string.replaceAll(/[^a-z0-9]/gi, '\\$&');
 }
+function wrapRegExpInGroup(string) {
+    return `(${string})`;
+}
 
 const help = `
     [grep-js]
@@ -25,14 +28,38 @@ const help = `
         -A | --after N          Displays N lines after each match.
         -V | --invert           Inverts match: print all lines NOT matching.
         -n | --numbers          Prints line numbers along with matching lines.
-        -c | --count            Prints only the number of matching lines.`;
+        -c | --count            Prints only the number of matching lines.
+        -x | --capture          Prints only the matching text, not the surrounding
+                                chars or lines. This option disables the output
+                                control flags: (-A, -B, -C, -V, -n). `;
 
 /**
  * @param {string} input
  * @param {string} rxstring
  * @param {object} options
  */
-function parseRegexString(
+function getMatchingTokens(
+    input,
+    rxstring,
+    { insensitive = false, word = false, regex = false }
+) {
+    const rxmain = word ? `\\b${rxstring}\\b` : rxstring;
+    const rxflags = insensitive ? 'gi' : 'g';
+    const rxwrapped = wrapRegExpInGroup(
+        regex ? rxmain : escapeRegExp(rxstring)
+    );
+    const regexp = new RegExp(rxwrapped, rxflags);
+    const captures = input.matchAll(regexp);
+    const unwrapped = [...captures].map(v => v[0]);
+    return unwrapped.join('\n');
+}
+
+/**
+ * @param {string} input
+ * @param {string} rxstring
+ * @param {object} options
+ */
+function getMatchingLines(
     input,
     rxstring,
     {
@@ -146,6 +173,7 @@ function parseRegexString(
     parser.option('invert', { alias: 'V', allowValue: false });
     parser.option('numbers', { alias: 'n', allowValue: false });
     parser.option('count', { alias: 'c', allowValue: false });
+    parser.option('capture', { alias: 'x', allowValue: false });
     parser.argument('string');
     parser.argument('file');
     const args = parser.parseArgv();
@@ -163,6 +191,15 @@ function parseRegexString(
         return console.log(`Error: Could not read input "${args.file}"`);
     }
 
+    if (args.capture)
+        return process.stdout.write(
+            getMatchingTokens(input, args.string, {
+                regex: Boolean(args.regex),
+                insensitive: Boolean(args.insensitive),
+                word: Boolean(args.word),
+            })
+        );
+
     let before = parseInt(args.before);
     if (isNaN(before) || !before) before = 0;
 
@@ -170,7 +207,7 @@ function parseRegexString(
     if (isNaN(after) || !after) after = 0;
 
     process.stdout.write(
-        parseRegexString(input, args.string, {
+        getMatchingLines(input, args.string, {
             regex: Boolean(args.regex),
             insensitive: Boolean(args.insensitive),
             nocolor: Boolean(args['no-color']),
