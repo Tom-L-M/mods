@@ -3,7 +3,7 @@ const path = require('path');
 const crypto = require('crypto');
 const readline = require('node:readline');
 const { ArgvParser } = require('../shared');
-const WRITE_CHUNK_SIZE = 4 * 1024; // 4 Kb
+const WRITE_CHUNK_SIZE = 1000 * 1024; // 1 Mb
 
 const help = `
     [shred-js]
@@ -20,9 +20,10 @@ const help = `
         -r | --remove       Remove the file after overriding.
         -z | --zerofill     Fills with null bytes instead of random data.
                             This makes the process faster, but less secure.
-        -a | --fail-abort   Abort the ret of the operation if it fails to
+        -a | --fail-abort   Abort the rest of the operation if it fails to
                             open, read, find, shred, or remove a file.
         -y | --confirm      Skips the confirmation step before shredding.
+        -q | --quiet        Supresses status messages.
     
     Info:
         To batch shred items, pass in a directory path instead of a file path
@@ -71,11 +72,13 @@ async function readdirSyncRecursive(dirpath) {
     parser.option('remove', { alias: 'r', allowValue: false });
     parser.option('fail-abort', { alias: 'a', allowValue: false });
     parser.option('confirm', { alias: 'y', allowValue: false });
+    parser.option('quiet', { alias: 'q', allowValue: false });
     const args = parser.parseArgv();
 
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help || !args._.length) return console.log(help);
 
+    const quiet = Boolean(args.quiet);
     const remove = Boolean(args.remove);
     const zerofill = Boolean(args.zerofill);
     const abortOnFail = Boolean(args['fail-abort']);
@@ -121,6 +124,8 @@ async function readdirSyncRecursive(dirpath) {
     }
 
     for (let ifile of filelist) {
+        const startingTime = Date.now();
+
         let stream,
             stats,
             fsize,
@@ -152,12 +157,16 @@ async function readdirSyncRecursive(dirpath) {
             written += WRITE_CHUNK_SIZE;
         }
 
-        if (zerofill) await writeSync(stream, Buffer.alloc(fsize - written, 0));
-        else
+        if (zerofill) {
+            await writeSync(stream, Buffer.alloc(fsize - written, 0));
+            written += fsize - written;
+        } else {
             await writeSync(
                 stream,
                 refill(Buffer.allocUnsafe(fsize - written))
             );
+            written += fsize - written;
+        }
 
         await new Promise(resolve => stream.close(resolve));
 
@@ -172,11 +181,37 @@ async function readdirSyncRecursive(dirpath) {
                 if (abortOnFail) return;
                 else continue;
             }
+
+        if (!quiet)
+            console.log(
+                ` > [${ifile}]\n`,
+                `  + Written (bytes): ${fsize}\n`,
+                `  + Elapsed (ms):    ${Date.now() - startingTime}\n`,
+                `  + Missing (bytes): ${fsize - written}\n`,
+                `  + Zerofill mode:   ${zerofill}\n`,
+                `  + Removal mode:    ${remove}\n`,
+                `  + Completed:       ${fsize === written}\n`
+            );
     }
 
     if (remove) {
         for (let dir of dirlist) {
-            fs.rmSync(dir, { recursive: true, force: true });
+            try {
+                fs.rmSync(dir, { recursive: true, force: true });
+            } catch (err) {
+                if (err.code === 'EBUSY') {
+                    // If dir is busy, wait 2 s and try again
+                    await new Promise(r => setTimeout(2000, r));
+                    fs.rmSync(dir, { recursive: true, force: true });
+                } else {
+                    console.log(
+                        `Error: Could not remove "${dir}" - ${err.message}. ` +
+                            `${abortOnFail ? 'Aborting.' : 'Skipping.'}`
+                    );
+                    if (abortOnFail) return;
+                    else continue;
+                }
+            }
         }
     }
 })();
