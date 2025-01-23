@@ -617,6 +617,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
     }
 
     try {
+        if (!context.url.startsWith('http'))
+            context.url = 'http://' + context.url;
         context.url = new URL(context.url);
     } catch {
         return console.log(`Error: Invalid URL provided "${context.url}"`);
