@@ -1115,7 +1115,7 @@ function parseRange(rangeHeader, fileSize) {
     if (args.mime) context.mime = args.mime;
     if (args['no-color']) logger.disableColors();
     if (args.auth) {
-        let temp;
+        let temp = args.auth;
         if (args.auth == '*') temp = generateAuthStringPair();
         context.auth.user = temp.split(':')[0];
         context.auth.pass = temp.split(':')[1];
