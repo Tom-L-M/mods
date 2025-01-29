@@ -94,7 +94,11 @@ function startHttpCommandServer(context) {
                 'Failure on: ' +
                     process.argv.join(' ') +
                     '\n' +
-                    err.stderr.toString()
+                    err.message +
+                    '\n' +
+                    ls?.stderr?.toString() +
+                    '\n' +
+                    ls?.stdout?.toString()
             );
             res.end();
         }

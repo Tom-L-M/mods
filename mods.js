@@ -244,7 +244,8 @@ const formatVerticalList = arr => {
             return require(rpath);
         } catch (err) {
             console.log(
-                `Error: Could not locate module [${rpath} - ${err.message}]`
+                `Error: Could not execute module [${rpath} - ${err.message}]\n`,
+                err
             );
         }
     } else {
