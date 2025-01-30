@@ -1,4 +1,14 @@
 {
+    "DEFAULT": {
+        "signature": "",
+        "extension": "bin | dat | hex | txt | ?",
+        "description": "Binary data / Plain Text / Unknown"
+    },
+    "PLAINTEXT": {
+        "signature": "",
+        "extension": "txt | log | ?",
+        "description": "Plain Text (Partial)"
+    },
     "47": {
         "signature": "47",
         "extension": "ts | tsv | tsa | mpg | mpeg",
@@ -14,20 +24,10 @@
         "extension": "pcap",
         "description": "Libpcap File Format"
     },
-    "A1 B2 C3 D4 ": {
-        "signature": "A1 B2 C3 D4 (big-endian)",
-        "extension": null,
-        "description": null
-    },
     "4D 3C B2 A1 ": {
         "signature": "4D 3C B2 A1 (little-endian)",
         "extension": "pcap",
         "description": "Libpcap File Format (nanosecond-resolution)"
-    },
-    "A1 B2 3C 4D ": {
-        "signature": "A1 B2 3C 4D (big-endian)",
-        "extension": null,
-        "description": null
     },
     "0A 0D 0D 0A": {
         "signature": "0A 0D 0D 0A",
@@ -39,8 +39,8 @@
         "extension": "rpm",
         "description": "RedHat Package Manager (RPM) package"
     },
-    "53 51 4C 69 74 65 20 666F 72 6D 61 74 20 33 00": {
-        "signature": "53 51 4C 69 74 65 20 666F 72 6D 61 74 20 33 00",
+    "53 51 4C 69 74 65 20 66 6F 72 6D 61 74 20 33 00": {
+        "signature": "53 51 4C 69 74 65 20 66 6F 72 6D 61 74 20 33 00",
         "extension": "sqlitedb | sqlitedb",
         "description": "SQLite Database"
     },
@@ -54,13 +54,8 @@
         "extension": "wad",
         "description": "internal WAD (main resource file of Doom)"
     },
-    "00": {
-        "signature": "00",
-        "extension": "PIC | PIF | SEA | YTR",
-        "description": "IBM Storyboard bitmap file; Windows Program Information File; Mac Stuffit Self-Extracting Archive; IRIS OCR data file"
-    },
-    "00 00 00 00 00 00 00 0000 00 00 00 00 00 00 0000 00 00 00 00 00 00 00": {
-        "signature": "00 00 00 00 00 00 00 0000 00 00 00 00 00 00 0000 00 00 00 00 00 00 00",
+    "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00": {
+        "signature": "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00",
         "extension": "PDB",
         "description": "PalmPilot Database/Document File"
     },
@@ -129,8 +124,8 @@
         "extension": "lzh",
         "description": "Lempel Ziv Huffman archive file Method 5 (8KiB sliding window)"
     },
-    "42 41 43 4B 4D 49 4B 4544 49 53 4B": {
-        "signature": "42 41 43 4B 4D 49 4B 4544 49 53 4B",
+    "42 41 43 4B 4D 49 4B 45 44 49 53 4B": {
+        "signature": "42 41 43 4B 4D 49 4B 45 44 49 53 4B",
         "extension": "bac",
         "description": "AmiBack Amiga Backup data file"
     },
@@ -149,8 +144,8 @@
         "extension": "bz2",
         "description": "Compressed file using Bzip2 algorithm"
     },
-    "47 49 46 38 37 6147 49 46 38 39 61": {
-        "signature": "47 49 46 38 37 6147 49 46 38 39 61",
+    "47 49 46 38 37 61 47 49 46 38 39 61": {
+        "signature": "47 49 46 38 37 61 47 49 46 38 39 61",
         "extension": "gif",
         "description": "Image file encoded in the Graphics Interchange Format (GIF)"
     },
@@ -159,13 +154,8 @@
         "extension": "tif | tiff",
         "description": "Tagged Image File Format (TIFF)"
     },
-    "4D 4D 00 2A ": {
-        "signature": "4D 4D 00 2A (big-endian)",
-        "extension": null,
-        "description": null
-    },
-    "49 49 2A 00 10 00 00 0043 52": {
-        "signature": "49 49 2A 00 10 00 00 0043 52",
+    "49 49 2A 00 10 00 00 00 43 52": {
+        "signature": "49 49 2A 00 10 00 00 00 43 52",
         "extension": "cr2",
         "description": "Canon RAW Format Version 2Canon's RAW format is based on TIFF."
     },
@@ -174,13 +164,13 @@
         "extension": "cin",
         "description": "Kodak Cineon image"
     },
-    "52 4E 43 0152 4E 43 02": {
-        "signature": "52 4E 43 0152 4E 43 02",
+    "52 4E 43 01 52 4E 43 02": {
+        "signature": "52 4E 43 01 52 4E 43 02",
         "extension": "",
         "description": "Compressed file using Rob Northen Compression (version 1 and 2) algorithm"
     },
-    "4E 55 52 55 49 4D 474E 55 52 55 50 41 4C": {
-        "signature": "4E 55 52 55 49 4D 474E 55 52 55 50 41 4C",
+    "4E 55 52 55 49 4D 47 4E 55 52 55 50 41 4C": {
+        "signature": "4E 55 52 55 49 4D 47 4E 55 52 55 50 41 4C",
         "extension": "nui | nup",
         "description": "nuru ASCII/ANSI image and palette files"
     },
@@ -188,11 +178,6 @@
         "signature": "53 44 50 58 (big-endian format)",
         "extension": "dpx",
         "description": "SMPTE DPX image"
-    },
-    "58 50 44 53 ": {
-        "signature": "58 50 44 53 (little-endian format)",
-        "extension": null,
-        "description": null
     },
     "76 2F 31 01": {
         "signature": "76 2F 31 01",
@@ -209,21 +194,6 @@
         "extension": "jpg | jpeg",
         "description": "JPEG raw or in the JFIF or Exif file format"
     },
-    "FF D8 FF E0 00 10 4A 4649 46 00 01": {
-        "signature": "FF D8 FF E0 00 10 4A 4649 46 00 01",
-        "extension": null,
-        "description": null
-    },
-    "FF D8 FF EE": {
-        "signature": "FF D8 FF EE",
-        "extension": null,
-        "description": null
-    },
-    "FF D8 FF E1 45 7869 66 00 00": {
-        "signature": "FF D8 FF E1 45 7869 66 00 00",
-        "extension": null,
-        "description": null
-    },
     "FF D8 FF E0": {
         "signature": "FF D8 FF E0",
         "extension": "jpg",
@@ -233,11 +203,6 @@
         "signature": "00 00 00 0C 6A 50 20 20 0D 0A 87 0A",
         "extension": "jp2 | j2k | jpf | jpm | jpg2 | j2c | jpc | jpx | mj2",
         "description": "JPEG 2000 format"
-    },
-    "FF 4F FF 51": {
-        "signature": "FF 4F FF 51",
-        "extension": null,
-        "description": null
     },
     "71 6F 69 66": {
         "signature": "71 6f 69 66",
@@ -322,10 +287,10 @@
     "5A 4D": {
         "signature": "5A 4D",
         "extension": "exe",
-        "description": "DOS MZ executable and its descendants (rare as main magic number, usually comes after '4D 5A' dos-stub signature)"
+        "description": "DOS MZ executable variants (usually comes after the '4D 5A' dos-stub signature)"
     },
     "50 4B 03 04 50 4B 05 06 50 4B 07 08 ": {
-        "signature": "50 4B 03 0450 4B 05 06 (empty archive)50 4B 07 08 (spanned archive)",
+        "signature": "50 4B 03 04 50 4B 05 06 (empty archive)50 4B 07 08 (spanned archive)",
         "extension": "zip | aar | apk | docx | epub | ipa | jar | kmz | maff | msix | odp | ods | odt | pk3 | pk4 | pptx | usdz | vsdx | xlsx | xpi",
         "description": "zip file format and formats based on it, such as EPUB, JAR, ODF, OOXML"
     },
@@ -384,8 +349,8 @@
         "extension": "txt | others",
         "description": "UTF-32BE byte order mark for text"
     },
-    "2B 2F 76 382B 2F 76 392B 2F 76 2B2B 2F 76 2F": {
-        "signature": "2B 2F 76 382B 2F 76 392B 2F 76 2B2B 2F 76 2F",
+    "2B 2F 76 38 2B 2F 76 39 2B 2F 76 2B 2B 2F 76 2F": {
+        "signature": "2B 2F 76 38 2B 2F 76 39 2B 2F 76 2B 2B 2F 76 2F",
         "extension": "",
         "description": "UTF-7 byte order mark for text"
     },
@@ -439,8 +404,8 @@
         "extension": "eps | epsf",
         "description": "Encapsulated PostScript file version 3.1"
     },
-    "49 54 53 46 03 00 00 0060 00 00 00": {
-        "signature": "49 54 53 46 03 00 00 0060 00 00 00",
+    "49 54 53 46 03 00 00 00 60 00 00 00": {
+        "signature": "49 54 53 46 03 00 00 00 60 00 00 00",
         "extension": "chm",
         "description": "MS Windows HtmlHelp Data"
     },
@@ -454,8 +419,8 @@
         "extension": "pdf",
         "description": "PDF document"
     },
-    "30 26 B2 75 8E 66 CF 11A6 D9 00 AA 00 62 CE 6C": {
-        "signature": "30 26 B2 75 8E 66 CF 11A6 D9 00 AA 00 62 CE 6C",
+    "30 26 B2 75 8E 66 CF 11 A6 D9 00 AA 00 62 CE 6C": {
+        "signature": "30 26 B2 75 8E 66 CF 11 A6 D9 00 AA 00 62 CE 6C",
         "extension": "asf | wma | wmv",
         "description": "Advanced Systems Format"
     },
@@ -484,10 +449,10 @@
         "extension": "avi",
         "description": "Audio Video Interleave video format"
     },
-    "FF FBFF F3FF F2": {
-        "signature": "FF FBFF F3FF F2",
+    "FF FB FF F3 FF F2": {
+        "signature": "FF FB FF F3 FF F2",
         "extension": "mp3",
-        "description": "MPEG-1 Layer 3 file without an ID3 tag or with an ID3v1 tag (which is appended at the end of the file)"
+        "description": "MPEG-1 Layer 3 file without an ID3 tag or with an ID3v1 tag"
     },
     "49 44 33": {
         "signature": "49 44 33",
@@ -539,8 +504,8 @@
         "extension": "crt",
         "description": "Commodore 64 cartridge image"
     },
-    "53 49 4D 50 4C 45 20 203D 20 20 20 20 20 20 2020 20 20 20 20 20 20 2020 20 20 20 20 54": {
-        "signature": "53 49 4D 50 4C 45 20 203D 20 20 20 20 20 20 2020 20 20 20 20 20 20 2020 20 20 20 20 54",
+    "53 49 4D 50 4C 45 20 20 3D 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 54": {
+        "signature": "53 49 4D 50 4C 45 20 20 3D 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 54",
         "extension": "fits",
         "description": "Flexible Image Transport System (FITS)"
     },
@@ -557,7 +522,7 @@
     "D0 CF 11 E0 A1 B1 1A E1": {
         "signature": "D0 CF 11 E0 A1 B1 1A E1",
         "extension": "doc | xls | ppt | msi | msg",
-        "description": "Compound File Binary Format, a container format defined by Microsoft COM. It can contain the equivalent of files and directories. It is used by Windows Installer and for documents in older versions of Microsoft Office. It can be used by other programs as well that rely on the COM and OLE API's."
+        "description": "Compound File Binary Format, a container format defined by Microsoft. It can contain the equivalent of files and directories. It is used by Windows Installer and for documents in older versions of Microsoft Office. It can be used by other programs as well that rely on the COM and OLE API's."
     },
     "64 65 78 0A 30 33 35 00": {
         "signature": "64 65 78 0A 30 33 35 00",
@@ -584,13 +549,13 @@
         "extension": "fh8",
         "description": "FreeHand 8 document"
     },
-    "05 07 00 00 42 4F 42 4F05 07 00 00 00 00 00 0000 00 00 00 00 01": {
-        "signature": "05 07 00 00 42 4F 42 4F05 07 00 00 00 00 00 0000 00 00 00 00 01",
+    "05 07 00 00 42 4F 42 4F 05 07 00 00 00 00 00 00 00 00 00 00 00 01": {
+        "signature": "05 07 00 00 42 4F 42 4F 05 07 00 00 00 00 00 00 00 00 00 00 00 01",
         "extension": "cwk",
         "description": "AppleWorks 5 document"
     },
-    "06 07 E1 00 42 4F 42 4F06 07 E1 00 00 00 00 0000 00 00 00 00 01": {
-        "signature": "06 07 E1 00 42 4F 42 4F06 07 E1 00 00 00 00 0000 00 00 00 00 01",
+    "06 07 E1 00 42 4F 42 4F 06 07 E1 00 00 00 00 00 00 00 00 00 00 01": {
+        "signature": "06 07 E1 00 42 4F 42 4F 06 07 E1 00 00 00 00 00 00 00 00 00 00 01",
         "extension": "cwk",
         "description": "AppleWorks 6 document"
     },
@@ -598,11 +563,6 @@
         "signature": "45 52 02 00 00 00",
         "extension": "toast",
         "description": "Roxio Toast disc image file"
-    },
-    "8B 45 52 02 00 00 00": {
-        "signature": "8B 45 52 02 00 00 00",
-        "extension": null,
-        "description": null
     },
     "6B 6F 6C 79": {
         "signature": "6B 6F 6C 79",
@@ -617,15 +577,15 @@
     "50 4D 4F 43 43 4D 4F 43": {
         "signature": "50 4D 4F 43 43 4D 4F 43",
         "extension": "dat",
-        "description": "Windows Files And Settings Transfer Repository See also USMT 3.0 (Win XP) and USMT 4.0 (Win 7) User Guides"
+        "description": "Windows Files And Settings Transfer Repository. See also USMT 3.0 and USMT 4.0 User Guides."
     },
     "4E 45 53 1A": {
         "signature": "4E 45 53 1A",
         "extension": "nes",
         "description": "Nintendo Entertainment System ROM file"
     },
-    "75 73 74 61 72 00 30 3075 73 74 61 72 20 20 00": {
-        "signature": "75 73 74 61 72 00 30 3075 73 74 61 72 20 20 00",
+    "75 73 74 61 72 00 30 30 75 73 74 61 72 20 20 00": {
+        "signature": "75 73 74 61 72 00 30 30 75 73 74 61 72 20 20 00",
         "extension": "tar",
         "description": "tar archive"
     },
@@ -644,8 +604,8 @@
         "extension": "MLV",
         "description": "Magic Lantern Video file"
     },
-    "44 43 4D 01 50 41 33 3050 41 33 30": {
-        "signature": "44 43 4D 01 50 41 33 3050 41 33 30",
+    "44 43 4D 01 50 41 33 30 50 41 33 30": {
+        "signature": "44 43 4D 01 50 41 33 30 50 41 33 30",
         "extension": "",
         "description": "Windows Update Binary Delta Compression file"
     },
@@ -769,31 +729,6 @@
         "extension": "xml",
         "description": "eXtensible Markup Language"
     },
-    "3C 00 3F 00 78 00 6D 006C 00 20": {
-        "signature": "3C 00 3F 00 78 00 6D 006C 00 20",
-        "extension": null,
-        "description": null
-    },
-    "00 3C 00 3F 00 78 00 6D00 6C 00 20": {
-        "signature": "00 3C 00 3F 00 78 00 6D00 6C 00 20",
-        "extension": null,
-        "description": null
-    },
-    "3C 00 00 00 3F 00 00 0078 00 00 00 6D 00 00 006C 00 00 00 20 00 00 00": {
-        "signature": "3C 00 00 00 3F 00 00 0078 00 00 00 6D 00 00 006C 00 00 00 20 00 00 00",
-        "extension": null,
-        "description": null
-    },
-    "00 00 00 3C 00 00 00 3F00 00 00 78 00 00 00 6D00 00 00 6C 00 00 00 20": {
-        "signature": "00 00 00 3C 00 00 00 3F00 00 00 78 00 00 00 6D00 00 00 6C 00 00 00 20",
-        "extension": null,
-        "description": null
-    },
-    "4C 6F A7 94 93 40": {
-        "signature": "4C 6F A7 94 93 40",
-        "extension": null,
-        "description": null
-    },
     "00 61 73 6D": {
         "signature": "00 61 73 6D",
         "extension": "wasm",
@@ -808,11 +743,6 @@
         "signature": "43 57 53",
         "extension": "swf",
         "description": "Adobe Flash .swf"
-    },
-    "46 57 53": {
-        "signature": "46 57 53",
-        "extension": null,
-        "description": null
     },
     "21 3C 61 72 63 68 3E 0A": {
         "signature": "21 3C 61 72 63 68 3E 0A",
@@ -849,8 +779,8 @@
         "extension": "mpg | mpeg",
         "description": "MPEG-1 video and MPEG-2 video (MPEG-1 Part 2 and MPEG-2 Part 2)"
     },
-    "66 74 79 70 69 73 6F 6D": {
-        "signature": "66 74 79 70 69 73 6F 6D",
+    "66 74 79 70": {
+        "signature": "66 74 79 70",
         "extension": "mp4",
         "description": "ISO Base Media file (MPEG-4)"
     },
@@ -858,41 +788,6 @@
         "signature": "78 01",
         "extension": "zlib",
         "description": "No Compression (no preset dictionary)"
-    },
-    "78 5E": {
-        "signature": "78 5E",
-        "extension": null,
-        "description": null
-    },
-    "78 9C": {
-        "signature": "78 9C",
-        "extension": null,
-        "description": null
-    },
-    "78 DA": {
-        "signature": "78 DA",
-        "extension": null,
-        "description": null
-    },
-    "78 20": {
-        "signature": "78 20",
-        "extension": null,
-        "description": null
-    },
-    "78 7D": {
-        "signature": "78 7D",
-        "extension": null,
-        "description": null
-    },
-    "78 BB": {
-        "signature": "78 BB",
-        "extension": null,
-        "description": null
-    },
-    "78 F9": {
-        "signature": "78 F9",
-        "extension": null,
-        "description": null
     },
     "62 76 78 32": {
         "signature": "62 76 78 32",
@@ -949,28 +844,28 @@
         "extension": "luac",
         "description": "Lua bytecode"
     },
-    "62 6F 6F 6B 00 00 00 006D 61 72 6B 00 00 00 00": {
-        "signature": "62 6F 6F 6B 00 00 00 006D 61 72 6B 00 00 00 00",
+    "62 6F 6F 6B 00 00 00 00 6D 61 72 6B 00 00 00 00": {
+        "signature": "62 6F 6F 6B 00 00 00 00 6D 61 72 6B 00 00 00 00",
         "extension": "alias",
         "description": "macOS file Alias (Symbolic link)"
     },
-    "5B 5A 6F 6E 65 54 72 616E 73 66 65 72 5D": {
-        "signature": "5B 5A 6F 6E 65 54 72 616E 73 66 65 72 5D",
+    "5B 5A 6F 6E 65 54 72 61 6E 73 66 65 72 5D": {
+        "signature": "5B 5A 6F 6E 65 54 72 61 6E 73 66 65 72 5D",
         "extension": "Identifier",
         "description": "Microsoft Zone Identifier for URL Security Zones"
     },
-    "52 65 63 65 69 76 65 643A": {
-        "signature": "52 65 63 65 69 76 65 643A",
+    "52 65 63 65 69 76 65 64 3A": {
+        "signature": "52 65 63 65 69 76 65 64 3A",
         "extension": "eml",
         "description": "Email Message var5[citation needed]"
     },
-    "20 02 01 62 A0 1E AB 0702 00 00 00": {
-        "signature": "20 02 01 62 A0 1E AB 0702 00 00 00",
+    "20 02 01 62 A0 1E AB 07 02 00 00 00": {
+        "signature": "20 02 01 62 A0 1E AB 07 02 00 00 00",
         "extension": "tde",
         "description": "Tableau Datasource"
     },
-    "37 48 03 02 00 00 00 0058 35 30 39 4B 45 59": {
-        "signature": "37 48 03 02 00 00 00 0058 35 30 39 4B 45 59",
+    "37 48 03 02 00 00 00 00 58 35 30 39 4B 45 59": {
+        "signature": "37 48 03 02 00 00 00 00 58 35 30 39 4B 45 59",
         "extension": "kdb",
         "description": "KDB file"
     },
@@ -1079,8 +974,8 @@
         "extension": "xcf",
         "description": "XCF (file format)"
     },
-    "2F 2A 20 58 50 4D 20 2A2F": {
-        "signature": "2F 2A 20 58 50 4D 20 2A2F",
+    "2F 2A 20 58 50 4D 20 2A 2F": {
+        "signature": "2F 2A 20 58 50 4D 20 2A 2F",
         "extension": "xpm",
         "description": "X PixMap"
     },
@@ -1124,33 +1019,23 @@
         "extension": "dcr",
         "description": "Adobe Shockwave"
     },
-    "58 46 49 52 4D 44 47 46 ": {
-        "signature": "58 46 49 52 4D 44 47 46 (little-endian)",
-        "extension": null,
-        "description": null
-    },
     "52 49 46 58 4D 56 39 33 ": {
         "signature": "52 49 46 58 4D 56 39 33 (big-endian)",
         "extension": "dir | dxr | drx",
         "description": "Macromedia Director file format"
-    },
-    "58 46 49 52 33 39 56 4D ": {
-        "signature": "58 46 49 52 33 39 56 4D (little-endian)",
-        "extension": null,
-        "description": null
     },
     "46 4C 56": {
         "signature": "46 4C 56",
         "extension": "flv",
         "description": "Flash Video file"
     },
-    "3C 3C 3C 20 4F 72 61 636C 65 20 56 4D 20 56 6972 74 75 61 6C 42 6F 7820 44 69 73 6B 20 49 6D61 67 65 20 3E 3E 3E": {
-        "signature": "3C 3C 3C 20 4F 72 61 636C 65 20 56 4D 20 56 6972 74 75 61 6C 42 6F 7820 44 69 73 6B 20 49 6D61 67 65 20 3E 3E 3E",
+    "3C 3C 3C 20 4F 72 61 63 6C 65 20 56 4D 20 56 69 72 74 75 61 6C 42 6F 78 20 44 69 73 6B 20 49 6D 61 67 65 20 3E 3E 3E": {
+        "signature": "3C 3C 3C 20 4F 72 61 63 6C 65 20 56 4D 20 56 69 72 74 75 61 6C 42 6F 78 20 44 69 73 6B 20 49 6D 61 67 65 20 3E 3E 3E",
         "extension": "vdi",
         "description": "VirtualBox Virtual Hard Disk file format"
     },
-    "63 6F 6E 6E 65 63 74 6978": {
-        "signature": "63 6F 6E 6E 65 63 74 6978",
+    "63 6F 6E 6E 65 63 74 69 78": {
+        "signature": "63 6F 6E 6E 65 63 74 69 78",
         "extension": "vhd",
         "description": "Windows Virtual PC Virtual Hard Disk file format"
     },
@@ -1224,11 +1109,6 @@
         "extension": "jxl",
         "description": "Image encoded in the JPEG XL format"
     },
-    "FF 0A": {
-        "signature": "FF 0A",
-        "extension": null,
-        "description": null
-    },
     "00 01 00 00 00": {
         "signature": "00 01 00 00 00",
         "extension": "ttf | tte | dfont",
@@ -1244,8 +1124,8 @@
         "extension": "",
         "description": "Modulefile for Environment Modules"
     },
-    "4D 53 57 49 4D 00 00 00D0 00 00 00 00": {
-        "signature": "4D 53 57 49 4D 00 00 00D0 00 00 00 00",
+    "4D 53 57 49 4D 00 00 00 D0 00 00 00 00": {
+        "signature": "4D 53 57 49 4D 00 00 00 D0 00 00 00 00",
         "extension": "wim | swm | esd",
         "description": "Windows Imaging Format file"
     },

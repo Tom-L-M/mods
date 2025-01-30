@@ -1,50 +1,83 @@
-function getSignature(stream, signatures, dumpall) {
-    let bytes = stream.toString('hex').toUpperCase();
-    let results = [];
-    for (let sign in signatures) {
-        if (bytes.startsWith(sign.split(' ').join(''))) {
+function getSignatures(data, signatures, dumpall) {
+    const bytes = [...data]
+        .map(v => v.toString(16).padStart(2, '0'))
+        .join(' ')
+        .toUpperCase();
+    const results = [];
+
+    // Make an initial search for signatures (with the first bytes only)
+    const first20 = [...data.subarray(0, 20)]
+        .map(v => v.toString(16).padStart(2, '0'))
+        .join(' ')
+        .toUpperCase();
+
+    for (const sign in signatures) {
+        if (first20.indexOf(sign) >= 0) {
+            const index = bytes.indexOf(sign);
+            const offset = '0x' + index.toString(16).padStart(8, '0');
             results.push({
                 signature: signatures[sign].signature,
                 type: signatures[sign].extension,
-                offset: '0x' + ''.padStart(8, '0'),
-                description:
-                    signatures[sign]?.description || '< no description >',
+                offset,
+                description: signatures[sign]?.description || '',
+            });
+            break;
+        }
+    }
+
+    // If there is no main signature found, then add a default one
+    if (results.length === 0) {
+        const first5 = [...data.subarray(0, 5)]
+            .map(v => v.toString(16).padStart(2, '0'))
+            .join(' ')
+            .toUpperCase();
+        // If the initial contains mostly printable characters, then it's likely to be a text file
+        const SLICE_SIZE = 100;
+        const PRINTABLE_THRESHOLD = 0.9;
+        const printable = [...data.subarray(0, SLICE_SIZE)].filter(
+            v => v >= 32 && v <= 126
+        );
+        if (printable.length >= SLICE_SIZE * PRINTABLE_THRESHOLD) {
+            results.push({
+                signature: first5,
+                type: signatures['PLAINTEXT'].extension,
+                offset: '0x00000000',
+                description: signatures['PLAINTEXT'].description,
+            });
+        } else {
+            results.push({
+                signature: first5,
+                type: signatures['DEFAULT'].extension,
+                offset: '0x00000000',
+                description: signatures['DEFAULT'].description,
             });
         }
     }
-    if (results.length === 0) {
-        results.push({
-            signature: '' + bytes[0],
-            type: 'txt | plain | other',
-            offset: '0x' + ''.padStart(8, '0'),
-            description: '< unknown >',
-        });
-    }
 
+    // Make a global search for signatures
     if (dumpall) {
-        for (let sign in signatures) {
-            let index = bytes.indexOf(sign);
-            let offset =
-                '0x' + Buffer.from([index]).toString('hex').padStart(8, '0');
-            if (index > 0) {
-                let obj = {
+        for (const sign in signatures) {
+            if (bytes.indexOf(sign, 20) >= 0) {
+                const index = bytes.indexOf(sign, 20);
+                const offset = '0x' + index.toString(16).padStart(8, '0');
+                results.push({
                     signature: signatures[sign].signature,
                     type: signatures[sign].extension,
-                    offset: offset,
-                    description:
-                        signatures[sign]?.description || '< no description >',
-                };
-                results.push(obj);
+                    offset,
+                    description: signatures[sign]?.description || '',
+                });
             }
         }
     }
-    results = results
-        .map(
-            x =>
-                `${x.offset} - [ ${x.signature} ] - [ ${x.type} ] - ${x.description}`
-        )
-        .join('\n');
-    return results;
+
+    // Sort the results by offset and return the dump
+    return results.sort((a, b) => {
+        const aoffset = parseInt(a.offset, 16);
+        const boffset = parseInt(b.offset, 16);
+        if (aoffset < boffset) return -1;
+        if (aoffset > boffset) return 1;
+        return 0;
+    });
 }
 
 const fs = require('fs');
@@ -63,13 +96,14 @@ const help = `
     Options:
         -h | --help             Prints the help message and quits.
         -v | --version          Prints the version info and quits.
-        -a | --all              Prints all signature markers, instead
-                                of just the first one.`;
+        -V | --verbose          Prints the signature markers with descriptions.
+        -a | --all              Prints all signature markers, not only the first.`;
 
 (async function () {
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('verbose', { alias: 'V', allowValue: false });
     parser.option('all', { alias: 'a', allowValue: false });
     parser.argument('file');
     const args = parser.parseArgv();
@@ -94,10 +128,44 @@ const help = `
                 data = fs.readFileSync(args.file);
             }
         }
-        const dump = getSignature(data, signatures, args.all);
-        console.log(dump);
+
+        const lines = getSignatures(data, signatures, args.all);
+        let printedInfo = false;
+
+        if (lines[0].description.includes('Plain Text (Partial)')) {
+            if (!printedInfo) console.log(); // Print empty line for formatting
+            console.log(
+                '+ WARN: Many printable characters were found. The file may contain plain text data.'
+            );
+            printedInfo = true;
+        }
+
+        if (lines.length >= 10) {
+            if (!printedInfo) console.log(); // Print empty line for formatting
+            console.log(
+                `+ WARN: Too many signatures found (${lines.length}). The file may contain encrypted or format-free data.`
+            );
+            printedInfo = true;
+        }
+
+        if (printedInfo) console.log(); // Print empty line for formatting
+
+        const longest = Math.max(...lines.map(v => v.signature.length)) + 4;
+        lines.forEach(line => {
+            const basestring =
+                `${line.offset}    ` +
+                `${line.signature.padEnd(longest, ' ')}${line.type}`;
+
+            if (args.verbose) {
+                console.log(
+                    `\n${basestring}\n              ${line.description}`
+                );
+            } else {
+                console.log(basestring);
+            }
+        });
     } catch (err) {
-        console.log('ERROR: File Not Found - Impossible to complete dump');
+        console.log('ERROR: Impossible to complete dump');
         console.log('Message:', err.message);
     }
 })();
