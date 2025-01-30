@@ -1,6 +1,6 @@
 {
     "name": "signatures",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "description": "A tool for extracting file signatures (magic numbers).",
     "main": "index.js",
     "scripts": {

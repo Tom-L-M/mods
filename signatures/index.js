@@ -14,7 +14,7 @@ function getSignature(stream, signatures, dumpall) {
     }
     if (results.length === 0) {
         results.push({
-            signature: '??',
+            signature: '' + bytes[0],
             type: 'txt | plain | other',
             offset: '0x' + ''.padStart(8, '0'),
             description: '< unknown >',

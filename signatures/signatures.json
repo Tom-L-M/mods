@@ -57,7 +57,7 @@
     "00": {
         "signature": "00",
         "extension": "PIC | PIF | SEA | YTR",
-        "description": "IBM Storyboard bitmap fileWindows Program Information FileMac Stuffit Self-Extracting ArchiveIRIS OCR data file"
+        "description": "IBM Storyboard bitmap file; Windows Program Information File; Mac Stuffit Self-Extracting Archive; IRIS OCR data file"
     },
     "00 00 00 00 00 00 00 0000 00 00 00 00 00 00 0000 00 00 00 00 00 00 00": {
         "signature": "00 00 00 00 00 00 00 0000 00 00 00 00 00 00 0000 00 00 00 00 00 00 00",
@@ -677,7 +677,7 @@
     "53 5A 44 44 88 F0 27 33": {
         "signature": "53 5A 44 44 88 F0 27 33",
         "extension": "_",
-        "description": "Microsoft compressed file in Quantum format, used prior to Windows XP. File can be decompressed using Extract.exe or Expand.exe distributed with earlier versions of Windows. After compression, the last character of the original filename extension is replaced with an underscore, e.g. ‘Setup.exe’ becomes ‘Setup.ex_’."
+        "description": "Microsoft compressed file in Quantum format, used prior to Windows XP. File can be decompressed using Extract.exe or Expand.exe distributed with earlier versions of Windows. After compression, the last character of the original filename extension is replaced with an underscore, e.g. 'Setup.exe' becomes 'Setup.ex_'."
     },
     "46 4C 49 46": {
         "signature": "46 4C 49 46",
@@ -697,7 +697,7 @@
     "41 54 26 54 46 4F 52 4D 44 4A 56": {
         "signature": "41 54 26 54 46 4F 52 4D 44 4A 56",
         "extension": "djv | udjv",
-        "description": "DjVu documentThe following byte is either 55 (U) for single-page or 4D (M) for multi-page documents."
+        "description": "DjVu document; The following byte is either 55 (U) for single-page or 4D (M) for multi-page documents."
     },
     "30 82": {
         "signature": "30 82",
