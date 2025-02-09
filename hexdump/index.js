@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { isStdinActive, readStdin } = require('../shared');
+const { isStdinActive, readStdin, ArgvParser } = require('../shared');
 
 /**
  * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
@@ -26,25 +26,25 @@ const { isStdinActive, readStdin } = require('../shared');
  *   param3: 0000
  * }
  */
-const parseargs = (mapping = {}, args = process.argv.slice(2)) => {
-    let params = {};
-    for (let i = 0; i < args.length; i++) {
-        if (args[i].startsWith('--'))
-            params[args[i].slice(2)] =
-                args[i + 1]?.startsWith('-') || !args[i + 1] ? true : args[++i];
-        else if (args[i].startsWith('-'))
-            params[args[i].slice(1)] =
-                args[i + 1]?.startsWith('-') || !args[i + 1] ? true : args[++i];
-        else params[args[i]] = true;
-    }
-    for (let key in mapping) {
-        if (params[key]) {
-            params[mapping[key]] = params[key];
-            delete params[key];
-        }
-    }
-    return params;
-};
+// const parseargs = (mapping = {}, args = process.argv.slice(2)) => {
+//     let params = {};
+//     for (let i = 0; i < args.length; i++) {
+//         if (args[i].startsWith('--'))
+//             params[args[i].slice(2)] =
+//                 args[i + 1]?.startsWith('-') || !args[i + 1] ? true : args[++i];
+//         else if (args[i].startsWith('-'))
+//             params[args[i].slice(1)] =
+//                 args[i + 1]?.startsWith('-') || !args[i + 1] ? true : args[++i];
+//         else params[args[i]] = true;
+//     }
+//     for (let key in mapping) {
+//         if (params[key]) {
+//             params[mapping[key]] = params[key];
+//             delete params[key];
+//         }
+//     }
+//     return params;
+// };
 
 const addressFromIndex = (address, radix) => {
     // The address must accomodate at max a UInt32 (4 bytes -> up to 4294967296)
@@ -219,27 +219,50 @@ const help = `
         -B | --b-binary     Show bytes as binary (base-2).`;
 
 (async function () {
-    const opts = {
-        h: 'help',
-        r: 'raw',
-        c: 'count',
-        p: 'offset',
-        v: 'version',
-        n: 'length',
-        d: 'decimal',
-        o: 'octal',
-        S: 'no-squeeze',
-        A: 'no-ascii',
-        T: 'no-trailing',
-        P: 'no-offset',
-        D: 'b-decimal',
-        O: 'b-octal',
-        B: 'b-binary',
-        Z: 'no-paint-0',
-    };
+    // const opts = {
+    //     h: 'help',
+    //     r: 'raw',
+    //     c: 'count',
+    //     p: 'offset',
+    //     v: 'version',
+    //     n: 'length',
+    //     d: 'decimal',
+    //     o: 'octal',
+    //     S: 'no-squeeze',
+    //     A: 'no-ascii',
+    //     T: 'no-trailing',
+    //     P: 'no-offset',
+    //     D: 'b-decimal',
+    //     O: 'b-octal',
+    //     B: 'b-binary',
+    //     Z: 'no-paint-0',
+    // };
 
-    const args = parseargs(opts);
-    const file = process.argv[2];
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('raw', { alias: 'r', allowValue: false });
+    parser.option('count', { alias: 'c', allowCasting: true });
+    parser.option('offset', { alias: 'p', allowCasting: true });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('length', { alias: 'n', allowCasting: true });
+    parser.option('decimal', { alias: 'd', allowValue: false });
+    parser.option('octal', { alias: 'o', allowValue: false });
+    parser.option('no-squeeze', { alias: 'S', allowValue: false });
+    parser.option('no-ascii', { alias: 'S', allowValue: false });
+    parser.option('no-trailing', { alias: 'T', allowValue: false });
+    parser.option('no-offset', { alias: 'P', allowValue: false });
+    parser.option('b-decimal', { alias: 'D', allowValue: false });
+    parser.option('b-octal', { alias: 'O', allowValue: false });
+    parser.option('b-binary', { alias: 'B', allowValue: false });
+    parser.option('no-paint-0', { alias: 'Z', allowValue: false });
+    parser.argument('file', { allowCasting: true });
+
+    const args = parser.parseArgv();
+    console.log(args.file);
+    process.exit();
+
+    const file = args.file;
+
     const fromStdin = isStdinActive();
 
     const count = args.count ? parseInt(args.count) : null;
