@@ -357,8 +357,12 @@ class ArgvParser {
 
                 // Cast as number
                 if (opt?.allowCasting) {
-                    const asfloat = parseFloat(value);
-                    value = !isNaN(asfloat) ? asfloat : value;
+                    // Test for automatic detection: (octals, binary or hex)
+                    let asfloat = Number(value);
+                    if (isNaN(asfloat)) {
+                        asfloat = parseFloat(value);
+                        value = !isNaN(asfloat) && asfloat !== 0 ? asfloat : 0;
+                    }
                 }
 
                 // Convert to long name format
@@ -428,8 +432,11 @@ class ArgvParser {
 
                 // Cast as number
                 if (opt?.allowCasting) {
-                    const asfloat = parseFloat(value);
-                    value = !isNaN(asfloat) ? asfloat : value;
+                    let asfloat = Number(value);
+                    if (isNaN(asfloat)) {
+                        asfloat = parseFloat(value);
+                        value = !isNaN(asfloat) && asfloat !== 0 ? asfloat : 0;
+                    }
                 }
 
                 // Convert to long name format
@@ -458,11 +465,15 @@ class ArgvParser {
             let argval = rest.shift();
             if (argument.allowCasting) {
                 // Cast as number
-                const asfloat = parseFloat(argval);
-                argval = !isNaN(asfloat) ? asfloat : argval;
+                let asfloat = Number(argval);
+                if (isNaN(asfloat)) {
+                    asfloat = parseFloat(argval);
+                    asfloat = !isNaN(asfloat) && asfloat !== 0 ? asfloat : 0;
+                }
+                params[argument.name] = asfloat;
+            } else {
                 params[argument.name] = argval;
             }
-            params[argument.name] = argval;
         }
 
         return { _: rest, _invalid: unknown, ...params };
