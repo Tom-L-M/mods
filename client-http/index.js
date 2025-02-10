@@ -278,8 +278,22 @@ async function sendPacket(context, { firstRun = false } = {}) {
             if (download === '.') download = '';
 
             if (download === '') download = fileNameFromURI(url);
+
             if (download && download !== '-') {
                 fname = path.resolve(download);
+
+                // If the download path ends with a '/' and is a non-existent dir (yet)
+                if (download.endsWith('/') && !fs.existsSync(fname))
+                    fs.mkdirSync(fname);
+
+                // If the download path is specified as a dir, but a file with the same name already exists
+                if (
+                    download.endsWith('/') &&
+                    fs.existsSync(fname) &&
+                    !isDirectory(fname)
+                ) {
+                    fname = path.join(fname, fileNameFromURI(url));
+                }
 
                 // If the provided download path is a directory, append a filename to it
                 if (isDirectory(fname)) {
