@@ -31,7 +31,13 @@ const help = `
         -c | --count            Prints only the number of matching lines.
         -x | --capture          Prints only the matching text, not the surrounding
                                 chars or lines. This option disables the output
-                                control flags: (-A, -B, -C, -V, -n). `;
+                                control flags: (-A, -B, -C, -V, -n).
+        
+    Info:
+        - To make the caret char (^) work in windows terminals,
+          use ^^^ (3) instead of ^ (1).
+          This will NOT work on Windows:        something[^;]+
+          This will work on Windows:            something[^^^;]+`;
 
 /**
  * @param {string} input
