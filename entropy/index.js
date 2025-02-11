@@ -1,35 +1,27 @@
 const fs = require('fs');
-const path = require('path');
-const { ArgvParser } = require('../shared');
 
-function calculateEntropy(file) {
-    const data = fs.readFileSync(file);
-    const fileSize = data.length;
-    const frequency = {};
-    for (let i = 0; i < fileSize; i++) {
-        const byte = data[i];
-        frequency[byte] = frequency[byte] ? frequency[byte] + 1 : 1;
-    }
+const {
+    isStdinActive,
+    validateFile,
+    readStdin,
+    ArgvParser,
+} = require('../shared');
+
+function computeEntropySync(buffer) {
+    const frequencymap = new Map();
     let entropy = 0;
-    for (let byte in frequency) {
-        const probability = frequency[byte] / fileSize;
-        entropy -= probability * Math.log2(probability);
-    }
-    return entropy;
-}
 
-async function walk(dirpath) {
-    return (
-        await Promise.all(
-            fs.readdirSync(dirpath).map(async file => {
-                const filepath = path.join(dirpath, file);
-                const stat = fs.statSync(filepath);
-                return stat.isDirectory() ? walk(filepath) : filepath;
-            })
-        )
-    )
-        .filter(file => file.length)
-        .flat(Infinity);
+    for (let i = 0; i < buffer.length; i++) {
+        let previous = frequencymap.get(buffer[i]);
+        frequencymap.set(buffer[i], previous ? previous + 1 : 1);
+    }
+
+    [...frequencymap.values()].forEach(value => {
+        const probability = value / buffer.length;
+        entropy -= probability * Math.log2(probability);
+    });
+
+    return entropy;
 }
 
 (async function main() {
@@ -38,53 +30,63 @@ async function walk(dirpath) {
         A tool for calculating Shannon Entropy (in bits/symbol) of a file or sequence of files
 
     Usage:
-        entropy [options] <path>
+        node entropy [options] <file>
+        <stdin> | node entropy [options]
 
     Options:
-        -h | --help         Prints the help message and quits.
-        -v | --version      Prints the version info and quits.
-
-    Info:
-        > If a directory path is passed as <path> instead of a file path, 
-          the entropy of all files in folders and subfolders will be calculated.`;
+        -h | --help             Prints the help message and quits.
+        -v | --version          Prints the version info and quits.
+        -q | --quiet            Prints only the numeric value.
+        -d | --digits <N>       The number of digits after the decimal point.`;
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
-    parser.argument('path');
+    parser.option('quiet', { alias: 'q', allowValue: false });
+    parser.option('digits', {
+        alias: 'd',
+        allowValue: true,
+        allowCasting: true,
+    });
+    parser.argument('file');
     const args = parser.parseArgv();
 
     if (args.version) return console.log(require('./package.json')?.version);
-    if (args.help || !args.path) return console.log(help);
+    if (args.help || (!args.file && !isStdinActive())) return console.log(help);
 
-    const fpath = args.path;
-    let result;
+    if (args._invalid.length > 0)
+        return console.log(
+            `[x] Error: invalid parameters [ ${args._invalid.join(', ')} ]`
+        );
+
+    const stdindata = isStdinActive() ? await readStdin() : null;
+
+    const filedata =
+        args.file && validateFile(args.file)
+            ? fs.readFileSync(args.file)
+            : null;
+
+    const finaldata =
+        stdindata && filedata
+            ? Buffer.concat([stdindata, filedata])
+            : stdindata || filedata;
+
     try {
-        const isDir = fs.statSync(fpath).isDirectory();
-        if (isDir) {
-            result = (await walk(fpath))
-                .map(
-                    x =>
-                        x +
-                        ' :: ' +
-                        calculateEntropy(x)
-                            .toString()
-                            .substring(0, 10)
-                            .padEnd(10, '0')
-                )
-                .flat()
-                .join('\n');
-        } else {
-            result =
-                fpath +
-                ' :: ' +
-                calculateEntropy(fpath)
-                    .toString()
-                    .substring(0, 10)
-                    .padEnd(10, '0');
+        let result = computeEntropySync(finaldata);
+        if (!isNaN(args.digits)) result = result.toFixed(args.digits);
+        else result = result.toFixed(5);
+
+        if (args.quiet) {
+            console.log(result);
+            return;
         }
-        result = result.replace(/0000000000/gim, '0.00000000');
-        console.log(result.trim());
+
+        const filename =
+            args.file && stdindata
+                ? '|stdin| + ' + args.file
+                : args.file || '|stdin|';
+        console.log(`${filename} (${finaldata.length} bytes) :: ${result}`);
+        return;
     } catch (err) {
         console.log('<> Error during entropy calculation -', err.message);
     }
