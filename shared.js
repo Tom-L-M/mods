@@ -362,6 +362,8 @@ class ArgvParser {
                     if (isNaN(asfloat)) {
                         asfloat = parseFloat(value);
                         value = !isNaN(asfloat) && asfloat !== 0 ? asfloat : 0;
+                    } else {
+                        value = asfloat;
                     }
                 }
 
@@ -436,6 +438,8 @@ class ArgvParser {
                     if (isNaN(asfloat)) {
                         asfloat = parseFloat(value);
                         value = !isNaN(asfloat) && asfloat !== 0 ? asfloat : 0;
+                    } else {
+                        value = asfloat;
                     }
                 }
 
