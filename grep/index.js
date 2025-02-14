@@ -32,12 +32,23 @@ const help = `
         -x | --capture          Prints only the matching text, not the surrounding
                                 chars or lines. This option disables the output
                                 control flags: (-A, -B, -C, -V, -n).
-        
-    Info:
-        - To make the caret char (^) work in windows terminals,
-          use ^^^ (3) instead of ^ (1).
-          This will NOT work on Windows:        something[^;]+
-          This will work on Windows:            something[^^^;]+`;
+        -t | --terminal-safe    Use terminal-safe chars, replacing:
+                                %C -> ^       %G -> >       %L -> <
+                                %B -> /       %R ->\\       %A -> &
+                                %S -> '       %D -> "       %P -> | `;
+
+function replaceUnsafeChars(rxstring) {
+    rxstring = rxstring.replaceAll('%C', '^');
+    rxstring = rxstring.replaceAll('%G', '>');
+    rxstring = rxstring.replaceAll('%L', '<');
+    rxstring = rxstring.replaceAll('%B', '/');
+    rxstring = rxstring.replaceAll('%R', '\\');
+    rxstring = rxstring.replaceAll('%A', '&');
+    rxstring = rxstring.replaceAll('%S', "'");
+    rxstring = rxstring.replaceAll('%D', '"');
+    rxstring = rxstring.replaceAll('%P', '|');
+    return rxstring;
+}
 
 /**
  * @param {string} input
@@ -47,8 +58,10 @@ const help = `
 function getMatchingTokens(
     input,
     rxstring,
-    { insensitive = false, word = false, regex = false }
+    { insensitive = false, word = false, regex = false, safeChars = false }
 ) {
+    if (safeChars) rxstring = replaceUnsafeChars(rxstring);
+
     const rxmain = word ? `\\b${rxstring}\\b` : rxstring;
     const rxflags = insensitive ? 'gi' : 'g';
     const rxwrapped = wrapRegExpInGroup(
@@ -78,8 +91,11 @@ function getMatchingLines(
         numbers = false,
         count = false,
         regex = false,
+        safeChars = false,
     }
 ) {
+    if (safeChars) rxstring = replaceUnsafeChars(rxstring);
+
     const rxmain = word ? `\\b${rxstring}\\b` : rxstring;
     const rxflags = insensitive ? 'i' : '';
 
@@ -180,6 +196,7 @@ function getMatchingLines(
     parser.option('numbers', { alias: 'n', allowValue: false });
     parser.option('count', { alias: 'c', allowValue: false });
     parser.option('capture', { alias: 'x', allowValue: false });
+    parser.option('terminal-safe', { alias: 't', allowValue: false });
     parser.argument('string');
     parser.argument('file');
     const args = parser.parseArgv();
@@ -203,6 +220,7 @@ function getMatchingLines(
                 regex: Boolean(args.regex),
                 insensitive: Boolean(args.insensitive),
                 word: Boolean(args.word),
+                safeChars: Boolean(args['terminal-safe']),
             })
         );
 
@@ -221,6 +239,7 @@ function getMatchingLines(
             invert: Boolean(args.invert),
             numbers: Boolean(args.numbers),
             count: Boolean(args.count),
+            safeChars: Boolean(args['terminal-safe']),
             before,
             after,
         })
