@@ -14,7 +14,8 @@ const help = `
         -h | --help             Prints the help message and quits.
         -v | --version          Prints the version info and quits.
         -q | --quiet            Shows only if the files are different or not.
-        -C | --no-color         Prints result without color ANSI tokens.`;
+        -C | --no-color         Prints result without color ANSI tokens.
+        -u | --show-unmodified  Prints the unmodified lines also.`;
 
 const green = string => `\x1b[32m${string}\x1b[0m`;
 const red = string => `\x1b[31m${string}\x1b[0m`;
@@ -82,13 +83,30 @@ function splitInLines(data, { replaceCRLF = false } = {}) {
     return data.split('\n');
 }
 
-function patch(data1, data2, { quiet, nocolor } = {}) {
+function patch(data1, data2, { quiet, nocolor, showUnmodified } = {}) {
     const dataSource1 = splitInLines(data1, { replaceCRLF: true }); //data1.trim().split('\n');
     const dataSource2 = splitInLines(data2, { replaceCRLF: true }); //data2.trim().split('\n');
-    const difflist = diff(dataSource1, dataSource2);
+    let difflist = diff(dataSource1, dataSource2);
+
+    const filtered = difflist.filter(v => v.action !== 'keep');
 
     if (quiet) {
-        return console.log(difflist.length > 0);
+        return console.log(
+            filtered.length > 0
+                ? `different (${filtered.length} lines)`
+                : 'equal'
+        );
+    }
+
+    if (!showUnmodified) {
+        difflist = difflist
+            .map((v, i, a) =>
+                v.action === 'keep' &&
+                (a[i - 1] === null || a[i - 1]?.action === 'keep')
+                    ? null
+                    : v
+            )
+            .filter(v => !!v);
     }
 
     for (let { action, data } of difflist) {
@@ -97,7 +115,7 @@ function patch(data1, data2, { quiet, nocolor } = {}) {
         } else if (action === 'remove') {
             console.log('- ' + (nocolor ? data : red(data)));
         } else {
-            console.log('  ' + data);
+            if (showUnmodified && data) console.log('  ' + data);
         }
     }
 }
@@ -108,6 +126,7 @@ function patch(data1, data2, { quiet, nocolor } = {}) {
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('quiet', { alias: 'q', allowValue: false });
     parser.option('no-color', { alias: 'C', allowValue: false });
+    parser.option('show-unmodified', { alias: 'u', allowValue: false });
     const args = parser.parseArgv();
     const file = args._[0];
     const fileB = args._[1];
@@ -119,6 +138,7 @@ function patch(data1, data2, { quiet, nocolor } = {}) {
     let input, inputB;
     const quiet = args.quiet || null;
     const nocolor = args['no-color'] || null;
+    const showUnmodified = args['show-unmodified'] || null;
 
     // If it is called like:    node script.js [somefile] [somefileB] [flags]
     // E.g. there is no input via pipes
@@ -149,5 +169,6 @@ function patch(data1, data2, { quiet, nocolor } = {}) {
     return patch(input.toString(), inputB.toString(), {
         quiet,
         nocolor,
+        showUnmodified,
     });
 })();

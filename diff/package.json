@@ -1,6 +1,6 @@
 {
     "name": "diff",
-    "version": "1.6.2",
+    "version": "1.6.4",
     "description": "A tool for finding line diff between files. (Port of UNIX's 'diff' tool).",
     "main": "index.js",
     "scripts": {
