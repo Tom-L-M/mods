@@ -515,25 +515,25 @@ async function sendPacket(context, { firstRun = false } = {}) {
         <stdin> | client-http [options]
 
     Options:
-        -h | --help                     Prints the help message and quits.
-        -v | --version                  Prints the version info and quits.
-        -t | --trace                    Prints information about connections, data, and redirections.
-        -i | --include-headers          Includes the response headers, dumping the HTTP response as-is.
-        -x | --method <METHOD>          Sets a request method (defaults to 'GET'). Both "x" and "X" are valid.
-        -o | --output [FILE | - | .]    Downloads the response content instead of displaying it.
+        -h, --help                     Prints the help message and quits.
+        -v, --version                  Prints the version info and quits.
+        -t, --trace                    Prints information about connections, data, and redirections.
+        -i, --include-headers          Includes the response headers, dumping the HTTP response as-is.
+        -x, --method <METHOD>          Sets a request method (defaults to 'GET'). Both "x" and "X" are valid.
+        -T, --timeout <MS>             Number of milisseconds to wait before triggering a timeout. Defaults to 3000ms.
+        -R, --no-retry                 Do not retry on timeout.
+        -U, --http-useragent <AGENT>   Sets the user_agent header (defaults to Chrome standart).
+        -F, --http-nofollow            Ignores 3XX-Redirection response codes.
+        -H, --http-header <HEADER>     Sets a new HTTP header, inthe format of:    "Header: Content".
+        -D, --data-ascii <TEXT>        Sends a specific text as data in packet.
+            --data-bytes <BYTES>       Sends a specific series of hex bytes as data in packet.
+            --data-file <FILENAME>     Reads a file and sends its contents as data.
+        -O, --no-output                Ignores the response content. Behaves like a HEAD request (prints only status).
+        -o, --output [FILE | - | .]    Downloads the response content instead of displaying it.
                                         Set to '-' to output to STDOUT, or to '.' to download with an automatic file name.
-        -O | --no-output                Ignores the response content. Behaves like a HEAD request (prints only status).
-        -T | --timeout <MS>             Number of milisseconds to wait before triggering a timeout. Defaults to 3000ms.
-        -R | --no-retry                 Do not retry on timeout.
-        -D   --data-ascii <TEXT>        Sends a specific text as data in packet.
-             --data-bytes <BYTES>       Sends a specific series of hex bytes as data in packet.
-             --data-file <FILENAME>     Reads a file and sends its contents as data.
-        -U | --http-useragent <AGENT>   Sets the user_agent header (defaults to Chrome standart).
-        -F | --http-nofollow            Ignores 3XX-Redirection response codes.
-        -H | --http-header <HEADER>     Sets a new HTTP header, inthe format of:    "Header: Content".
-        -n | --next <URL>               Executes another request to URL, and concats the result after the first.
+        -n, --next <URL>               Executes another request to URL, and concats the result after the first.
                                         Multiple --next flags may be used, and they will be requested in sequence.
-        -c | --concat <STRING>          Concatenates the data from queries, with <STRING> as separator.
+        -c, --concat <STRING>          Concatenates the data from queries, with <STRING> as separator.
                                         (This affects downloads too: all data will be written to a single download file).
 
     Info:
