@@ -446,6 +446,7 @@ function startHttpBaseServer(context) {
             req.socket.remotePort,
         ];
 
+        let accepted = false;
         if (auth.use) {
             let r_header = req.headers.authorization || ''; // get the auth header
             let r_token = r_header.split(/\s+/).pop() || ''; // and the encoded auth token
@@ -455,7 +456,7 @@ function startHttpBaseServer(context) {
             let r_password = r_parts.join(':'); // everything else is the password
             if (r_username !== auth.user || r_password !== auth.pass) {
                 console.log(
-                    `${now} - http-exec@${remoteip}:${remoteport} >> [${
+                    `${now} - http@${remoteip}:${remoteport} >> [${
                         req.method
                     }] : ${
                         req.url == '/undefined' ? '/' : req.url
@@ -467,13 +468,16 @@ function startHttpBaseServer(context) {
                         'Basic realm="Access to the staging site"',
                 });
                 res.end('401: Forbidden :: Authorization Failed');
-                return;
+            } else {
+                console.log(
+                    `${now} - http@${remoteip}:${remoteport} >> [${
+                        req.method
+                    }] : ${
+                        req.url == '/undefined' ? '/' : req.url
+                    } - Auth:Accepted`
+                );
+                accepted = true;
             }
-            console.log(
-                `${now} - http-exec@${remoteip}:${remoteport} >> [${
-                    req.method
-                }] : ${req.url == '/undefined' ? '/' : req.url} - Auth:Accepted`
-            );
         } else {
             console.log(
                 `${now} - http@${remoteip}:${remoteport} >> [${req.method}] : ${
@@ -488,6 +492,8 @@ function startHttpBaseServer(context) {
                         .map(x => x.join(': '))
                         .join('\n  & ')
             );
+
+        if (!accepted) return;
 
         if (req.method.toUpperCase().trim() == 'POST') {
             let chunkdata = '';
