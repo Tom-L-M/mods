@@ -567,7 +567,6 @@ const fullHelp = `
                     rB === intB.toString()
                 )
                     (rA = intA), (rB = intB);
-                console.log(xmode, [rA, rB], [rA < rB, rA === rB, rA > rB]);
                 if (xmode === 'asc' || xmode === 'ascending')
                     return rA < rB ? -1 : rA === rB ? 0 : 1;
                 if (xmode === 'des' || xmode === 'descending')
