@@ -186,6 +186,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
     let {
         url,
         next,
+        auth,
+        authToken,
         download,
         timeout,
         retryOnTimeout,
@@ -221,6 +223,14 @@ async function sendPacket(context, { firstRun = false } = {}) {
         for (let header of httpHeaders) {
             let [name, ...body] = header.split(':');
             options.headers['' + name] = body[0].trim();
+        }
+
+        if (auth) {
+            options.headers['Authorization'] = `Basic ${auth}`;
+        }
+
+        if (authToken) {
+            options.headers['Authorization'] = `Bearer ${authToken}`;
         }
 
         if (message) {
@@ -525,6 +535,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
         -U, --http-useragent <AGENT>   Sets the user_agent header (defaults to Chrome standart).
         -F, --http-nofollow            Ignores 3XX-Redirection response codes.
         -H, --http-header <HEADER>     Sets a new HTTP header, inthe format of:    "Header: Content".
+        -a, --auth <USER>:<PASSWD>     Adds an HTTP-basic-auth "Authorization" header with provided user and password.
+        -A, --auth-token <TOKEN>       Adds an HTTP-bearer-auth header, with the provided token. Useful for API requests.
         -D, --data-ascii <TEXT>        Sends a specific text as data in packet.
             --data-bytes <BYTES>       Sends a specific series of hex bytes as data in packet.
             --data-file <FILENAME>     Reads a file and sends its contents as data.
@@ -545,6 +557,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('trace', { alias: 't', allowValue: false });
+    parser.option('auth', { alias: 'a', allowValue: true });
+    parser.option('auth-token', { alias: 'A', allowValue: true });
     parser.option('include-headers', { alias: 'i', allowValue: false });
     parser.option('method', { alias: ['x', 'X'] });
     parser.option('output', { alias: 'o', allowDash: true });
@@ -573,6 +587,8 @@ async function sendPacket(context, { firstRun = false } = {}) {
         dump: Boolean(args['include-headers']),
         noOutput: Boolean(args['no-output']),
         retryOnTimeout: !args['no-retry'],
+        auth: args['auth'],
+        authToken: args['auth-token'],
         timeoutRetries: 0,
         trace: Boolean(args.trace),
         method: args.method || 'GET',
@@ -608,6 +624,15 @@ async function sendPacket(context, { firstRun = false } = {}) {
 
     // If both 'trace' and 'dump' are active, disable 'dump', as 'trace' already includes all the info
     if (context.trace && context.dump) context.dump = false;
+
+    if (context.auth) {
+        if (typeof context.auth !== 'string' || !context.auth.includes(':')) {
+            return console.log(
+                `Error: Invalid credentials provided: "${context.auth}". Expected "USERNAME:PASSWORD".`
+            );
+        }
+        context.auth = Buffer.from(context.auth).toString('base64');
+    }
 
     if (args['data-ascii']) {
         // --text somecontent
