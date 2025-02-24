@@ -7,47 +7,6 @@ const {
 } = require('../shared');
 
 /**
- * This function is guaranteed to work, but only if separators are single chars.
- *
- * The second function was not battle-tested yet, and may fail.
- * So, keep the old version here in case we need to downgrade or revert.
- */
-/**
- * Parses a CSV string and returns an Array representation as a table.
- * @param {string} data
- * @param {string} separator The cell separator used. Default for CSV is ','.
- * @param {boolean} addIndex If set to true, adds a 'Index' column to the right, indexing starts at 1.
- * @returns {string[]} A 2D-Array representing the CSV table
- */
-// function parseCSV_OLD(data, { separator = ',', addIndex = false } = {}) {
-//     let rows = data.trim().split('\n');
-//     if (addIndex && !rows[0].startsWith('Index' + separator)) {
-//         rows = [
-//             'Index' + separator + rows[0],
-//             ...rows.slice(1).map((v, i) => i + 1 + separator + v),
-//         ];
-//     }
-
-//     let cols = rows.map(row => {
-//         // Add a separator in the end of the line, so that
-//         // the last field is parsed as a regular one
-//         // avoids the need of a special-case handler
-//         row = row.trim() + separator;
-//         let insideQuotes = false;
-//         let cell = '';
-//         const cells = [];
-//         for (let char of row) {
-//             if (char === '"') insideQuotes = !insideQuotes;
-//             if (char === separator && !insideQuotes)
-//                 cells.push(cell), (cell = '');
-//             else cell += char;
-//         }
-//         return cells;
-//     });
-//     return cols;
-// }
-
-/**
  * Parses a CSV string and returns an Array representation as a table.
  * @param {string} data
  * @param {string} separator The cell separator used. Default for CSV is ','.
@@ -412,8 +371,8 @@ const fullHelp = `
     const stdinActive = isStdinActive();
 
     if (args.version) return console.log(require('./package.json')?.version);
-    if (args.help || (!stdinActive && !file)) return console.log(help);
     if (args['help-all']) return console.log(fullHelp);
+    if (args.help || (!stdinActive && !file)) return console.log(help);
 
     if (args._invalid.length > 0)
         return console.log(
@@ -504,14 +463,6 @@ const fullHelp = `
         }
 
         selected = [...new Set(selected)].sort((a, b) => a - b);
-        // selected = selected
-        //     .map(v => {
-        //         let nV = parseInt(v);
-        //         if (!isNaN(nV) && nV.toString() === v) return v;
-        //         nV = originalHeader.indexOf(v);
-        //         if (nV < 0) return null;
-        //     })
-        //     .filter(v => v !== null);
         csv = csv.map(v => v.filter((_, i) => selected.includes(i)));
     }
 
@@ -546,7 +497,7 @@ const fullHelp = `
         if (!isNaN(parseInt(xcol))) {
             xcol = parseInt(xcol);
         } else {
-            xcol = originalHeader.indexOf(xcol);
+            xcol = csv[0].indexOf(xcol);
         }
         if ((!xcol && typeof xcol !== 'number') || xcol < 0)
             return console.log(
