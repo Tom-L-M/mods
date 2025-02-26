@@ -188,6 +188,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         next,
         auth,
         authToken,
+        cookies,
         download,
         timeout,
         retryOnTimeout,
@@ -233,6 +234,13 @@ async function sendPacket(context, { firstRun = false } = {}) {
             options.headers['Authorization'] = `Bearer ${authToken}`;
         }
 
+        if (cookies.length > 0) {
+            options.headers['Cookie'] = '';
+            for (let ck of cookies) {
+                options.headers['Cookie'] += ck + ';';
+            }
+        }
+
         if (message) {
             options.headers['Content-Length'] = message.length;
             options.headers['Content-Type'] =
@@ -249,6 +257,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
             // Tracks download speed with metered chunks per second
             let lastChunkSize = 0;
 
+            // If dump is requested, print as-is
             if (dump) {
                 console.log(
                     'HTTP/' + res.httpVersion,
@@ -258,20 +267,41 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 console.log(formatResponseHeaders(res.headers), '\n');
             }
 
-            console.log(
-                `+ ${options.method} (${res.statusCode} ${res.statusMessage}) - ${url}`
-            );
-
-            if (trace) {
-                if (message) {
+            // if dump is not requested, style the status
+            else {
+                console.log(`> (${options.method}) ${url}`);
+                // Colorize response according to code
+                if (is200Code(res)) {
                     console.log(
-                        `+ Sent data: ${message.length || message.size} bytes`
+                        `> \x1b[32m${res.statusCode} ${res.statusMessage}\x1b[0m`
+                    );
+                } else if (is300Code(res)) {
+                    console.log(
+                        `> \x1b[33m${res.statusCode} ${res.statusMessage}\x1b[0m`
+                    );
+                } else {
+                    console.log(
+                        `> \x1b[31m${res.statusCode} ${res.statusMessage}\x1b[0m`
                     );
                 }
-                console.log(
-                    `+ Response headers: \n` +
-                        `${formatResponseHeaders(res.headers, ' -  ')}\n`
-                );
+
+                // if trace is also requested
+                if (trace) {
+                    console.log();
+                    if (message) {
+                        console.log(
+                            `+ Sent data: ${
+                                message.length || message.size
+                            } bytes`
+                        );
+                    }
+                    console.log(
+                        `+ Response headers: \n` +
+                            `${formatResponseHeaders(res.headers, ' -  ')}`
+                    );
+                }
+
+                console.log(); // Empty line for formatting
             }
 
             let fname,
@@ -319,9 +349,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
                     return resolve();
                 }
 
-                if (is200Code(res)) {
-                    printDownloadHeader(fname);
-                }
+                printDownloadHeader(fname);
             }
 
             // If the user accepts the risk of printing to STDOUT:
@@ -345,7 +373,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
             res.on('data', chunk => {
                 outputsize += chunk.length;
                 lastChunkSize += chunk.length;
-                if (download && is200Code(res) && download !== '-') {
+                if (download && download !== '-') {
                     fs.appendFileSync(fname, chunk);
 
                     // Let the download status update very 1 second (1000ms)
@@ -373,50 +401,55 @@ async function sendPacket(context, { firstRun = false } = {}) {
                 if (printedData && !nextSeparator) console.log(); // Empty line for styling if something was already printed
 
                 // If there is no following to do, print result of current download
-                if (is200Code(res)) {
-                    if (download && download !== '-') {
-                        printDownloadInfo(
-                            res.headers['content-length'] || outputsize,
-                            outputsize,
-                            // res.headers['content-length'] || outputsize,
-                            startMS,
-                            lastChunkSize
-                        );
-                        if (trace)
-                            console.log(
-                                `+ Total data received (${outputsize} bytes) ` +
-                                    `- Saved in [${fname}]`
-                            );
-                        console.log();
-                    }
-                }
-
-                // If redirection following is requested, and there is a redirection destination
-                if (is300Code(res) && res.headers.location && !httpNofollow) {
+                //if (is200Code(res)) {
+                if (download && download !== '-') {
+                    printDownloadInfo(
+                        res.headers['content-length'] || outputsize,
+                        outputsize,
+                        // res.headers['content-length'] || outputsize,
+                        startMS,
+                        lastChunkSize
+                    );
+                    console.log();
                     if (trace)
                         console.log(
-                            `+ Client informed redirection - Redirecting to [${res.headers.location}]`
+                            `\n> Total data received: ${outputsize} bytes ` +
+                                `- Saved in [${fname}]`
                         );
+                }
+                //}
 
-                    const redirectionContext = cloneObject(context);
+                // If redirection following is requested, and there is a redirection destination
+                else if (is300Code(res)) {
+                    if (res.headers.location && !httpNofollow) {
+                        if (trace)
+                            console.log(
+                                `+ Client informed redirection - Redirecting to [${res.headers.location}]`
+                            );
 
-                    // Prevent recursive calls of going to next URLs
-                    redirectionContext.next = [];
+                        const redirectionContext = cloneObject(context);
 
-                    // Provided an absolute url for redirection: e.g. https://newplace.com/something
-                    if (res.headers.location.startsWith('http')) {
-                        redirectionContext.url = new URL(res.headers.location);
+                        // Prevent recursive calls of going to next URLs
+                        redirectionContext.next = [];
+
+                        // Provided an absolute url for redirection: e.g. https://newplace.com/something
+                        if (res.headers.location.startsWith('http')) {
+                            redirectionContext.url = new URL(
+                                res.headers.location
+                            );
+                        }
+                        // Provided a relative url for redirection: e.g. /something
+                        else {
+                            redirectionContext.url = new URL(
+                                url.origin + res.headers.location
+                            );
+                        }
+
+                        await sendPacket(redirectionContext); // Send a new request to the proper place now
                     }
-                    // Provided a relative url for redirection: e.g. /something
-                    else {
-                        redirectionContext.url = new URL(
-                            url.origin + res.headers.location
-                        );
-                    }
-
-                    await sendPacket(redirectionContext); // Send a new request to the proper place now
                 }
 
+                // Independent of the last result
                 // Start fetching the next URLs
                 if (next.length > 0) {
                     const nextURL = next[0];
@@ -459,9 +492,9 @@ async function sendPacket(context, { firstRun = false } = {}) {
             });
         });
 
-        request.on('socket', () => {
-            if (trace) console.log(`+ Trying ${context.url}...`);
-        });
+        // request.on('socket', () => {
+        //     if (trace) console.log(`+ Trying ${context.url}...`);
+        // });
 
         request.on('error', err => {
             // If the request was already destroyed, it means the 'timeout' was triggered first
@@ -537,6 +570,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         -H, --http-header <HEADER>     Sets a new HTTP header, inthe format of:    "Header: Content".
         -a, --auth <USER>:<PASSWD>     Adds an HTTP-basic-auth "Authorization" header with provided user and password.
         -A, --auth-token <TOKEN>       Adds an HTTP-bearer-auth header, with the provided token. Useful for API requests.
+        -C, --cookie <STRING>          Adds a cookie to the request. This flag can be used multiple times.
         -D, --data-ascii <TEXT>        Sends a specific text as data in packet.
             --data-bytes <BYTES>       Sends a specific series of hex bytes as data in packet.
             --data-file <FILENAME>     Reads a file and sends its contents as data.
@@ -573,6 +607,11 @@ async function sendPacket(context, { firstRun = false } = {}) {
     parser.option('http-header', { alias: 'H', allowMultiple: true });
     parser.option('next', { alias: 'n', allowMultiple: true });
     parser.option('concat', { alias: 'c' });
+    parser.option('cookie', {
+        alias: 'C',
+        allowValue: true,
+        allowMultiple: true,
+    });
     parser.argument('url');
     const args = parser.parseArgv();
 
@@ -603,6 +642,7 @@ async function sendPacket(context, { firstRun = false } = {}) {
         bytes: null,
         file: null,
         message: null,
+        cookies: args.cookies || [],
     };
 
     // If multiple URLs are passed in a file, split them on '\n' and use the first as default url,
