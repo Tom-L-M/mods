@@ -38,6 +38,7 @@ function startHttpCommandServer(context) {
             req.socket.remotePort,
         ];
 
+        let accepted = true;
         if (auth.use) {
             let r_header = req.headers.authorization || ''; // get the auth header
             let r_token = r_header.split(/\s+/).pop() || ''; // and the encoded auth token
@@ -59,7 +60,7 @@ function startHttpCommandServer(context) {
                         'Basic realm="Access to the staging site"',
                 });
                 res.end('401: Forbidden :: Authorization Failed');
-                return;
+                accepted = false;
             }
             console.log(
                 `${now} - http-comm@${remoteip}:${remoteport} >> [${
@@ -80,6 +81,8 @@ function startHttpCommandServer(context) {
                         .map(x => x.join(': '))
                         .join('\n  & ')
             );
+
+        if (!accepted) return;
 
         let ls;
         try {
@@ -168,6 +171,7 @@ function startHttpExecServer(context) {
             req.socket.remotePort,
         ];
 
+        let accepted = true;
         if (auth.use) {
             let r_header = req.headers.authorization || ''; // get the auth header
             let r_token = r_header.split(/\s+/).pop() || ''; // and the encoded auth token
@@ -189,7 +193,7 @@ function startHttpExecServer(context) {
                         'Basic realm="Access to the staging site"',
                 });
                 res.end('401: Forbidden :: Authorization Failed');
-                return;
+                accepted = false;
             }
             console.log(
                 `${now} - http-exec@${remoteip}:${remoteport} >> [${
@@ -210,6 +214,8 @@ function startHttpExecServer(context) {
                         .map(x => x.join(': '))
                         .join('\n  & ')
             );
+
+        if (!accepted) return;
 
         // Prevents logging of empty commands
         if (req.url == '/' || req.url == '/favicon.ico') {
@@ -295,6 +301,7 @@ function startHttpSiteServer(context) {
             req.socket.remotePort,
         ];
 
+        let accepted = true;
         if (auth.use) {
             let r_header = req.headers.authorization || ''; // get the auth header
             let r_token = r_header.split(/\s+/).pop() || ''; // and the encoded auth token
@@ -316,7 +323,7 @@ function startHttpSiteServer(context) {
                         'Basic realm="Access to the staging site"',
                 });
                 res.end('401: Forbidden :: Authorization Failed');
-                return;
+                accepted = false;
             }
             console.log(
                 `${now} - http-exec@${remoteip}:${remoteport} >> [${
@@ -337,6 +344,8 @@ function startHttpSiteServer(context) {
                         .map(x => x.join(': '))
                         .join('\n  & ')
             );
+
+        if (!accepted) return;
 
         let extension = path.extname(req.url).slice(1);
         let type = extension
@@ -446,7 +455,7 @@ function startHttpBaseServer(context) {
             req.socket.remotePort,
         ];
 
-        let accepted = false;
+        let accepted = true;
         if (auth.use) {
             let r_header = req.headers.authorization || ''; // get the auth header
             let r_token = r_header.split(/\s+/).pop() || ''; // and the encoded auth token
@@ -468,6 +477,7 @@ function startHttpBaseServer(context) {
                         'Basic realm="Access to the staging site"',
                 });
                 res.end('401: Forbidden :: Authorization Failed');
+                accepted = false;
             } else {
                 console.log(
                     `${now} - http@${remoteip}:${remoteport} >> [${
@@ -476,7 +486,6 @@ function startHttpBaseServer(context) {
                         req.url == '/undefined' ? '/' : req.url
                     } - Auth:Accepted`
                 );
-                accepted = true;
             }
         } else {
             console.log(
@@ -601,6 +610,7 @@ function startHttpFileServer(context) {
             req.socket.remotePort,
         ];
 
+        let accepted = true;
         if (auth.use) {
             let r_header = req.headers.authorization || ''; // get the auth header
             let r_token = r_header.split(/\s+/).pop() || ''; // and the encoded auth token
@@ -622,7 +632,7 @@ function startHttpFileServer(context) {
                         'Basic realm="Access to the staging site"',
                 });
                 res.end('401: Forbidden :: Authorization Failed');
-                return;
+                accepted = false;
             }
             console.log(
                 `${now} - http-exec@${remoteip}:${remoteport} >> [${
@@ -643,6 +653,8 @@ function startHttpFileServer(context) {
                         .map(x => x.join(': '))
                         .join('\n  & ')
             );
+
+        if (!accepted) return;
 
         const querypath = normalizeURLPath(req.url.slice(1)); // /deb/test/file.txt -> deb/test/file.txt
         const referencePath = path.join(basepath, querypath); // C:\var\www + deb/test/file.txt -> C:\var\www\deb\test\file.txt
@@ -839,6 +851,7 @@ function startHttpRedirectionServer(context) {
 
         res.setHeader('Content-Type', 'text/html');
 
+        let accepted = true;
         if (auth.use) {
             let r_header = req.headers.authorization || ''; // get the auth header
             let r_token = r_header.split(/\s+/).pop() || ''; // and the encoded auth token
@@ -859,7 +872,7 @@ function startHttpRedirectionServer(context) {
                         'Basic realm="Access to the staging site"',
                 });
                 res.end('401: Forbidden :: Authorization Failed');
-                return;
+                accepted = false;
             }
             console.log(
                 `${now} - http-exec@${remoteip}:${remoteport} >> [${
@@ -880,6 +893,8 @@ function startHttpRedirectionServer(context) {
                         .map(x => x.join(': '))
                         .join('\n  & ')
             );
+
+        if (!accepted) return;
 
         if (req.method.toUpperCase().trim() == 'POST') {
             let chunkdata = '';

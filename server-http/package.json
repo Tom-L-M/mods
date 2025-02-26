@@ -1,6 +1,6 @@
 {
     "name": "server-http",
-    "version": "1.7.2",
+    "version": "1.7.3",
     "description": "A tool for running a local protocol-compliant HTTP/HTTPS server.",
     "main": "index.js",
     "scripts": {
