@@ -1,6 +1,6 @@
 {
     "name": "base64",
-    "version": "1.2.1",
+    "version": "1.5.0",
     "description": "A tool for encoding and decoding text in base64. (Port of UNIX's 'base64' tool).",
     "main": "index.js",
     "scripts": {
