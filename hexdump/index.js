@@ -1,51 +1,6 @@
 const fs = require('fs');
 const { isStdinActive, readStdin, ArgvParser } = require('../shared');
 
-/**
- * Parses the CLI arguments (process.argv), dividing the flags into properties of an object.
- * Multi-word params are divided as "param":"value", while sinle-word params becomes: "param":true.
- * Lost values will be ignored*. So 'node example.js 000 --param1' will turn into: { param1:true } and '000' will be ignored.
- *   * Unless they are defined as aliases for other parameters. So, if mapping is defined as { '000':'param0' },
- *     the result will be { param1:true, param0: true } instead of { param1:true }
- * Aliases in 'mapping' do not take priority over regular double-word parameters
- *
- * @since 1.2.14
- *
- * @param {Object} mapping An object mapping the arguments alias. Always take the form of "alias":"originalProperty"
- * @return {Object} An object containing the arguments parsed, and their values
- *
- * @example <caption>  </caption>
- * // called the script with:
- * // node example.js build --param1 --param2 pvalue -p 0000
- * parseargs({ "p": "param3" })
- * // creates:
- * {
- *   build: true
- *   param1: true
- *   param2: p2value
- *   param3: 0000
- * }
- */
-// const parseargs = (mapping = {}, args = process.argv.slice(2)) => {
-//     let params = {};
-//     for (let i = 0; i < args.length; i++) {
-//         if (args[i].startsWith('--'))
-//             params[args[i].slice(2)] =
-//                 args[i + 1]?.startsWith('-') || !args[i + 1] ? true : args[++i];
-//         else if (args[i].startsWith('-'))
-//             params[args[i].slice(1)] =
-//                 args[i + 1]?.startsWith('-') || !args[i + 1] ? true : args[++i];
-//         else params[args[i]] = true;
-//     }
-//     for (let key in mapping) {
-//         if (params[key]) {
-//             params[mapping[key]] = params[key];
-//             delete params[key];
-//         }
-//     }
-//     return params;
-// };
-
 const addressFromIndex = (address, radix) => {
     // The address must accomodate at max a UInt32 (4 bytes -> up to 4294967296)
     // This means, the program can dump files with at max 4294967296 bytes (4 GB)
@@ -219,25 +174,6 @@ const help = `
         -B | --b-binary     Show bytes as binary (base-2).`;
 
 (async function () {
-    // const opts = {
-    //     h: 'help',
-    //     r: 'raw',
-    //     c: 'count',
-    //     p: 'offset',
-    //     v: 'version',
-    //     n: 'length',
-    //     d: 'decimal',
-    //     o: 'octal',
-    //     S: 'no-squeeze',
-    //     A: 'no-ascii',
-    //     T: 'no-trailing',
-    //     P: 'no-offset',
-    //     D: 'b-decimal',
-    //     O: 'b-octal',
-    //     B: 'b-binary',
-    //     Z: 'no-paint-0',
-    // };
-
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('raw', { alias: 'r', allowValue: false });
@@ -255,11 +191,9 @@ const help = `
     parser.option('b-octal', { alias: 'O', allowValue: false });
     parser.option('b-binary', { alias: 'B', allowValue: false });
     parser.option('no-paint-0', { alias: 'Z', allowValue: false });
-    parser.argument('file', { allowCasting: true });
+    parser.argument('file');
 
     const args = parser.parseArgv();
-    console.log(args.file);
-    process.exit();
 
     const file = args.file;
 
