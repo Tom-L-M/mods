@@ -1,6 +1,6 @@
 {
     "name": "server-simptcp",
-    "version": "1.6.1",
+    "version": "1.6.2",
     "description": "A tool for running the Simple-TCP-IP services locally (chargen/daytime/discard/echo).",
     "main": "index.js",
     "scripts": {

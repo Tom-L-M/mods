@@ -417,8 +417,7 @@ function parseArgs() {
         return console.log(require('./package.json')?.version);
     if (args.includes('--help') || args.includes('-h') || args.length === 0)
         return console.log(help);
-    if (args.includes('-C') || args.includes('--no-color'))
-        logger.disableColors();
+    logger.disableColors();
 
     const routes = parseArgs();
     for (const route of routes) {

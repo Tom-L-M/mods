@@ -1058,7 +1058,6 @@ function parseRange(rangeHeader, fileSize) {
         -r, --res  <RESOURCE>       Uses a specific resource as response (see table below)
         -a, --auth <USER>:<PASS>    Enables default HTTP-Auth headers
         -m, --mime <MIME-TYPE>      Uses a specific MIME type for the responses
-        -C, --no-color              Disables colored output
         -s, --https <KEY>,<CERT>    Uses HTTPS instead of HTTP - require key and certificate
             --https <DIR>`;
 
@@ -1111,7 +1110,6 @@ function parseRange(rangeHeader, fileSize) {
     parser.option('auth', { alias: 'a' });
     parser.option('mime', { alias: 'm' });
     parser.option('https', { alias: 's' });
-    parser.option('no-color', { alias: 'C', allowValue: false });
     parser.argument('protocol');
     const args = parser.parseArgv();
 
@@ -1138,7 +1136,6 @@ function parseRange(rangeHeader, fileSize) {
     if (args.dump) context.dump = true;
     if (args.res) context.content = args.res;
     if (args.mime) context.mime = args.mime;
-    if (args['no-color']) logger.disableColors();
     if (args.auth) {
         let temp = args.auth;
         if (args.auth == '*') temp = generateAuthStringPair();

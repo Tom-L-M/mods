@@ -1,6 +1,6 @@
 {
     "name": "server-gopher",
-    "version": "1.5.0",
+    "version": "1.5.1",
     "description": "A tool for running a local protocol-compliant GOPHER server.",
     "main": "index.js",
     "scripts": {

@@ -324,8 +324,7 @@ function startTftpServer(context) {
         -v, --version       Shows version information
         -p, --port          Selects a port to use (default is 69)
         -o, --host          Selects an interface to use (default is '0.0.0.0')
-        -d, --dir           Responds requests with the contents of a dir
-        -C, --no-color      Disable the colored output`;
+        -d, --dir           Responds requests with the contents of a dir`;
 
     const context = {
         help: help,
@@ -342,7 +341,7 @@ function startTftpServer(context) {
     if (args.host) context.host = args.host;
     if (args.port) context.port = args.port;
     if (args.dir) context.dir = args.dir;
-    if (args['no-color']) logger.disableColors();
+    logger.disableColors();
 
     try {
         startTftpServer(context);

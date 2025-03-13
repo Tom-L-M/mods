@@ -1,6 +1,6 @@
 {
     "name": "server-udp",
-    "version": "1.4.1",
+    "version": "1.4.2",
     "description": "A tool for running a local raw UDP server.",
     "main": "index.js",
     "scripts": {

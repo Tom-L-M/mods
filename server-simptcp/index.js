@@ -266,7 +266,6 @@ function startEchoServer(host, port) {
         -v, --version       Shows version information
         -p, --port          Selects a port to use (defaults vary)
         -o, --host          Selects an interface to use (default is '0.0.0.0')
-        -C, --no-color      Disable the colorful output
 
     Services and Default Ports:
     ┌──────────────────────────────────────────────────────────────────────┐
@@ -296,7 +295,6 @@ function startEchoServer(host, port) {
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('port', { alias: 'p', allowCasting: true });
     parser.option('host', { alias: 'o' });
-    parser.option('no-color', { allowValue: false });
     parser.argument('protocol');
     const args = parser.parseArgv();
 
@@ -310,7 +308,7 @@ function startEchoServer(host, port) {
 
     if (args.port) context.port = args.port;
     if (args.host) context.host = args.host;
-    if (args['no-color']) logger.disableColors();
+    logger.disableColors();
 
     try {
         if (!Object.keys(SERVICES).includes(args.protocol)) {

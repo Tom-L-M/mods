@@ -89,8 +89,7 @@ function startUdpServer(context) {
         -p, --port          Selects a port to use (default is 5000)
         -o, --host          Selects an interface to use (default is '0.0.0.0')
         -f, --file          Responds requests with a file data
-        -t, --text          Responds requests with a string
-        -C, --no-color      Disable the colored output`;
+        -t, --text          Responds requests with a string`;
 
     const context = {
         args: args,
@@ -134,14 +133,11 @@ function startUdpServer(context) {
                 context.content = next;
                 break;
 
-            case '-C':
-            case '--no-color':
-                logger.disableColors();
-                break;
-
             default:
         }
     }
+
+    logger.disableColors();
 
     try {
         if (!context.port) context.port = 5000;

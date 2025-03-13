@@ -1,6 +1,6 @@
 {
     "name": "proxy",
-    "version": "1.7.0",
+    "version": "1.7.1",
     "description": "A tool for running local static UDP/TCP proxy servers.",
     "main": "index.js",
     "scripts": {

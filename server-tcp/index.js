@@ -98,13 +98,11 @@ function startTcpServer(host, port, content, { dump } = {}) {
         -o | --host HOST    Selects an interface to use (default is '0.0.0.0')
         -f | --file FILE    Responds requests with a file data
         -t | --text TEXT    Responds requests with a string
-        -C | --no-color     Prevents printing with color codes
         -D | --no-dump      Prevents printing hexdumps from requests`;
 
     const parser = new ArgvParser();
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
-    parser.option('no-color', { alias: 'C', allowValue: false });
     parser.option('no-dump', { alias: 'D', allowValue: false });
     parser.option('port', { alias: 'p' });
     parser.option('host', { alias: 'h' });
@@ -127,7 +125,7 @@ function startTcpServer(host, port, content, { dump } = {}) {
     if (args.port) context.port = args.port;
     if (args.text) context.content = args.text;
 
-    if (args['no-color']) logger.disableColors();
+    logger.disableColors();
     if (args['no-dump']) context.dump = false;
 
     if (args.file) {

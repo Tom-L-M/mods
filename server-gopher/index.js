@@ -460,7 +460,7 @@ class GopherServer {
             A protocol-compliant GOPHER server
 
         Usage:
-            server-gopher [--build] [--help] [--version] [--host HOST] [--port PORT] [--dir DIR] [--no-color]
+            server-gopher [--build] [--help] [--version] [--host HOST] [--port PORT] [--dir DIR]
 
         Info:
             > Use '--build' to enter the gophermap builder before booting the server
@@ -492,14 +492,13 @@ class GopherServer {
     parser.option('host', { alias: 'o' });
     parser.option('dir', { alias: 'd' });
     parser.option('build', { alias: 'b', allowValue: false });
-    parser.option('no-color', { alias: 'C', allowValue: false });
     const args = parser.parseArgv();
 
     if (args.version) return console.log(require('./package.json')?.version);
     if (args.help) return console.log(help);
     if (args.build) return await build();
 
-    if (args['no-color']) logger.disableColors();
+    logger.disableColors();
 
     if (args._invalid.length > 0)
         return console.log(
