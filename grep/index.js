@@ -34,7 +34,7 @@ const help = `
                                 control flags: (-A, -B, -C, -V, -n).
         -t | --terminal-safe    Use terminal-safe chars, replacing:
                                 %C -> ^       %G -> >       %L -> <
-                                %B -> /       %R ->\\       %A -> &
+                                %B -> /       %R ->\\        %A -> &
                                 %S -> '       %D -> "       %P -> | `;
 
 function replaceUnsafeChars(rxstring) {

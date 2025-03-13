@@ -1,6 +1,6 @@
 {
     "name": "grep",
-    "version": "1.7.0",
+    "version": "1.7.1",
     "description": "A tool for finding regex matches in input. (Port of UNIX's 'grep' tool).",
     "main": "index.js",
     "scripts": {
