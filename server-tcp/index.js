@@ -54,15 +54,21 @@ function startTcpServer(host, port, content, { dump } = {}) {
                 );
             });
 
-            // Avoid printing connection-related events, pollutes the terminal
-            // socket.on('close', function () {
-            //     logger.info({ event: 'disconnect', client });
-            // });
+            socket.on('end', function () {
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.info({ event: 'disconnect', client });
+            });
 
-            // Avoid printing connection-related events, pollutes the terminal
-            // socket.on('error', function (err) {
-            //     logger.error({ event: 'reset', client }, err.message);
-            // });
+            socket.on('timeout', function () {
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.error({ event: 'timeout', client });
+                socket.end();
+            });
+
+            socket.on('error', function () {
+                // Avoid printing connection-related events, pollutes the terminal
+                // logger.info({ event: 'reset', client }, err.message);
+            });
         })
         .listen(port, host, () => {
             logger.print(
