@@ -665,6 +665,14 @@ function startHttpFileServer(context) {
                 .filter(x => x.isDirectory() || x.isFile())
                 .map(x => {
                     let fname = path.join(source, x.name);
+                    let flink = slicePath(
+                        path.join(
+                            source,
+                            encodeURIComponent(pathFragment(fname))
+                        ),
+                        basepath
+                    );
+
                     let stat = fs.statSync(fname);
                     let fsize = stat.isDirectory()
                         ? '-'
@@ -680,6 +688,7 @@ function startHttpFileServer(context) {
                             : types[fname.slice(fname.lastIndexOf('.') + 1)] ||
                               types['default'];
                     return {
+                        flink: flink,
                         name: fname,
                         size: fsize,
                         mtime: ftime,
@@ -688,8 +697,8 @@ function startHttpFileServer(context) {
                 });
         }
         function formatFileListAsHTML(list) {
-            const buildLine = (fname, ftime, fsize, fmime) => {
-                return `<tr><td align="left"><a href="${fname}"> ${pathFragment(
+            const buildLine = (flink, fname, ftime, fsize, fmime) => {
+                return `<tr><td align="left"><a href="${flink}"> ${pathFragment(
                     fname
                 )}${
                     fsize == '-' ? '/' : ''
@@ -739,6 +748,7 @@ function startHttpFileServer(context) {
                 [...dirlist, ...filelist]
                     .map(x =>
                         buildLine(
+                            x.flink,
                             slicePath(x.name, basepath),
                             x.mtime,
                             x.size,
@@ -1097,11 +1107,6 @@ function parseRange(rangeHeader, fileSize) {
           and 'cert.pem' inside it.
           EX:   [...] --https ./keys/key.pem,./keys/cert.pem     (Using individual paths)
           EX:   [...] --https ./keys                             (Using a directory)
-
-    Known Issues:
-        > Due to the way Node.JS handles URI hashes ("#some-http-fragment"), it is NOT possible
-          to serve files containing hashes on its path. And it WILL return a 404 error,
-          even if listed for download.
     `;
 
     const parser = new ArgvParser();
