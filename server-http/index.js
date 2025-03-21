@@ -48,7 +48,7 @@ function startHttpCommandServer(context) {
             let r_password = r_parts.join(':'); // everything else is the password
             if (r_username !== auth.user || r_password !== auth.pass) {
                 console.log(
-                    `${now} - http-comm@${remoteip}:${remoteport} >> [${
+                    `${now} - http@${remoteip}:${remoteport} >> [${
                         req.method
                     }] : ${
                         req.url == '/undefined' ? '/' : req.url
@@ -63,9 +63,9 @@ function startHttpCommandServer(context) {
                 accepted = false;
             }
             console.log(
-                `${now} - http-comm@${remoteip}:${remoteport} >> [${
-                    req.method
-                }] : ${req.url == '/undefined' ? '/' : req.url} - Auth:Accepted`
+                `${now} - http@${remoteip}:${remoteport} >> [${req.method}] : ${
+                    req.url == '/undefined' ? '/' : req.url
+                } - Auth:Accepted`
             );
         } else {
             console.log(
@@ -181,7 +181,7 @@ function startHttpExecServer(context) {
             let r_password = r_parts.join(':'); // everything else is the password
             if (r_username !== auth.user || r_password !== auth.pass) {
                 console.log(
-                    `${now} - http-exec@${remoteip}:${remoteport} >> [${
+                    `${now} - http@${remoteip}:${remoteport} >> [${
                         req.method
                     }] : ${
                         req.url == '/undefined' ? '/' : req.url
@@ -196,9 +196,9 @@ function startHttpExecServer(context) {
                 accepted = false;
             }
             console.log(
-                `${now} - http-exec@${remoteip}:${remoteport} >> [${
-                    req.method
-                }] : ${req.url == '/undefined' ? '/' : req.url} - Auth:Accepted`
+                `${now} - http@${remoteip}:${remoteport} >> [${req.method}] : ${
+                    req.url == '/undefined' ? '/' : req.url
+                } - Auth:Accepted`
             );
         } else {
             console.log(
@@ -311,7 +311,7 @@ function startHttpSiteServer(context) {
             let r_password = r_parts.join(':'); // everything else is the password
             if (r_username !== auth.user || r_password !== auth.pass) {
                 console.log(
-                    `${now} - http-exec@${remoteip}:${remoteport} >> [${
+                    `${now} - http@${remoteip}:${remoteport} >> [${
                         req.method
                     }] : ${
                         req.url == '/undefined' ? '/' : req.url
@@ -326,9 +326,9 @@ function startHttpSiteServer(context) {
                 accepted = false;
             }
             console.log(
-                `${now} - http-exec@${remoteip}:${remoteport} >> [${
-                    req.method
-                }] : ${req.url == '/undefined' ? '/' : req.url} - Auth:Accepted`
+                `${now} - http@${remoteip}:${remoteport} >> [${req.method}] : ${
+                    req.url == '/undefined' ? '/' : req.url
+                } - Auth:Accepted`
             );
         } else {
             console.log(
@@ -620,7 +620,7 @@ function startHttpFileServer(context) {
             let r_password = r_parts.join(':'); // everything else is the password
             if (r_username !== auth.user || r_password !== auth.pass) {
                 console.log(
-                    `${now} - http-exec@${remoteip}:${remoteport} >> [${
+                    `${now} - http@${remoteip}:${remoteport} >> [${
                         req.method
                     }] : ${
                         req.url == '/undefined' ? '/' : req.url
@@ -635,9 +635,9 @@ function startHttpFileServer(context) {
                 accepted = false;
             }
             console.log(
-                `${now} - http-exec@${remoteip}:${remoteport} >> [${
-                    req.method
-                }] : ${req.url == '/undefined' ? '/' : req.url} - Auth:Accepted`
+                `${now} - http@${remoteip}:${remoteport} >> [${req.method}] : ${
+                    req.url == '/undefined' ? '/' : req.url
+                } - Auth:Accepted`
             );
         } else {
             console.log(
@@ -861,7 +861,7 @@ function startHttpRedirectionServer(context) {
             let r_password = r_parts.join(':'); // everything else is the password
             if (r_username !== auth.user || r_password !== auth.pass) {
                 console.log(
-                    `${now} - http-exec@${remoteip}:${remoteport} >> [${
+                    `${now} - http@${remoteip}:${remoteport} >> [${
                         req.method
                     }] : ${
                         req.url == '/undefined' ? '/' : req.url
@@ -875,9 +875,9 @@ function startHttpRedirectionServer(context) {
                 accepted = false;
             }
             console.log(
-                `${now} - http-exec@${remoteip}:${remoteport} >> [${
-                    req.method
-                }] : ${req.url == '/undefined' ? '/' : req.url} - Auth:Accepted`
+                `${now} - http@${remoteip}:${remoteport} >> [${req.method}] : ${
+                    req.url == '/undefined' ? '/' : req.url
+                } - Auth:Accepted`
             );
         } else {
             console.log(
@@ -1097,6 +1097,11 @@ function parseRange(rangeHeader, fileSize) {
           and 'cert.pem' inside it.
           EX:   [...] --https ./keys/key.pem,./keys/cert.pem     (Using individual paths)
           EX:   [...] --https ./keys                             (Using a directory)
+
+    Known Issues:
+        > Due to the way Node.JS handles URI hashes ("#some-http-fragment"), it is NOT possible
+          to serve files containing hashes on its path. And it WILL return a 404 error,
+          even if listed for download.
     `;
 
     const parser = new ArgvParser();
