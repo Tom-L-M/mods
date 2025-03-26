@@ -130,18 +130,31 @@ const getDateFormatted = dateMs => {
     return new Date(dateMs).toISOString();
 };
 
+const getSizeFormatted = size => {
+    const SZ_1KB = 1024;
+    const SZ_1MB = SZ_1KB * SZ_1KB;
+    const SZ_1GB = SZ_1MB * SZ_1KB;
+    const fmt = n => n.toFixed(4);
+    if (size > SZ_1GB) return fmt(size / SZ_1GB) + ' gb';
+    if (size > SZ_1MB) return fmt(size / SZ_1MB) + ' mb';
+    if (size > SZ_1KB) return fmt(size / SZ_1KB) + ' kb';
+    return size + ' b';
+};
+
 /**
  * @param {string} layout The layout string to format.
  * @param {string} filePath The absolute item path.
  * @param {fs.Stats} IStat The fs.Stats object for that item path.
  * @returns
  */
-function render(layout, IStat, filePath) {
+function render(layout, IStat, filePath, { humanReadableSizes = false } = {}) {
+    if (humanReadableSizes) layout = layout.replaceAll('%s', '%S');
     for (let prop in PROPERTIES)
         layout = layout
             .replaceAll('%' + prop, PROPERTIES[prop](IStat, filePath))
             .replaceAll('\\n', '\n')
             .replaceAll('\\t', '\t');
+
     return layout;
 }
 
@@ -164,6 +177,8 @@ const PROPERTIES = {
     i: IStat => IStat.ino,
     // Size in bytes
     s: IStat => IStat.size,
+    // Size in human-readable-form
+    S: IStat => getSizeFormatted(IStat.size),
     // Number of blocks used
     b: IStat => IStat.blocks,
     // Creation time (human-readable)
@@ -250,6 +265,7 @@ const help = `
         -v | --version      Prints the version info and quits.
         -H | --longhelp     Prints the complete help message and quits.
         -f | --format S     Formats the output according to the available properties.
+        -r | --readable     Use human-readable values for sizes. The same as %S.
         -j | --json         Prints all data as a JSON object.
         -t | --terse        Prints data in compact one-line format.`;
 
@@ -265,7 +281,8 @@ const longhelp = `
         -h | --help         Prints the help message and quits.
         -v | --version      Prints the version info and quits.
         -H | --longhelp     Prints the complete help message and quits.
-        -p | --printf S     Formats the output according to the available properties.
+        -p | --format S     Formats the output according to the available properties.
+        -r | --readable     Use human-readable values for sizes. The same as %S.
         -j | --json         Prints all data as a JSON object.
         -t | --terse        Prints data in compact one-line format.
 
@@ -278,7 +295,8 @@ const longhelp = `
         %g    GroupID     
         %B    Block Size       
         %i    INode       
-        %s    Size in bytes       
+        %s    Size in bytes     
+        %S    Size in human-readable format       
         %b    Number of blocks used       
         %w    Creation time (human-readable format)       
         %W    Creation time (milisseconds since epoch)       
@@ -310,6 +328,7 @@ const path = require('node:path');
     parser.option('help', { alias: 'h', allowValue: false });
     parser.option('version', { alias: 'v', allowValue: false });
     parser.option('longhelp', { alias: 'H', allowValue: false });
+    parser.option('readable', { alias: 'r', allowValue: false });
     parser.option('json', { alias: 'j', allowValue: false });
     parser.option('terse', { alias: 't', allowValue: false });
     parser.option('format', { alias: 'f' });
@@ -347,12 +366,24 @@ const path = require('node:path');
     filepath = filepath.replaceAll(/\\/gi, '/');
 
     if (args.terse)
-        return console.log(render(DEFAULT_TERSE_LAYOUT, stats, filepath));
+        return console.log(
+            render(DEFAULT_TERSE_LAYOUT, stats, filepath, {
+                humanReadableSizes: args.readable,
+            })
+        );
 
     if (args.json)
-        return console.log(render(DEFAULT_JSON_LAYOUT, stats, filepath));
+        return console.log(
+            render(DEFAULT_JSON_LAYOUT, stats, filepath, {
+                humanReadableSizes: args.readable,
+            })
+        );
 
     if (args.format) return console.log(render(args.format, stats, filepath));
 
-    return console.log(render(DEFAULT_TEXT_LAYOUT, stats, filepath));
+    return console.log(
+        render(DEFAULT_TEXT_LAYOUT, stats, filepath, {
+            humanReadableSizes: args.readable,
+        })
+    );
 })();

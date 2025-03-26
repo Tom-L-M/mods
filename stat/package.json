@@ -1,6 +1,6 @@
 {
     "name": "stat",
-    "version": "1.4.1",
+    "version": "1.5.0",
     "description": "A tool for getting file information. (Port of UNIX's 'stat' tool).",
     "main": "index.js",
     "scripts": {
