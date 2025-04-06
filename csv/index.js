@@ -276,7 +276,9 @@ const help = `
                                 "M" must be one of: "asc", "ascending", "des" or "descending".
         -M | --match N,M        Filters a table with RegExp using column N as reference.
                                 "N" must be either a column name, or its index.
-                                "M" must be a regular expression string.`;
+                                "M" must be a regular expression string.
+        -B | --number-bars N    Add graph bars to numeric cells. N is optional and is the scale.
+                        (the value will be divided by N to set the number of bars).`;
 
 const fullHelp = `
     [csv-js]
@@ -305,6 +307,8 @@ const fullHelp = `
         -R | --row-count        Prints the number of rows.
         -F | --field-count      Prints the number of fields.
         -L | --list N           Prints the selected information as a list with separator N.
+        -B | --number-bars N    Add graph bars to numeric cells. N is optional and is the scale.
+                                (the value will be divided by N to set the number of bars).
 
     Sorting and filtering:
         -S | --sort N,M         Sorts a table using column N as reference.
@@ -350,6 +354,7 @@ const fullHelp = `
     parser.option('ascii', { alias: 'a', allowValue: false });
     parser.option('pad-start', { alias: 'p', allowValue: false });
     parser.option('max-cell-size', { alias: 'm', allowCasting: true });
+    parser.option('number-bars', { alias: 'B', allowCasting: true });
     parser.option('header', { alias: 'e', allowValue: false });
     parser.option('no-header', { alias: 'E', allowValue: false });
     parser.option('col-count', { alias: 'C', allowValue: false });
@@ -400,6 +405,22 @@ const fullHelp = `
 
     let csv = parseCSV(input, { separator, addIndex });
     const originalHeader = csv[0];
+
+    if (args['number-bars'] !== undefined) {
+        for (let i = 1; i < csv.length; i++) {
+            csv[i] = csv[i].map(v => {
+                const line = !isNaN(v)
+                    ? '■'.repeat(
+                          v /
+                              (args['number-bars'] > 0
+                                  ? args['number-bars']
+                                  : 1)
+                      ) + ' '
+                    : '';
+                return `${line}${v}`;
+            });
+        }
+    }
 
     if (args['field']) {
         for (let xfield of args['field']) {
