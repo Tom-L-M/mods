@@ -1,6 +1,6 @@
 {
     "name": "mods",
-    "version": "1.11.11+0",
+    "version": "1.11.12+0",
     "description": "An executable wrapper to compile standalone scripts and modules into a single tool.",
     "main": "mods.js",
     "keywords": [],

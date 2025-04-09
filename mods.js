@@ -109,15 +109,19 @@ const formatVerticalList = arr => {
 
     const compileContentVersionString = () => {
         const toollist = getAvailableTools();
-        let versionstring = '';
+        let versionstring = [];
         for (let tool of toollist)
-            versionstring += `;${tool}:${
-                JSON.parse(
-                    fs.readFileSync(`${__dirname}/${tool}/package.json`, 'utf8')
-                ).version
-            }`;
-        versionstring = versionstring.slice(1); // Remove the first trailing delimiter
-        return versionstring;
+            versionstring.push(
+                tool +
+                    ': ' +
+                    JSON.parse(
+                        fs.readFileSync(
+                            `${__dirname}/${tool}/package.json`,
+                            'utf8'
+                        )
+                    ).version
+            );
+        return versionstring.join('\n');
     };
 
     const compileAccumulatedVersionNumber = () => {
@@ -193,8 +197,7 @@ const formatVerticalList = arr => {
         console.log(toollist);
     } else if (['-V', '--content-version'].includes(tool)) {
         const versionstring = compileContentVersionString();
-        const versionhash = compileAccumulatedVersionNumber();
-        console.log(`$${versionhash}$${versionstring}`);
+        console.log(versionstring);
     } else if (['--info', '-i'].includes(tool)) {
         if (args[2]) {
             let pkg;
