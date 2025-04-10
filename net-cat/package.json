@@ -1,6 +1,6 @@
 {
     "name": "net-cat",
-    "version": "1.6.1",
+    "version": "1.6.2",
     "description": "A tool for creating live TCP connections to remote hosts (Port of UNIX's 'netcat' tool).",
     "main": "index.js",
     "scripts": {

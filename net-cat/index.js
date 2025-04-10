@@ -1,12 +1,9 @@
+const fs = require('fs');
 const net = require('net');
 const readline = require('readline');
-const fs = require('fs');
+const { ArgvParser } = require('../shared');
 
-(function () {
-    const args = process.argv.slice(2);
-    const targetAddress = args[0];
-    const targetPort = args[1];
-    const help = `
+const help = `
     [net-cat-js]
         A tool for creating live-sending TCP connections to remote hosts
 
@@ -16,41 +13,46 @@ const fs = require('fs');
     Options:
         -h | --help         Prints the help message and quits.
         -v | --version      Prints the version info and quits.
-        -f | --file X       All the output and input in the console will be
+        -p | --pipe X       All the output and input in the console will be
                             copied to a file.
         -s | --silent       The console output will be suppressed. This does
                             not interfere with --pipe. This does not supress 
                             the user input on the screen, only the terminal output`;
-    let pipeto = false;
-    let isSilent = false;
-    if (args.includes('--version') || args.includes('-v'))
-        return console.log(require('./package.json')?.version);
-    if (args.includes('--help') || args.includes('-h') || args.length < 2)
-        return console.log(help);
 
-    if (args.includes('--silent')) isSilent = true;
-    if (args.includes('--pipe')) {
-        pipeto = args[args.indexOf('--pipe') + 1];
-        if (!fs.existsSync(pipeto)) {
+(function () {
+    const parser = new ArgvParser();
+    parser.option('help', { alias: 'h', allowValue: false });
+    parser.option('version', { alias: 'v', allowValue: false });
+    parser.option('silent', { alias: 's', allowValue: false });
+    parser.option('pipe', { alias: 'p' });
+    parser.argument('host');
+    parser.argument('port');
+    const args = parser.parseArgv();
+
+    if (args.version) return console.log(require('./package.json')?.version);
+    if (args.help || !args.host || !args.port) return console.log(help);
+    if (args.silent) args.silent = true;
+    if (args.pipe) {
+        if (!fs.existsSync(args.pipe)) {
             try {
-                fs.writeFileSync(pipeto, '');
-                let str = `<> Created file - piping dual output to ${pipeto}`;
-                if (!isSilent) console.log(str);
-                if (pipeto) {
-                    fs.appendFileSync(pipeto, str + '\n');
+                fs.writeFileSync(args.pipe, '');
+                let str = `<> Created file - piping dual output to ${args.pipe}`;
+                if (!args.silent) console.log(str);
+                if (args.pipe) {
+                    fs.appendFileSync(args.pipe, str + '\n');
                 }
             } catch {
-                pipeto = false;
-                if (!isSilent)
+                args.pipe = false;
+                if (!args.silent)
                     console.log(
-                        `<> Error: Impossible to write to file: ${pipeto}`
+                        `<> Error: Impossible to write to file: ${args.pipe}`
                     );
             }
         } else {
-            let str = `<> Piping dual output to ${pipeto}\n`;
-            if (!isSilent) console.log(str);
-            if (pipeto) {
-                fs.appendFileSync(pipeto, str + '\n');
+            let str = `<> Piping dual output to ${args.pipe}\n`;
+            if (!args.silent) console.log(str);
+            if (args.pipe) {
+                fs.appendFileSync(args.pipe, str + '\n');
             }
         }
     }
@@ -58,18 +60,18 @@ const fs = require('fs');
     let socket;
     try {
         socket = net.createConnection(
-            { host: targetAddress, port: targetPort },
+            { host: args.host, port: args.port },
             () => {
-                let str1 = `<> Connected to ${targetAddress}:${targetPort}`;
+                let str1 = `<> Connected to ${args.host}:${args.port}`;
                 let str2 = `<> Write '<exit>' at any time to exit the program and close the connection\n`;
-                if (!isSilent) console.log(str1);
-                if (!isSilent) console.log(str2);
+                if (!args.silent) console.log(str1);
+                if (!args.silent) console.log(str2);
             }
         );
     } catch {
         let str =
             '<> Error while creating connection. Use --help for the help menu.';
-        if (!isSilent) console.log(str);
+        if (!args.silent) console.log(str);
         return;
     }
 
@@ -81,28 +83,28 @@ const fs = require('fs');
 
     rl.on('line', line => {
         if (line.trim() == 'exit') return socket.end();
-        if (pipeto) {
-            fs.appendFileSync(pipeto, line + '\n');
+        if (args.pipe) {
+            fs.appendFileSync(args.pipe, line + '\n');
         }
         socket.write(line + '\n');
     });
 
     socket.on('data', data => {
-        if (pipeto) {
-            fs.appendFileSync(pipeto, data + '\n');
+        if (args.pipe) {
+            fs.appendFileSync(args.pipe, data + '\n');
         }
-        if (!isSilent) console.log(data + '\n');
+        if (!args.silent) console.log(data + '\n');
     });
     socket.on('error', err => {
-        if (pipeto) {
-            fs.appendFileSync(pipeto, err + '\n');
+        if (args.pipe) {
+            fs.appendFileSync(args.pipe, err + '\n');
         }
         socket.destroy();
         rl.close();
     });
     socket.on('end', () => {
-        let str = `<> Disconnected from ${targetAddress}:${targetPort}`;
-        if (!isSilent) console.log(str);
+        let str = `<> Disconnected from ${args.host}:${args.port}`;
+        if (!args.silent) console.log(str);
         // process.exit(0);
         rl.close();
     });
